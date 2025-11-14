@@ -4,9 +4,10 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { attendanceStorage } from "@/lib/storage"
+import * as XLSX from 'xlsx' // ← NEW: Import XLSX library
 
 export default function SettingsPage() {
-  const [exportFormat, setExportFormat] = useState("csv")
+  const [exportFormat, setExportFormat] = useState("excel") // ← MODIFIED: Changed default to excel
   const [dateRange, setDateRange] = useState({
     start: "2025-11-01",
     end: "2025-11-09",
@@ -23,9 +24,12 @@ export default function SettingsPage() {
     deviceWarning: 3,
   })
 
+  // ← MODIFIED: Updated handleExport function
   const handleExport = () => {
     if (exportFormat === "csv") {
       exportToCSV()
+    } else if (exportFormat === "excel") {
+      exportToExcel()
     } else if (exportFormat === "pdf") {
       exportToPDF()
     }
@@ -58,6 +62,171 @@ export default function SettingsPage() {
     link.href = url
     link.download = `attendance_${dateRange.start}_${dateRange.end}.csv`
     link.click()
+  }
+
+  // ← NEW: Excel export function
+  const exportToExcel = () => {
+    try {
+      const allRecords = attendanceStorage.getAll()
+      const filtered = allRecords.filter(
+        (record) => record.date >= dateRange.start && record.date <= dateRange.end,
+      )
+
+      if (filtered.length === 0) {
+        alert("No records found for the selected date range.")
+        return
+      }
+
+      // Create workbook
+      const wb = XLSX.utils.book_new()
+
+      // Prepare attendance data
+      const attendanceData = filtered.map((record) => ({
+        'Employee ID': record.employeeId,
+        'Name': record.name,
+        'Department': record.department || 'N/A',
+        'Date': record.date,
+        'Clock In': new Date(record.clockInTime).toLocaleTimeString(),
+        'Clock Out': record.clockOutTime ? new Date(record.clockOutTime).toLocaleTimeString() : 'Not Clocked Out',
+        'Total Hours': record.totalHours ? record.totalHours.toFixed(2) : '-',
+        'Status': record.status || getStatus(record)
+      }))
+
+      // Create attendance worksheet
+      const ws = XLSX.utils.json_to_sheet(attendanceData)
+
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 15 }, // Employee ID
+        { wch: 25 }, // Name
+        { wch: 20 }, // Department
+        { wch: 12 }, // Date
+        { wch: 15 }, // Clock In
+        { wch: 15 }, // Clock Out
+        { wch: 12 }, // Total Hours
+        { wch: 15 }  // Status
+      ]
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Attendance')
+
+      // Create summary statistics
+      const stats = calculateStatistics(filtered)
+      const summaryData = [
+        { Metric: 'Total Records', Value: stats.totalRecords },
+        { Metric: 'Total Employees', Value: stats.uniqueEmployees },
+        { Metric: 'Present', Value: stats.present },
+        { Metric: 'Absent', Value: stats.absent },
+        { Metric: 'On Time', Value: stats.onTime },
+        { Metric: 'Late Arrivals', Value: stats.late },
+        { Metric: 'Not Clocked Out', Value: stats.notClockedOut },
+        { Metric: 'Total Hours Worked', Value: stats.totalHours.toFixed(2) },
+        { Metric: 'Average Hours/Day', Value: stats.averageHours.toFixed(2) },
+        { Metric: 'Attendance Rate', Value: `${stats.attendanceRate.toFixed(1)}%` }
+      ]
+
+      const summaryWs = XLSX.utils.json_to_sheet(summaryData)
+      summaryWs['!cols'] = [{ wch: 25 }, { wch: 20 }]
+      XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary')
+
+      // Group by department if multiple departments exist
+      const departmentGroups = groupByDepartment(filtered)
+      if (Object.keys(departmentGroups).length > 1) {
+        Object.keys(departmentGroups).forEach(dept => {
+          const deptData = departmentGroups[dept].map((record: { employeeId: any; name: any; date: any; clockInTime: string | number | Date; clockOutTime: string | number | Date; totalHours: number; status: any }) => ({
+            'Employee ID': record.employeeId,
+            'Name': record.name,
+            'Date': record.date,
+            'Clock In': new Date(record.clockInTime).toLocaleTimeString(),
+            'Clock Out': record.clockOutTime ? new Date(record.clockOutTime).toLocaleTimeString() : 'Not Clocked Out',
+            'Total Hours': record.totalHours ? record.totalHours.toFixed(2) : '-',
+            'Status': record.status || getStatus(record)
+          }))
+
+          const deptWs = XLSX.utils.json_to_sheet(deptData)
+          deptWs['!cols'] = [
+            { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 15 },
+            { wch: 15 }, { wch: 12 }, { wch: 15 }
+          ]
+          
+          // Sanitize department name for sheet name
+          const sheetName = dept.substring(0, 31).replace(/[:\\\/?*\[\]]/g, '_')
+          XLSX.utils.book_append_sheet(wb, deptWs, sheetName)
+        })
+      }
+
+      // Generate filename
+      const filename = `Attendance_Report_${dateRange.start}_to_${dateRange.end}.xlsx`
+
+      // Download file
+      XLSX.writeFile(wb, filename)
+
+      alert(`Excel file "${filename}" has been downloaded successfully!`)
+    } catch (error) {
+      console.error("Excel export error:", error)
+      alert("Failed to export to Excel. Please try again.")
+    }
+  }
+
+  // ← NEW: Helper function to calculate statistics
+  const calculateStatistics = (records: any[]) => {
+    const uniqueEmployees = new Set(records.map(r => r.employeeId)).size
+    const present = records.filter(r => r.clockInTime).length
+    const absent = records.filter(r => !r.clockInTime).length
+    const notClockedOut = records.filter(r => r.clockInTime && !r.clockOutTime).length
+    
+    let onTime = 0
+    let late = 0
+    let totalHours = 0
+
+    records.forEach(record => {
+      const status = getStatus(record)
+      if (status === 'On Time') onTime++
+      if (status === 'Late') late++
+      if (record.totalHours) totalHours += record.totalHours
+    })
+
+    return {
+      totalRecords: records.length,
+      uniqueEmployees,
+      present,
+      absent,
+      onTime,
+      late,
+      notClockedOut,
+      totalHours,
+      averageHours: totalHours / (present || 1),
+      attendanceRate: (present / (present + absent || 1)) * 100
+    }
+  }
+
+  // ← NEW: Helper function to get attendance status
+  const getStatus = (record: any): string => {
+    if (!record.clockInTime) return 'Absent'
+    if (!record.clockOutTime) return 'Not Clocked Out'
+    
+    const clockInTime = new Date(record.clockInTime)
+    const hour = clockInTime.getHours()
+    const minute = clockInTime.getMinutes()
+    
+    // Late if after 9:00 AM
+    if (hour > 9 || (hour === 9 && minute > 0)) {
+      return 'Late'
+    }
+    
+    return 'On Time'
+  }
+
+  // ← NEW: Helper function to group records by department
+  const groupByDepartment = (records: any[]) => {
+    return records.reduce((acc, record) => {
+      const dept = record.department || 'N/A'
+      if (!acc[dept]) {
+        acc[dept] = []
+      }
+      acc[dept].push(record)
+      return acc
+    }, {} as Record<string, any[]>)
   }
 
   const exportToPDF = () => {
@@ -101,9 +270,20 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* ← MODIFIED: Added Excel option */}
           <div>
             <label className="text-slate-300 block mb-3 font-semibold">Export Format</label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  value="excel"
+                  checked={exportFormat === "excel"}
+                  onChange={(e) => setExportFormat(e.target.value)}
+                  className="w-4 h-4"
+                />
+                <span className="ml-3 text-slate-300 font-semibold">Excel (.xlsx)</span>
+              </label>
               <label className="flex items-center cursor-pointer">
                 <input
                   type="radio"
@@ -112,7 +292,7 @@ export default function SettingsPage() {
                   onChange={(e) => setExportFormat(e.target.value)}
                   className="w-4 h-4"
                 />
-                <span className="ml-3 text-slate-300">CSV (Excel)</span>
+                <span className="ml-3 text-slate-300">CSV</span>
               </label>
               <label className="flex items-center cursor-pointer">
                 <input
@@ -127,8 +307,23 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* ← NEW: Export preview info */}
+          <div className="p-4 bg-slate-700 rounded-lg border border-slate-600">
+            <p className="text-slate-300 text-sm mb-2">
+              <span className="font-semibold">Selected format:</span> {exportFormat.toUpperCase()}
+            </p>
+            {exportFormat === "excel" && (
+              <div className="text-slate-400 text-xs space-y-1">
+                <p>✓ Multiple sheets (Attendance, Summary, By Department)</p>
+                <p>✓ Formatted columns with proper widths</p>
+                <p>✓ Statistical summary included</p>
+                <p>✓ Professional layout ready for printing</p>
+              </div>
+            )}
+          </div>
+
           <Button onClick={handleExport} className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold">
-            Export Data
+            {exportFormat === "excel" ? "📊 Export to Excel" : exportFormat === "csv" ? "📄 Export to CSV" : "📑 Export to PDF"}
           </Button>
         </CardContent>
       </Card>
