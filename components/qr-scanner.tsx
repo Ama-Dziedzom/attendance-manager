@@ -34,6 +34,10 @@ export function QRScanner() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const qrCodeScannerRef = useRef<Html5Qrcode | null>(null)
+  
+  // ← NEW: Track if scanner is actually running
+  const isScannerRunningRef = useRef(false)
+  
   const [scanState, setScanState] = useState<"ready" | "scanning" | "success" | "error" | "registered">("ready")
   const [currentTime, setCurrentTime] = useState<string>("")
   const [clockInMode, setClockInMode] = useState(true)
@@ -93,21 +97,21 @@ export function QRScanner() {
 
   // Process scanned QR code data
   const processQRCode = useCallback((qrData: string) => {
+    console.log("🔍 PROCESS QR CODE CALLED")
+    console.log("📄 Raw QR Data:", qrData)
+    
     try {
-      // Debug: Log the raw QR data
-      console.log("Scanned QR Data (raw):", qrData)
-      console.log("QR Data length:", qrData.length)
-      console.log("QR Data type:", typeof qrData)
-      
       // Clean the QR data (remove any whitespace)
       const cleanedData = qrData.trim()
+      console.log("🧹 Cleaned Data:", cleanedData)
       
       // Parse QR code JSON data
       let qrDataObj
       try {
         qrDataObj = JSON.parse(cleanedData)
+        console.log("✅ Parsed successfully:", qrDataObj)
       } catch (parseError) {
-        console.error("JSON Parse Error:", parseError)
+        console.error("❌ JSON Parse Error:", parseError)
         console.error("Failed to parse:", cleanedData)
         
         // Try to find JSON-like structure
@@ -115,71 +119,84 @@ export function QRScanner() {
         if (jsonMatch) {
           try {
             qrDataObj = JSON.parse(jsonMatch[0])
-            console.log("Successfully parsed after extraction:", qrDataObj)
+            console.log("✅ Successfully parsed after extraction:", qrDataObj)
           } catch (e) {
             setScanState("error")
             setErrorMessage(`Invalid QR Code format. Please ensure the QR code was generated from this system.`)
             setScanResult(null)
+            setTimeout(() => resumeScanning(), 3000)
             return
           }
         } else {
           setScanState("error")
           setErrorMessage(`Invalid QR Code format. Raw data: ${cleanedData.substring(0, 100)}...`)
           setScanResult(null)
+          setTimeout(() => resumeScanning(), 3000)
           return
         }
       }
 
-      console.log("Parsed QR Data:", qrDataObj)
       const { empId, name, hash, generated } = qrDataObj
+      console.log("🔑 Extracted fields:", { empId, name, hash, generated })
 
       if (!empId || !name) {
-        console.error("Missing required fields:", { empId, name, hash, generated })
+        console.error("❌ Missing required fields:", { empId, name, hash, generated })
         setScanState("error")
         setErrorMessage(`Invalid QR Code format. Missing empId or name. Found: ${JSON.stringify(qrDataObj)}`)
         setScanResult(null)
+        setTimeout(() => resumeScanning(), 3000)
         return
       }
 
       // Debug: Check all employees in storage
       const allEmployees = employeeStorage.getAll()
-      console.log("All employees in storage:", allEmployees)
-      console.log("Total employees:", allEmployees.length)
-      console.log("Looking for empId:", empId)
-      console.log("Available empIds:", allEmployees.map(e => e.empId))
+      console.log("👥 All employees in storage:", allEmployees)
+      console.log("🔢 Total employees:", allEmployees.length)
+      console.log("🔍 Looking for empId:", empId)
+      console.log("📋 Available empIds:", allEmployees.map(e => e.empId))
 
       // Find employee in storage
       const employee = employeeStorage.getByEmpId(empId)
-      console.log("Found employee:", employee)
+      console.log("👤 Found employee:", employee)
       
       if (!employee) {
         setScanState("error")
         setErrorMessage(`Employee not found. EmpId: "${empId}". Please generate QR code first. Available employees: ${allEmployees.length}`)
         setScanResult(null)
+        setTimeout(() => resumeScanning(), 3000)
         return
       }
 
       // Verify hash (optional security check)
       if (hash && employee.hash !== hash) {
+        console.warn("⚠️ Hash mismatch - QR:", hash, "Employee:", employee.hash)
         setScanState("error")
         setErrorMessage("Invalid QR Code - Security verification failed")
         setScanResult(null)
+        setTimeout(() => resumeScanning(), 3000)
         return
       }
+
+      console.log("✅ Employee validated, processing attendance...")
 
       // Process attendance
       let attendanceRecord
       if (clockInMode) {
+        console.log("⏰ Clocking IN...")
         attendanceRecord = attendanceStorage.clockIn(empId, employee.name, employee.department)
       } else {
+        console.log("⏰ Clocking OUT...")
         attendanceRecord = attendanceStorage.clockOut(empId)
         if (!attendanceRecord) {
           setScanState("error")
           setErrorMessage("No clock-in record found for today")
           setScanResult(null)
+          setTimeout(() => resumeScanning(), 3000)
           return
         }
       }
+
+      console.log("✅ Attendance record:", attendanceRecord)
 
       // Success
       setScanState("success")
@@ -191,14 +208,19 @@ export function QRScanner() {
       })
       setErrorMessage("")
       
+      console.log("🎉 SUCCESS! Clock", clockInMode ? "IN" : "OUT", "for", employee.name)
+      
       // Auto-resume scanning after 3 seconds
       setTimeout(() => {
+        console.log("🔄 Auto-resuming scanner...")
         resumeScanning()
       }, 3000)
     } catch (error) {
+      console.error("❌ PROCESS QR ERROR:", error)
       setScanState("error")
       setErrorMessage("Failed to process QR code. Please try again.")
       setScanResult(null)
+      setTimeout(() => resumeScanning(), 3000)
     }
   }, [clockInMode, resumeScanning])
 
@@ -216,11 +238,12 @@ export function QRScanner() {
 
   // Auto-start scanner when component mounts
   useEffect(() => {
-    let scanningActive = false
+    // ← MODIFIED: Use ref instead of local variable to persist across renders
+    const scanningActiveRef = { current: false }
     let scannerInstance: Html5Qrcode | null = null
 
     const startAutoScan = async () => {
-      if (scanningActive || scanState === "success" || scanState === "error") return
+      if (scanningActiveRef.current || scanState === "success" || scanState === "error") return
       
       try {
         // Check if camera is available
@@ -233,10 +256,12 @@ export function QRScanner() {
           qrCodeScannerRef.current = scannerInstance
         }
 
-        scanningActive = true
+        scanningActiveRef.current = true  // ← MODIFIED
         setScanState("scanning")
         setIsScanning(true)
         setErrorMessage("")
+        
+        console.log("🚀 Scanner starting, scanningActive:", scanningActiveRef.current)  // ← NEW
 
         // Start continuous scanning
         await scannerInstance.start(
@@ -247,26 +272,65 @@ export function QRScanner() {
             aspectRatio: 1.0,
           },
           async (decodedText) => {
+            // ← NEW: Add console log to confirm QR detection
+            console.log("🎯 QR CODE DETECTED:", decodedText)
+            console.log("📊 scanningActive status:", scanningActiveRef.current)  // ← NEW
+            
             // QR code detected - process it
-            if (scanningActive) {
-              scanningActive = false
+            if (scanningActiveRef.current) {  // ← MODIFIED
+              console.log("✅ Processing QR code...")
+              scanningActiveRef.current = false  // ← MODIFIED
+              
               try {
-                await scannerInstance?.stop()
+                // ← MODIFIED: Stop scanner first, then process
+                if (isScannerRunningRef.current) {
+                  await scannerInstance?.stop()
+                  isScannerRunningRef.current = false
+                  console.log("🛑 Scanner stopped")
+                }
+                
+                // Process the QR code
                 processQRCode(decodedText)
               } catch (err) {
-                console.error("Error processing QR:", err)
-                scanningActive = true
+                console.error("❌ Error processing QR:", err)
+                
+                // ← NEW: Reset running state on error
+                isScannerRunningRef.current = false
+                
+                scanningActiveRef.current = true  // ← MODIFIED
                 startAutoScan()
               }
+            } else {
+              console.log("⚠️ Scanning not active, ignoring scan")
+              console.log("⚠️ This means scanningActive was false when QR detected")  // ← NEW
             }
           },
           (errorMessage) => {
-            // Ignore scanning errors (just means no QR code detected yet)
+            // ← MODIFIED: Silently ignore common scanning errors
+            // These errors just mean no QR code is visible yet
+            const ignoredErrors = [
+              "NotFoundException",
+              "No MultiFormat Readers",
+              "QR code parse error"
+            ]
+            
+            const shouldIgnore = ignoredErrors.some(err => errorMessage.includes(err))
+            if (!shouldIgnore) {
+              console.log("Scan error:", errorMessage)
+            }
           }
         )
+        
+        // ← NEW: Mark as running after successful start
+        isScannerRunningRef.current = true
+        console.log("✅ Scanner started successfully, scanningActive:", scanningActiveRef.current)  // ← NEW
+        
       } catch (error: any) {
         console.error("Scanner start error:", error)
         const errorName = error?.name || ""
+        
+        // ← NEW: Ensure running state is false on error
+        isScannerRunningRef.current = false
         
         if (errorName === "NotAllowedError" || errorName === "PermissionDeniedError") {
           setErrorMessage("Camera permission denied. Please allow camera access and try again.")
@@ -277,7 +341,7 @@ export function QRScanner() {
         }
         
         setScanState("error")
-        scanningActive = false
+        scanningActiveRef.current = false  // ← MODIFIED
         setIsScanning(false)
       }
     }
@@ -287,17 +351,20 @@ export function QRScanner() {
       startAutoScan()
     }
 
+    // ← MODIFIED: Cleanup function with proper state checking
     return () => {
-      scanningActive = false
-      if (scannerInstance) {
-        scannerInstance
-          .stop()
-          .then(() => {
-            scannerInstance?.clear()
-          })
-          .catch((err) => {
-            console.error("Error stopping scanner:", err)
-          })
+      isScannerRunningRef.current = false
+      if (scannerInstance && isScannerRunningRef.current) {
+        scannerInstance.stop()
+        isScannerRunningRef.current = false
+        scannerInstance.clear()
+      } else if (scannerInstance) {
+        // ← NEW: If scanner exists but not running, just clear it
+        try {
+          scannerInstance.clear()
+        } catch (err) {
+          console.error("Error clearing scanner:", err)
+        }
       }
     }
   }, [scanState, scannerId, processQRCode])
