@@ -13,12 +13,13 @@ import { employeeStorage, type Employee as StorageEmployee } from "@/lib/storage
 
 // ← NEW: Agency list with codes
 const AGENCIES = [
-  { id: "head-office", name: "Head Office", code: "HO" },
-  { id: "branch-accra", name: "Accra Branch", code: "AC" },
-  { id: "branch-kumasi", name: "Kumasi Branch", code: "KU" },
-  { id: "branch-takoradi", name: "Takoradi Branch", code: "TA" },
-  { id: "branch-tema", name: "Tema Branch", code: "TE" },
-  { id: "remote", name: "Remote/WFH", code: "RE" }
+  { id: "Ninani Group", name: "Ninani Group", code: "NI" },
+  { id: "Rezultz", name: "Rezultz", code: "RE"},
+  { id: "ID", name: "ID", code: "ID" },
+  { id: "TPMC", name: "TPMC", code: "TP"},
+  { id: "InnovaDDB", name: "InnovaDDB", code: "IN" },
+  { id: "BrandAlert", name: "BrandAlert", code: "BR"},
+  {id: "P2P", name: "P2P", code: "P2"}
 ]
 
 export interface Employee {
