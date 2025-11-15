@@ -29,10 +29,10 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-64 bg-slate-800 border-r border-slate-700 flex flex-col">
-      <div className="p-6 border-b border-slate-700">
-        <h1 className="text-2xl font-bold text-white">Attendance Hub</h1>
-        <p className="text-xs text-slate-300 mt-2">{role === "it-admin" ? "IT Admin Panel" : "HR Manager Portal"}</p>
+    <aside className="w-64 bg-blue-50 border-r border-blue-100 flex flex-col">
+      <div className="p-6 border-b border-blue-100">
+        <h1 className="text-2xl font-bold text-gray-900">Attendance Hub</h1>
+        <p className="text-xs text-gray-600 mt-2">{role === "it-admin" ? "IT Admin Panel" : "HR Manager Portal"}</p>
       </div>
 
       <nav className="flex-1 p-4 space-y-2">
@@ -42,8 +42,8 @@ export function Sidebar() {
               variant={pathname === item.href ? "default" : "ghost"}
               className={`w-full justify-start text-left ${
                 pathname === item.href
-                  ? "bg-primary text-primary-foreground"
-                  : "text-slate-200 hover:bg-slate-700 hover:text-white"
+                  ? "bg-blue-500 text-primary-foreground"
+                  : "text-gray-600 hover:bg-blue-50 hover:text-white"
               }`}
               asChild
             >
@@ -55,11 +55,11 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-slate-700">
+      <div className="p-4 border-t border-blue-100">
         <Button
           onClick={handleLogout}
           variant="outline"
-          className="w-full text-slate-200 border-slate-600 hover:bg-slate-700 hover:text-white bg-transparent"
+          className="w-full text-gray-600 border-blue-600 hover:bg-blue-100 hover:text-blue-500 bg-transparent"
         >
           Logout
         </Button>
