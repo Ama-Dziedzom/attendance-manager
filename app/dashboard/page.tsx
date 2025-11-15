@@ -1,19 +1,49 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AttendanceFeed } from "@/components/attendance-feed"
-import { DashboardMetrics } from "@/components/dashboard-metrics"
 import { attendanceStorage, type AttendanceRecord } from "@/lib/storage"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Button } from "@/components/ui/button"
+import { 
+  CalendarIcon, 
+  Users, 
+  UserCheck, 
+  UserX, 
+  Clock, 
+  TrendingUp,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
+} from "lucide-react"
+import { format } from "date-fns"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 
 type SortKey = "name" | "clockInTime" | "status" | "totalHours"
 type SortOrder = "asc" | "desc"
 
 export default function DashboardPage() {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [date, setDate] = useState(new Date().toISOString().split("T")[0])
   const [sortKey, setSortKey] = useState<SortKey>("clockInTime")
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([])
+
+  // Update date string when selectedDate changes
+  useEffect(() => {
+    const dateString = selectedDate.toISOString().split("T")[0]
+    setDate(dateString)
+  }, [selectedDate])
 
   // Load attendance data from storage
   useEffect(() => {
@@ -22,7 +52,6 @@ export default function DashboardPage() {
       setAttendanceData(data)
     }
     loadData()
-    // Refresh data every 5 seconds to show real-time updates
     const interval = setInterval(loadData, 5000)
     return () => clearInterval(interval)
   }, [date])
@@ -30,7 +59,6 @@ export default function DashboardPage() {
   const todayData = useMemo(() => {
     const filtered = attendanceData.filter((record) => record.date === date)
     
-    // Sort
     filtered.sort((a, b) => {
       let aVal: any = a[sortKey]
       let bVal: any = b[sortKey]
@@ -48,6 +76,19 @@ export default function DashboardPage() {
     return filtered
   }, [attendanceData, date, sortKey, sortOrder])
 
+  // Calculate metrics
+  const metrics = useMemo(() => {
+    const total = todayData.length
+    const present = todayData.filter(r => r.clockInTime).length
+    const onTime = todayData.filter(r => r.status === "On Time").length
+    const late = todayData.filter(r => r.status === "Late").length
+    const avgHours = total > 0 
+      ? todayData.reduce((sum, r) => sum + r.totalHours, 0) / total 
+      : 0
+
+    return { total, present, onTime, late, avgHours }
+  }, [todayData])
+
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc")
@@ -57,144 +98,205 @@ export default function DashboardPage() {
     }
   }
 
-  const getStatusBadgeColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "On Time":
-        return "bg-green-100 text-green-800 border border-green-200"
+        return <Badge variant="default" className="bg-green-500">On Time</Badge>
       case "Late":
-        return "bg-yellow-100 text-yellow-800 border border-yellow-200"
+        return <Badge variant="default" className="bg-yellow-500">Late</Badge>
       case "Early Departure":
-        return "bg-blue-100 text-blue-800 border border-blue-200"
+        return <Badge variant="default" className="bg-blue-500">Early</Badge>
       default:
-        return "bg-gray-100 text-gray-800 border border-gray-200"
+        return <Badge variant="secondary">{status}</Badge>
     }
   }
 
+  const getSortIcon = (key: SortKey) => {
+    if (sortKey !== key) return <ArrowUpDown className="ml-2 h-4 w-4" />
+    return sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+  }
+
   return (
-    <div className="p-8 space-y-8">
+    <div className="flex-1 space-y-4 p-8 pt-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between space-y-2">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Attendance Overview for {date}</p>
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-muted-foreground">
+            Attendance Overview for {format(selectedDate, "MMMM dd, yyyy")}
+          </p>
         </div>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-        />
+        
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-[240px] justify-start text-left font-normal"
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {format(selectedDate, "PPP")}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => date && setSelectedDate(date)}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
       </div>
 
-      {/* Key Metrics */}
-      <DashboardMetrics date={date} />
-
-      {/* {Real-time Feed} */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <AttendanceFeed date={date} />
-        </div>
-
-        {/* Alerts Section */}
-        <Card className="bg-white border-blue-100 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-gray-900">Alerts</CardTitle>
+      {/* Metrics Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm font-semibold text-red-800">⚠️ Unauthorized Device</p>
-              <p className="text-xs text-red-600 mt-1">John Doe attempted login from unknown device</p>
-            </div>
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm font-semibold text-yellow-800">⏰ Late Arrival</p>
-              <p className="text-xs text-yellow-600 mt-1">5 employees clocked in after 9:00 AM</p>
-            </div>
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm font-semibold text-blue-800">ℹ️ Info</p>
-              <p className="text-xs text-blue-600 mt-1">2 employees still not clocked in</p>
-            </div>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.total}</div>
+            <p className="text-xs text-muted-foreground">
+              Tracked today
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Present</CardTitle>
+            <UserCheck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.present}</div>
+            <p className="text-xs text-muted-foreground">
+              {metrics.total > 0 ? ((metrics.present / metrics.total) * 100).toFixed(1) : 0}% attendance rate
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">On Time</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.onTime}</div>
+            <p className="text-xs text-muted-foreground">
+              {metrics.late} late arrivals
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg Hours</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.avgHours.toFixed(1)}h</div>
+            <p className="text-xs text-muted-foreground">
+              Per employee today
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Report Table */}
-      <Card className="bg-white border-blue-100 shadow-sm overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-100">
-          <CardTitle className="text-gray-900">Attendance Report Table ({todayData.length} records)</CardTitle>
+      {/* Real-time Feed */}
+      <AttendanceFeed date={date} />
+
+      {/* Attendance Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Attendance Records</CardTitle>
+          <CardDescription>
+            View and manage attendance for {format(selectedDate, "MMMM dd, yyyy")}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-blue-100 bg-blue-50">
-                  <th
-                    className="px-6 py-3 text-left text-gray-900 font-semibold cursor-pointer hover:bg-blue-100 transition-colors"
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <Button
+                    variant="ghost"
                     onClick={() => toggleSort("name")}
+                    className="h-8 w-full justify-start p-0 hover:bg-transparent"
                   >
-                    Employee {sortKey === "name" && (sortOrder === "asc" ? "↑" : "↓")}
-                  </th>
-                  <th className="px-6 py-3 text-left text-gray-900 font-semibold">ID</th>
-                  <th className="px-6 py-3 text-left text-gray-900 font-semibold">Department</th>
-                  <th
-                    className="px-6 py-3 text-left text-gray-900 font-semibold cursor-pointer hover:bg-blue-100 transition-colors"
+                    Employee
+                    {getSortIcon("name")}
+                  </Button>
+                </TableHead>
+                <TableHead>ID</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
                     onClick={() => toggleSort("clockInTime")}
+                    className="h-8 w-full justify-start p-0 hover:bg-transparent"
                   >
-                    Clock In {sortKey === "clockInTime" && (sortOrder === "asc" ? "↑" : "↓")}
-                  </th>
-                  <th className="px-6 py-3 text-left text-gray-900 font-semibold">Clock Out</th>
-                  <th className="px-6 py-3 text-left text-gray-900 font-semibold">Hours</th>
-                  <th
-                    className="px-6 py-3 text-left text-gray-900 font-semibold cursor-pointer hover:bg-blue-100 transition-colors"
+                    Clock In
+                    {getSortIcon("clockInTime")}
+                  </Button>
+                </TableHead>
+                <TableHead>Clock Out</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    onClick={() => toggleSort("totalHours")}
+                    className="h-8 w-full justify-start p-0 hover:bg-transparent"
+                  >
+                    Hours
+                    {getSortIcon("totalHours")}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
                     onClick={() => toggleSort("status")}
+                    className="h-8 w-full justify-start p-0 hover:bg-transparent"
                   >
-                    Status {sortKey === "status" && (sortOrder === "asc" ? "↑" : "↓")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {todayData.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                      No attendance records for this date
-                    </td>
-                  </tr>
-                ) : (
-                  todayData.map((record, idx) => (
-                    <tr 
-                      key={idx} 
-                      className="border-b border-gray-100 hover:bg-blue-50 transition-colors bg-white"
-                    >
-                      <td className="px-6 py-4 text-gray-900 font-medium">{record.name}</td>
-                      <td className="px-6 py-4 text-gray-700">{record.employeeId}</td>
-                      <td className="px-6 py-4 text-gray-700">{record.department}</td>
-                      <td className="px-6 py-4 text-gray-700">
-                        {new Date(record.clockInTime).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td className="px-6 py-4 text-gray-700">
-                        {record.clockOutTime
-                          ? new Date(record.clockOutTime).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "-"}
-                      </td>
-                      <td className="px-6 py-4 text-gray-700">{record.totalHours.toFixed(2)}h</td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(record.status)}`}
-                        >
-                          {record.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                    Status
+                    {getSortIcon("status")}
+                  </Button>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {todayData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    No attendance records for this date
+                  </TableCell>
+                </TableRow>
+              ) : (
+                todayData.map((record, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell className="font-medium">{record.name}</TableCell>
+                    <TableCell>{record.employeeId}</TableCell>
+                    <TableCell>{record.department}</TableCell>
+                    <TableCell>
+                      {new Date(record.clockInTime).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      {record.clockOutTime
+                        ? new Date(record.clockOutTime).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "-"}
+                    </TableCell>
+                    <TableCell>{record.totalHours.toFixed(2)}h</TableCell>
+                    <TableCell>{getStatusBadge(record.status)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

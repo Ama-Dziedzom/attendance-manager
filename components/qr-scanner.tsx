@@ -13,7 +13,7 @@ interface ScanResult {
   photo?: string
   timestamp: string
   type: "in" | "out"
-  agency: string // ← NEW
+  agency: string
 }
 
 interface DeviceFingerprint {
@@ -31,15 +31,15 @@ interface Employee {
   lastScan?: ScanResult
 }
 
-// ← NEW: Agency list
+// Agency list
 const AGENCIES = [
-  { id: "Ninani Group", name: "Ninani Group" },
-  { id: "Rezultz", name: "Rezultz" },
-  { id: "ID", name: "ID" },
-  { id: "TPMC", name: "TPMC" },
-  { id: "InnovaDDB", name: "InnovaDDB" },
-  { id: "BrandAlert", name: "BrandAlert" },
-  {id: "P2P", name: "P2P"}
+  { id: "ninani-group", name: "Ninani Group" },
+  { id: "rezultz", name: "Rezultz" },
+  { id: "id", name: "ID" },
+  { id: "tpmc", name: "TPMC" },
+  { id: "innovaddb", name: "InnovaDDB" },
+  { id: "brandalert", name: "BrandAlert" },
+  { id: "p2p", name: "P2P" }
 ]
 
 export function QRScanner() {
@@ -48,8 +48,8 @@ export function QRScanner() {
   const qrCodeScannerRef = useRef<Html5Qrcode | null>(null)
   const isScannerRunningRef = useRef(false)
   
-  const [scanState, setScanState] = useState<"agency-select" | "ready" | "scanning" | "success" | "error" | "registered">("agency-select") // ← MODIFIED
-  const [selectedAgency, setSelectedAgency] = useState<string>("") // ← NEW
+  const [scanState, setScanState] = useState<"agency-select" | "ready" | "scanning" | "success" | "error" | "registered">("agency-select")
+  const [selectedAgency, setSelectedAgency] = useState<string>("")
   const [currentTime, setCurrentTime] = useState<string>("")
   const [clockInMode, setClockInMode] = useState(true)
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
@@ -97,7 +97,7 @@ export function QRScanner() {
     return Math.abs(hash).toString(16)
   }
 
-  // ← NEW: Handle agency selection
+  // Handle agency selection
   const handleAgencySelect = (agencyId: string) => {
     setSelectedAgency(agencyId)
     setScanState("ready")
@@ -111,7 +111,7 @@ export function QRScanner() {
     setErrorMessage("")
   }, [])
 
-  // ← NEW: Back to agency selection
+  // Back to agency selection
   const backToAgencySelect = () => {
     setScanState("agency-select")
     setSelectedAgency("")
@@ -123,7 +123,7 @@ export function QRScanner() {
   const processQRCode = useCallback((qrData: string) => {
     console.log("🔍 PROCESS QR CODE CALLED")
     console.log("📄 Raw QR Data:", qrData)
-    console.log("🏢 Selected Agency:", selectedAgency) // ← NEW
+    console.log("🏢 Selected Agency:", selectedAgency)
     
     try {
       const cleanedData = qrData.trim()
@@ -198,29 +198,26 @@ export function QRScanner() {
 
       console.log("✅ Employee validated, processing attendance...")
 
-      // ← MODIFIED: Process attendance with agency info
+      // FIXED: Process attendance with agency info
       let attendanceRecord
       const agencyName = AGENCIES.find(a => a.id === selectedAgency)?.name || selectedAgency
       
       if (clockInMode) {
         console.log("⏰ Clocking IN at agency:", agencyName)
+        // Pass agency name as 4th parameter
         attendanceRecord = attendanceStorage.clockIn(
           empId, 
           employee.name, 
           employee.department,
-          selectedAgency,
+          agencyName
         )
+        console.log("📝 Clock In Result:", attendanceRecord)
       } else {
         console.log("⏰ Clocking OUT from agency:", agencyName)
-        attendanceRecord = attendanceStorage.clockOut(
-          empId,
-          selectedAgency,
-          empId,
-          {
-            agency: selectedAgency,
-            agencyName: agencyName
-          }
-        )
+        // Call with just the employee ID
+        attendanceRecord = attendanceStorage.clockOut(empId)
+        console.log("📝 Clock Out Result:", attendanceRecord)
+        
         if (!attendanceRecord) {
           setScanState("error")
           setErrorMessage("No clock-in record found for today")
@@ -239,7 +236,27 @@ export function QRScanner() {
         name: employee.name,
         timestamp: new Date().toLocaleTimeString(),
         type: clockInMode ? "in" : "out",
-        agency: agencyName // ← NEW
+        agency: agencyName
+      })
+      setErrorMessage("")
+      
+      console.log("🎉 SUCCESS! Clock", clockInMode ? "IN" : "OUT", "for", employee.name, "at", agencyName)
+      
+      setTimeout(() => {
+        console.log("🔄 Auto-resuming scanner...")
+        resumeScanning()
+      }, 3000)
+
+      console.log("✅ Attendance record:", attendanceRecord)
+
+      // Success
+      setScanState("success")
+      setScanResult({
+        employeeId: empId,
+        name: employee.name,
+        timestamp: new Date().toLocaleTimeString(),
+        type: clockInMode ? "in" : "out",
+        agency: agencyName
       })
       setErrorMessage("")
       
@@ -256,7 +273,7 @@ export function QRScanner() {
       setScanResult(null)
       setTimeout(() => resumeScanning(), 3000)
     }
-  }, [clockInMode, resumeScanning, selectedAgency]) // ← MODIFIED: Added selectedAgency dependency
+  }, [clockInMode, resumeScanning, selectedAgency])
 
   // Request camera permission
   const requestCameraPermission = async () => {
@@ -276,7 +293,7 @@ export function QRScanner() {
     let scannerInstance: Html5Qrcode | null = null
 
     const startAutoScan = async () => {
-      if (scanningActiveRef.current || scanState === "success" || scanState === "error" || scanState === "agency-select") return // ← MODIFIED
+      if (scanningActiveRef.current || scanState === "success" || scanState === "error" || scanState === "agency-select") return
       
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
@@ -305,27 +322,23 @@ export function QRScanner() {
             console.log("🎯 QR CODE DETECTED:", decodedText)
             console.log("📊 scanningActive status:", scanningActiveRef.current)
             
-            if (scanningActiveRef.current) {
-              console.log("✅ Processing QR code...")
-              scanningActiveRef.current = false
-              
-              try {
-                if (isScannerRunningRef.current) {
-                  await scannerInstance?.stop()
-                  isScannerRunningRef.current = false
-                  console.log("🛑 Scanner stopped")
-                }
-                
-                processQRCode(decodedText)
-              } catch (err) {
-                console.error("❌ Error processing QR:", err)
+            // ALWAYS process if we detect a QR code
+            console.log("✅ Processing QR code...")
+            scanningActiveRef.current = false
+            
+            try {
+              if (isScannerRunningRef.current) {
+                await scannerInstance?.stop()
                 isScannerRunningRef.current = false
-                scanningActiveRef.current = true
-                startAutoScan()
+                console.log("🛑 Scanner stopped")
               }
-            } else {
-              console.log("⚠️ Scanning not active, ignoring scan")
-              console.log("⚠️ This means scanningActive was false when QR detected")
+              
+              processQRCode(decodedText)
+            } catch (err) {
+              console.error("❌ Error processing QR:", err)
+              isScannerRunningRef.current = false
+              scanningActiveRef.current = true
+              startAutoScan()
             }
           },
           (errorMessage) => {
@@ -373,8 +386,16 @@ export function QRScanner() {
       scanningActiveRef.current = false
       if (scannerInstance && isScannerRunningRef.current) {
         scannerInstance.stop()
-        isScannerRunningRef.current = false
-        scannerInstance.clear()
+          .then(() => {
+            isScannerRunningRef.current = false
+            scannerInstance?.clear()
+          })
+          .catch((err) => {
+            if (!err?.message?.includes("not running")) {
+              console.error("Error stopping scanner:", err)
+            }
+            isScannerRunningRef.current = false
+          })
       } else if (scannerInstance) {
         try {
           scannerInstance.clear()
@@ -407,7 +428,7 @@ export function QRScanner() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col items-center justify-center relative bg-muted overflow-hidden px-4">
         
-        {/* ← NEW: Agency Selection Screen */}
+        {/* Agency Selection Screen */}
         {scanState === "agency-select" && (
           <div className="w-full max-w-md">
             <Card className="p-8">
@@ -435,7 +456,7 @@ export function QRScanner() {
                 </Button>
               </div>
 
-              {/* ← MODIFIED: Agency Dropdown */}
+              {/* Agency Dropdown */}
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">
                   Select Agency <span className="text-destructive">*</span>
@@ -487,7 +508,7 @@ export function QRScanner() {
         {/* Scanner Screen */}
         {(scanState === "ready" || scanState === "scanning") && (
           <>
-            {/* ← NEW: Selected Agency Badge */}
+            {/* Selected Agency Badge */}
             <div className="mb-4 px-4 py-2 bg-primary/10 rounded-full flex items-center gap-2">
               <Building className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium">
@@ -558,7 +579,6 @@ export function QRScanner() {
               />
               <p className="text-center font-semibold text-lg">{scanResult.name}</p>
               <p className="text-center text-sm text-muted-foreground">{scanResult.employeeId}</p>
-              {/* ← NEW: Show agency */}
               <div className="flex items-center justify-center gap-2 mt-2">
                 <Building className="w-4 h-4 text-muted-foreground" />
                 <p className="text-center text-sm text-muted-foreground">{scanResult.agency}</p>
@@ -574,9 +594,9 @@ export function QRScanner() {
             <div className="w-24 h-24 rounded-full bg-destructive flex items-center justify-center">
               <AlertCircle className="w-12 h-12 text-destructive-foreground" />
             </div>
-            <h2 className="text-2xl font-bold text-center text-destructive">Camera Access Required</h2>
+            <h2 className="text-2xl font-bold text-center text-destructive">Error</h2>
             <p className="text-center text-sm text-muted-foreground px-4">
-              {errorMessage || "Camera permission is required to scan QR codes."}
+              {errorMessage || "An error occurred. Please try again."}
             </p>
             <div className="flex flex-col gap-2 w-full px-4">
               <Button onClick={requestCameraPermission} size="lg" className="w-full">
@@ -605,9 +625,6 @@ export function QRScanner() {
                 Back to Agency Selection
               </Button>
             </div>
-            <p className="text-center text-xs text-muted-foreground mt-2">
-              Or check your browser settings to allow camera access for this site.
-            </p>
           </div>
         )}
 

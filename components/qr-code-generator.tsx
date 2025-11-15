@@ -13,13 +13,12 @@ import { employeeStorage, type Employee as StorageEmployee } from "@/lib/storage
 
 // ← NEW: Agency list with codes
 const AGENCIES = [
-  { id: "Ninani Group", name: "Ninani Group", code: "NI" },
-  { id: "Rezultz", name: "Rezultz", code: "RE"},
-  { id: "ID", name: "ID", code: "ID" },
-  { id: "TPMC", name: "TPMC", code: "TP"},
-  { id: "InnovaDDB", name: "InnovaDDB", code: "IN" },
-  { id: "BrandAlert", name: "BrandAlert", code: "BR"},
-  {id: "P2P", name: "P2P", code: "P2"}
+  { id: "head-office", name: "Head Office", code: "HO" },
+  { id: "branch-accra", name: "Accra Branch", code: "AC" },
+  { id: "branch-kumasi", name: "Kumasi Branch", code: "KU" },
+  { id: "branch-takoradi", name: "Takoradi Branch", code: "TA" },
+  { id: "branch-tema", name: "Tema Branch", code: "TE" },
+  { id: "remote", name: "Remote/WFH", code: "RE" }
 ]
 
 export interface Employee {
@@ -373,19 +372,12 @@ export function QRCodeGenerator() {
           <div className="lg:col-span-1">
             <Card className="p-6 border-blue-100">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Single Employee</h2>
-              {/* FIX: Fix type mismatch by adjusting onSubmit prop to match EmployeeForm expected type */}
-              <EmployeeForm
-                onSubmit={(data) => {
-                  // data: { name: string; department: string; email: string; agency: string }
-                  // Safe forward: matches required type, do not add empId here.
-                  handleAddEmployee({
-                    name: data.name,
-                    department: data.department,
-                    email: data.email,
-                    agency: data.agency,
-                  })
-                } } agencies={[]}              />
-              
+              {/* ← MODIFIED: Pass agencies to form */}
+              <EmployeeForm 
+                onSubmit={handleAddEmployee} 
+                agencies={AGENCIES} 
+              />
+
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Bulk Upload</h3>
                 <input type="file" ref={fileInputRef} onChange={handleCSVUpload} accept=".csv" className="hidden" />
@@ -437,32 +429,22 @@ export function QRCodeGenerator() {
           </div>
         </div>
 
-        {/* Grid View and Download */}
+        {/* Grid View Section - Full Width */}
         {employees.length > 0 && (
-          <>
+          <div className="mt-8">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Generated QR Codes</h2>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setShowGrid(!showGrid)}
-                  variant="outline"
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                >
-                  {showGrid ? "Hide Grid" : "View Grid"}
-                </Button>
-                {employees.length > 1 && (
-                  <Button onClick={downloadAllQR} className="bg-blue-600 hover:bg-blue-700 text-white">
-                    Download All ({employees.length})
-                  </Button>
-                )}
-              </div>
+              <h2 className="text-xl font-bold text-gray-900">QR Code Grid View</h2>
+              <Button
+                onClick={() => setShowGrid(!showGrid)}
+                variant="outline"
+                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              >
+                {showGrid ? "Hide Grid" : "Show Grid"}
+              </Button>
             </div>
 
             {showGrid && <QRCodeGrid employees={employees} onDownload={downloadSingleQR} />}
-
-            {/* Employee Table */}
-            <EmployeeTable employees={employees} onDownload={downloadSingleQR} />
-          </>
+          </div>
         )}
       </div>
 

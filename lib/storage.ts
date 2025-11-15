@@ -7,6 +7,7 @@ export interface Employee {
   name: string
   department: string
   email: string
+  agency: string
   timestamp: string
   hash: string
 }
@@ -16,6 +17,7 @@ export interface AttendanceRecord {
   employeeId: string
   name: string
   department: string
+  agency?: string
   date: string
   clockInTime: string
   clockOutTime?: string
@@ -102,7 +104,7 @@ export const attendanceStorage = {
     return this.getByEmployeeId(employeeId, today)[0]
   },
 
-  clockIn(employeeId: string, employeeName: string, department: string, agencyName: string): AttendanceRecord {
+  clockIn(employeeId: string, employeeName: string, department: string, agency?: string): AttendanceRecord {
     const today = new Date().toISOString().split("T")[0]
     const now = new Date().toISOString()
     
@@ -123,6 +125,7 @@ export const attendanceStorage = {
       employeeId,
       name: employeeName,
       department,
+      agency: agency,
       date: today,
       clockInTime: now,
       totalHours: 0,
@@ -133,7 +136,7 @@ export const attendanceStorage = {
     return record
   },
 
-  clockOut(employeeId: string, department: string, agencyName: string, p0: { agency: string; agencyName: string }): AttendanceRecord | null {
+  clockOut(employeeId: string): AttendanceRecord | null {
     const record = this.getTodayRecord(employeeId)
     if (!record || record.clockOutTime) {
       return null // Not clocked in or already clocked out
@@ -159,4 +162,3 @@ export const attendanceStorage = {
     return record
   },
 }
-
