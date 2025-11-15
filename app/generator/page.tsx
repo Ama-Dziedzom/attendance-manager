@@ -1,4 +1,4 @@
-import { QRCodeGenerator } from "@/components/qr-code-generator"
+import QRCodeGenerator from "@/components/qr-code-generator"
 
 export default function GeneratorPage() {
   return (
@@ -7,4 +7,3 @@ export default function GeneratorPage() {
     </main>
   )
 }
-

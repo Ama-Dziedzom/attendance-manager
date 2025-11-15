@@ -11,12 +11,23 @@ import { QRCodeGrid } from "./qr-code-grid"
 import { QRCodeSVG } from "qrcode.react"
 import { employeeStorage, type Employee as StorageEmployee } from "@/lib/storage"
 
+// ← NEW: Agency list with codes
+const AGENCIES = [
+  { id: "head-office", name: "Head Office", code: "HO" },
+  { id: "branch-accra", name: "Accra Branch", code: "AC" },
+  { id: "branch-kumasi", name: "Kumasi Branch", code: "KU" },
+  { id: "branch-takoradi", name: "Takoradi Branch", code: "TA" },
+  { id: "branch-tema", name: "Tema Branch", code: "TE" },
+  { id: "remote", name: "Remote/WFH", code: "RE" }
+]
+
 export interface Employee {
   id: string
   empId: string
   name: string
   department: string
   email: string
+  agency: string // ← NEW
   timestamp: string
   hash: string
   qrCode?: string
@@ -27,6 +38,7 @@ export function QRCodeGenerator() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [showGrid, setShowGrid] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
+  const [errorMessage, setErrorMessage] = useState("") // ← NEW
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load employees from storage on mount
@@ -57,15 +69,65 @@ export function QRCodeGenerator() {
     })
   }
 
-  const handleAddEmployee = (formData: { empId: string; name: string; department: string; email: string }) => {
+  // ← NEW: Generate unique employee ID based on agency
+  const generateEmployeeId = (agencyId: string): string => {
+    const agency = AGENCIES.find(a => a.id === agencyId)
+    const agencyCode = agency?.code || "XX"
+    
+    // Get existing employee IDs for this agency
+    const existingIds = employees
+      .filter(e => e.empId.startsWith(agencyCode))
+      .map(e => {
+        const numPart = e.empId.substring(2)
+        return parseInt(numPart, 10)
+      })
+      .filter(num => !isNaN(num))
+    
+    // Find next available number
+    let nextNumber = 1
+    while (existingIds.includes(nextNumber)) {
+      nextNumber++
+    }
+    
+    // Format as 4-digit number with leading zeros
+    const numberPart = nextNumber.toString().padStart(4, '0')
+    
+    return `${agencyCode}${numberPart}`
+  }
+
+  // ← NEW: Check if employee ID already exists
+  const isDuplicateEmployeeId = (empId: string): boolean => {
+    return employees.some(emp => emp.empId.toLowerCase() === empId.toLowerCase())
+  }
+
+  // ← MODIFIED: Updated to include agency parameter
+  const handleAddEmployee = (formData: { 
+    name: string
+    department: string
+    email: string
+    agency: string // ← NEW
+  }) => {
+    // Generate employee ID based on selected agency
+    const generatedEmpId = generateEmployeeId(formData.agency)
+    
+    // Double-check for duplicates (shouldn't happen with auto-generation)
+    if (isDuplicateEmployeeId(generatedEmpId)) {
+      setErrorMessage(`Error: Generated Employee ID "${generatedEmpId}" already exists. Please try again.`)
+      setTimeout(() => setErrorMessage(""), 5000)
+      return
+    }
+
     const timestamp = new Date().toISOString()
-    const hash = generateHash(formData.empId, timestamp)
+    const hash = generateHash(generatedEmpId, timestamp)
+    const agency = AGENCIES.find(a => a.id === formData.agency)
+    
     const newEmployee: Employee = {
       id: `emp_${Date.now()}`,
-      empId: formData.empId,
+      empId: generatedEmpId,
       name: formData.name,
       department: formData.department,
       email: formData.email,
+      agency: agency?.name || formData.agency, // ← NEW
       timestamp,
       hash,
     }
@@ -80,16 +142,18 @@ export function QRCodeGenerator() {
     
     if (!savedEmployee) {
       console.error("ERROR: Employee was not saved to storage!")
-      setSuccessMessage(`Warning: Employee may not have been saved correctly`)
+      setErrorMessage(`Warning: Employee may not have been saved correctly`)
+      setTimeout(() => setErrorMessage(""), 5000)
     } else {
-      setSuccessMessage(`QR Code generated successfully for ${newEmployee.name}`)
+      setSuccessMessage(`QR Code generated successfully for ${newEmployee.name} (ID: ${generatedEmpId})`)
+      setTimeout(() => setSuccessMessage(""), 5000)
     }
     
     setEmployees([newEmployee, ...employees])
     setSelectedEmployee(newEmployee)
-    setTimeout(() => setSuccessMessage(""), 3000)
   }
 
+  // ← MODIFIED: Updated CSV upload to include agency
   const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -99,37 +163,63 @@ export function QRCodeGenerator() {
       const text = e.target?.result as string
       const lines = text.split("\n").slice(1)
       const newEmployees: Employee[] = []
+      const errors: string[] = []
 
-      lines.forEach((line) => {
+      lines.forEach((line, index) => {
         if (!line.trim()) return
-        const [empId, name, department, email] = line.split(",").map((s) => s.trim())
-        if (empId && name) {
+        
+        // CSV format: name,department,email,agencyId
+        const [name, department, email, agencyId] = line.split(",").map((s) => s.trim())
+        
+        if (name && agencyId) {
+          // Validate agency exists
+          const agency = AGENCIES.find(a => a.id === agencyId || a.name === agencyId)
+          
+          if (!agency) {
+            errors.push(`Line ${index + 2}: Invalid agency "${agencyId}"`)
+            return
+          }
+          
+          // Generate employee ID
+          const generatedEmpId = generateEmployeeId(agency.id)
+          
           const timestamp = new Date().toISOString()
-          const hash = generateHash(empId, timestamp)
+          const hash = generateHash(generatedEmpId, timestamp)
+          
           newEmployees.push({
             id: `emp_${Date.now()}_${Math.random()}`,
-            empId,
+            empId: generatedEmpId,
             name,
             department: department || "",
             email: email || "",
+            agency: agency.name,
             timestamp,
             hash,
           })
+        } else {
+          errors.push(`Line ${index + 2}: Missing name or agency`)
         }
       })
 
-      // Save all to storage
-      const allEmployeesToSave = [...newEmployees, ...employees] as StorageEmployee[]
-      employeeStorage.saveAll(allEmployeesToSave)
-      
-      // Verify employees were saved
-      console.log(`Saved ${allEmployeesToSave.length} employees to storage`)
-      const savedCount = employeeStorage.getAll().length
-      console.log(`Verified: ${savedCount} employees in storage`)
-      
-      setEmployees([...newEmployees, ...employees])
-      setSuccessMessage(`${newEmployees.length} QR codes generated successfully`)
-      setTimeout(() => setSuccessMessage(""), 3000)
+      if (errors.length > 0) {
+        setErrorMessage(`CSV Upload Errors:\n${errors.join('\n')}`)
+        setTimeout(() => setErrorMessage(""), 8000)
+      }
+
+      if (newEmployees.length > 0) {
+        // Save all to storage
+        const allEmployeesToSave = [...newEmployees, ...employees] as StorageEmployee[]
+        employeeStorage.saveAll(allEmployeesToSave)
+        
+        // Verify employees were saved
+        console.log(`Saved ${allEmployeesToSave.length} employees to storage`)
+        const savedCount = employeeStorage.getAll().length
+        console.log(`Verified: ${savedCount} employees in storage`)
+        
+        setEmployees([...newEmployees, ...employees])
+        setSuccessMessage(`${newEmployees.length} QR codes generated successfully${errors.length > 0 ? ` (${errors.length} errors)` : ''}`)
+        setTimeout(() => setSuccessMessage(""), 5000)
+      }
     }
 
     reader.readAsText(file)
@@ -263,6 +353,18 @@ export function QRCodeGenerator() {
         </div>
       )}
 
+      {/* ← NEW: Error Message */}
+      {errorMessage && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mx-4 mt-4 rounded">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <p className="text-red-800 font-medium whitespace-pre-line">{errorMessage}</p>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -270,8 +372,19 @@ export function QRCodeGenerator() {
           <div className="lg:col-span-1">
             <Card className="p-6 border-blue-100">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Single Employee</h2>
-              <EmployeeForm onSubmit={handleAddEmployee} />
-
+              {/* FIX: Fix type mismatch by adjusting onSubmit prop to match EmployeeForm expected type */}
+              <EmployeeForm
+                onSubmit={(data) => {
+                  // data: { name: string; department: string; email: string; agency: string }
+                  // Safe forward: matches required type, do not add empId here.
+                  handleAddEmployee({
+                    name: data.name,
+                    department: data.department,
+                    email: data.email,
+                    agency: data.agency,
+                  })
+                } } agencies={[]}              />
+              
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Bulk Upload</h3>
                 <input type="file" ref={fileInputRef} onChange={handleCSVUpload} accept=".csv" className="hidden" />
@@ -282,7 +395,18 @@ export function QRCodeGenerator() {
                 >
                   Upload CSV
                 </Button>
-                <p className="text-xs text-gray-500 mt-2">CSV format: employeeId,name,department,email</p>
+                {/* ← MODIFIED: Updated CSV format instructions */}
+                <p className="text-xs text-gray-500 mt-2">
+                  CSV format: name,department,email,agencyId
+                </p>
+                <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
+                  <p className="font-semibold mb-1">Valid Agency IDs:</p>
+                  <ul className="space-y-0.5">
+                    {AGENCIES.map(a => (
+                      <li key={a.id}>• {a.id} ({a.code}) - {a.name}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </Card>
           </div>
@@ -305,6 +429,7 @@ export function QRCodeGenerator() {
                     </svg>
                   </div>
                   <p className="text-gray-600">Add an employee or upload a CSV to generate QR codes</p>
+                  <p className="text-sm text-gray-500 mt-2">Employee IDs will be auto-generated based on agency</p>
                 </div>
               </Card>
             )}
@@ -361,3 +486,6 @@ export function QRCodeGenerator() {
     </div>
   )
 }
+
+// Export both named and default
+export default QRCodeGenerator

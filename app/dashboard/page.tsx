@@ -46,7 +46,7 @@ export default function DashboardPage() {
     })
 
     return filtered
-  }, [date, sortKey, sortOrder])
+  }, [attendanceData, date, sortKey, sortOrder])
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -60,13 +60,13 @@ export default function DashboardPage() {
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "On Time":
-        return "bg-green-950 text-green-400"
+        return "bg-green-100 text-green-800 border border-green-200"
       case "Late":
-        return "bg-yellow-950 text-yellow-400"
+        return "bg-yellow-100 text-yellow-800 border border-yellow-200"
       case "Early Departure":
-        return "bg-blue-950 text-blue-400"
+        return "bg-blue-100 text-blue-800 border border-blue-200"
       default:
-        return "bg-slate-800 text-slate-400"
+        return "bg-gray-100 text-gray-800 border border-gray-200"
     }
   }
 
@@ -75,14 +75,14 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-          <p className="text-slate-400 mt-1">Attendance Overview for {date}</p>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-1">Attendance Overview for {date}</p>
         </div>
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+          className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
         />
       </div>
 
@@ -96,55 +96,55 @@ export default function DashboardPage() {
         </div>
 
         {/* Alerts Section */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-white">Alerts</CardTitle>
+            <CardTitle className="text-gray-900">Alerts</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-3 bg-red-950 border border-red-800 rounded-lg">
-              <p className="text-sm font-semibold text-red-400">⚠️ Unauthorized Device</p>
-              <p className="text-xs text-red-300 mt-1">John Doe attempted login from unknown device</p>
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm font-semibold text-red-800">⚠️ Unauthorized Device</p>
+              <p className="text-xs text-red-600 mt-1">John Doe attempted login from unknown device</p>
             </div>
-            <div className="p-3 bg-yellow-950 border border-yellow-800 rounded-lg">
-              <p className="text-sm font-semibold text-yellow-400">⏰ Late Arrival</p>
-              <p className="text-xs text-yellow-300 mt-1">5 employees clocked in after 9:00 AM</p>
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm font-semibold text-yellow-800">⏰ Late Arrival</p>
+              <p className="text-xs text-yellow-600 mt-1">5 employees clocked in after 9:00 AM</p>
             </div>
-            <div className="p-3 bg-blue-950 border border-blue-800 rounded-lg">
-              <p className="text-sm font-semibold text-blue-400">ℹ️ Info</p>
-              <p className="text-xs text-blue-300 mt-1">2 employees still not clocked in</p>
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm font-semibold text-blue-800">ℹ️ Info</p>
+              <p className="text-xs text-blue-600 mt-1">2 employees still not clocked in</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Report Table */}
-      <Card className="bg-slate-800 border-slate-700 overflow-hidden">
-        <CardHeader>
-          <CardTitle className="text-white">Attendance Report Table ({todayData.length} records)</CardTitle>
+      <Card className="bg-white border-blue-100 shadow-sm overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-100">
+          <CardTitle className="text-gray-900">Attendance Report Table ({todayData.length} records)</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-600 bg-slate-700">
+                <tr className="border-b border-blue-100 bg-blue-50">
                   <th
-                    className="px-6 py-3 text-left text-white font-semibold cursor-pointer hover:bg-slate-600 transition-colors"
+                    className="px-6 py-3 text-left text-gray-900 font-semibold cursor-pointer hover:bg-blue-100 transition-colors"
                     onClick={() => toggleSort("name")}
                   >
                     Employee {sortKey === "name" && (sortOrder === "asc" ? "↑" : "↓")}
                   </th>
-                  <th className="px-6 py-3 text-left text-white font-semibold">ID</th>
-                  <th className="px-6 py-3 text-left text-white font-semibold">Department</th>
+                  <th className="px-6 py-3 text-left text-gray-900 font-semibold">ID</th>
+                  <th className="px-6 py-3 text-left text-gray-900 font-semibold">Department</th>
                   <th
-                    className="px-6 py-3 text-left text-white font-semibold cursor-pointer hover:bg-slate-600 transition-colors"
+                    className="px-6 py-3 text-left text-gray-900 font-semibold cursor-pointer hover:bg-blue-100 transition-colors"
                     onClick={() => toggleSort("clockInTime")}
                   >
                     Clock In {sortKey === "clockInTime" && (sortOrder === "asc" ? "↑" : "↓")}
                   </th>
-                  <th className="px-6 py-3 text-left text-white font-semibold">Clock Out</th>
-                  <th className="px-6 py-3 text-left text-white font-semibold">Hours</th>
+                  <th className="px-6 py-3 text-left text-gray-900 font-semibold">Clock Out</th>
+                  <th className="px-6 py-3 text-left text-gray-900 font-semibold">Hours</th>
                   <th
-                    className="px-6 py-3 text-left text-white font-semibold cursor-pointer hover:bg-slate-600 transition-colors"
+                    className="px-6 py-3 text-left text-gray-900 font-semibold cursor-pointer hover:bg-blue-100 transition-colors"
                     onClick={() => toggleSort("status")}
                   >
                     Status {sortKey === "status" && (sortOrder === "asc" ? "↑" : "↓")}
@@ -152,35 +152,46 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {todayData.map((record, idx) => (
-                  <tr key={idx} className="border-b border-slate-700 hover:bg-slate-700/50 transition-colors bg-slate-800">
-                    <td className="px-6 py-4 text-white font-medium">{record.name}</td>
-                    <td className="px-6 py-4 text-slate-200">{record.employeeId}</td>
-                    <td className="px-6 py-4 text-slate-200">{record.department}</td>
-                    <td className="px-6 py-4 text-slate-200">
-                      {new Date(record.clockInTime).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                    <td className="px-6 py-4 text-slate-200">
-                      {record.clockOutTime
-                        ? new Date(record.clockOutTime).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "-"}
-                    </td>
-                    <td className="px-6 py-4 text-slate-200">{record.totalHours.toFixed(2)}h</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(record.status)}`}
-                      >
-                        {record.status}
-                      </span>
+                {todayData.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                      No attendance records for this date
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  todayData.map((record, idx) => (
+                    <tr 
+                      key={idx} 
+                      className="border-b border-gray-100 hover:bg-blue-50 transition-colors bg-white"
+                    >
+                      <td className="px-6 py-4 text-gray-900 font-medium">{record.name}</td>
+                      <td className="px-6 py-4 text-gray-700">{record.employeeId}</td>
+                      <td className="px-6 py-4 text-gray-700">{record.department}</td>
+                      <td className="px-6 py-4 text-gray-700">
+                        {new Date(record.clockInTime).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td className="px-6 py-4 text-gray-700">
+                        {record.clockOutTime
+                          ? new Date(record.clockOutTime).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "-"}
+                      </td>
+                      <td className="px-6 py-4 text-gray-700">{record.totalHours.toFixed(2)}h</td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(record.status)}`}
+                        >
+                          {record.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

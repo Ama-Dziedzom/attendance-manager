@@ -102,7 +102,7 @@ export const attendanceStorage = {
     return this.getByEmployeeId(employeeId, today)[0]
   },
 
-  clockIn(employeeId: string, employeeName: string, department: string): AttendanceRecord {
+  clockIn(employeeId: string, employeeName: string, department: string, agencyName: string): AttendanceRecord {
     const today = new Date().toISOString().split("T")[0]
     const now = new Date().toISOString()
     
@@ -133,7 +133,7 @@ export const attendanceStorage = {
     return record
   },
 
-  clockOut(employeeId: string): AttendanceRecord | null {
+  clockOut(employeeId: string, department: string, agencyName: string, p0: { agency: string; agencyName: string }): AttendanceRecord | null {
     const record = this.getTodayRecord(employeeId)
     if (!record || record.clockOutTime) {
       return null // Not clocked in or already clocked out
