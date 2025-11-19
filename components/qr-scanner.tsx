@@ -198,22 +198,25 @@ export function QRScanner() {
 
       console.log("✅ Employee validated, processing attendance...")
 
-      // FIXED: Process attendance with agency info (simplified)
+      // FIXED: Process attendance with agency info
       let attendanceRecord
       const agencyName = AGENCIES.find(a => a.id === selectedAgency)?.name || selectedAgency
       
       if (clockInMode) {
         console.log("⏰ Clocking IN at agency:", agencyName)
-        // Call with just the basic parameters your storage expects
+        // Pass agency name as 4th parameter
         attendanceRecord = attendanceStorage.clockIn(
           empId, 
           employee.name, 
-          employee.department
+          employee.department,
+          agencyName
         )
+        console.log("📝 Clock In Result:", attendanceRecord)
       } else {
         console.log("⏰ Clocking OUT from agency:", agencyName)
         // Call with just the employee ID
         attendanceRecord = attendanceStorage.clockOut(empId)
+        console.log("📝 Clock Out Result:", attendanceRecord)
         
         if (!attendanceRecord) {
           setScanState("error")
@@ -223,6 +226,26 @@ export function QRScanner() {
           return
         }
       }
+
+      console.log("✅ Attendance record:", attendanceRecord)
+
+      // Success
+      setScanState("success")
+      setScanResult({
+        employeeId: empId,
+        name: employee.name,
+        timestamp: new Date().toLocaleTimeString(),
+        type: clockInMode ? "in" : "out",
+        agency: agencyName
+      })
+      setErrorMessage("")
+      
+      console.log("🎉 SUCCESS! Clock", clockInMode ? "IN" : "OUT", "for", employee.name, "at", agencyName)
+      
+      setTimeout(() => {
+        console.log("🔄 Auto-resuming scanner...")
+        resumeScanning()
+      }, 3000)
 
       console.log("✅ Attendance record:", attendanceRecord)
 
@@ -299,26 +322,23 @@ export function QRScanner() {
             console.log("🎯 QR CODE DETECTED:", decodedText)
             console.log("📊 scanningActive status:", scanningActiveRef.current)
             
-            if (scanningActiveRef.current) {
-              console.log("✅ Processing QR code...")
-              scanningActiveRef.current = false
-              
-              try {
-                if (isScannerRunningRef.current) {
-                  await scannerInstance?.stop()
-                  isScannerRunningRef.current = false
-                  console.log("🛑 Scanner stopped")
-                }
-                
-                processQRCode(decodedText)
-              } catch (err) {
-                console.error("❌ Error processing QR:", err)
+            // ALWAYS process if we detect a QR code
+            console.log("✅ Processing QR code...")
+            scanningActiveRef.current = false
+            
+            try {
+              if (isScannerRunningRef.current) {
+                await scannerInstance?.stop()
                 isScannerRunningRef.current = false
-                scanningActiveRef.current = true
-                startAutoScan()
+                console.log("🛑 Scanner stopped")
               }
-            } else {
-              console.log("⚠️ Scanning not active, ignoring scan")
+              
+              processQRCode(decodedText)
+            } catch (err) {
+              console.error("❌ Error processing QR:", err)
+              isScannerRunningRef.current = false
+              scanningActiveRef.current = true
+              startAutoScan()
             }
           },
           (errorMessage) => {
