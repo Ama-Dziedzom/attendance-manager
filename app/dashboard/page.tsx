@@ -255,7 +255,7 @@ export default function DashboardPage() {
                   <Button
                     variant="ghost"
                     onClick={() => toggleSort("status")}
-                    className="h-8 w-full justify-start p-0 hover:bg-transparent"
+                    className="h-8 w-full justify-start p-0 hover:bg-blue-200"
                   >
                     Status
                     {getSortIcon("status")}

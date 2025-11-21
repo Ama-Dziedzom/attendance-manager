@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart, LineChart } from "@/components/charts"
 
+
 export default function ReportsPage() {
   const [timeframe, setTimeframe] = useState("weekly")
 
@@ -56,31 +57,31 @@ export default function ReportsPage() {
   return (
     <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white">Reports & Analytics</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
         <p className="text-slate-400 mt-1">Attendance trends and insights</p>
       </div>
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardContent className="p-6">
             <p className="text-slate-400 text-sm">Avg Attendance Rate</p>
             <p className="text-3xl font-bold text-green-400 mt-2">{averageAttendance}%</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardContent className="p-6">
             <p className="text-slate-400 text-sm">Total Employees</p>
             <p className="text-3xl font-bold text-blue-400 mt-2">{totalEmployees}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardContent className="p-6">
             <p className="text-slate-400 text-sm">This Week Late</p>
             <p className="text-3xl font-bold text-yellow-400 mt-2">7</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardContent className="p-6">
             <p className="text-slate-400 text-sm">This Week Absent</p>
             <p className="text-3xl font-bold text-red-400 mt-2">2</p>
