@@ -58,32 +58,32 @@ export default function ReportsPage() {
     <div className="p-8 space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
-        <p className="text-slate-400 mt-1">Attendance trends and insights</p>
+        <p className="text-gray-600 mt-1">Attendance trends and insights</p>
       </div>
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-white border-blue-100">
           <CardContent className="p-6">
-            <p className="text-slate-400 text-sm">Avg Attendance Rate</p>
+            <p className="text-gray-600 text-sm">Avg Attendance Rate</p>
             <p className="text-3xl font-bold text-green-400 mt-2">{averageAttendance}%</p>
           </CardContent>
         </Card>
         <Card className="bg-white border-blue-100">
           <CardContent className="p-6">
-            <p className="text-slate-400 text-sm">Total Employees</p>
+            <p className="text-gray-600 text-sm">Total Employees</p>
             <p className="text-3xl font-bold text-blue-400 mt-2">{totalEmployees}</p>
           </CardContent>
         </Card>
         <Card className="bg-white border-blue-100">
           <CardContent className="p-6">
-            <p className="text-slate-400 text-sm">This Week Late</p>
+            <p className="text-gray-600 text-sm">This Week Late</p>
             <p className="text-3xl font-bold text-yellow-400 mt-2">7</p>
           </CardContent>
         </Card>
         <Card className="bg-white border-blue-100">
           <CardContent className="p-6">
-            <p className="text-slate-400 text-sm">This Week Absent</p>
+            <p className="text-gray-600 text-sm">This Week Absent</p>
             <p className="text-3xl font-bold text-red-400 mt-2">2</p>
           </CardContent>
         </Card>
@@ -92,9 +92,9 @@ export default function ReportsPage() {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Weekly Trend */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardHeader>
-            <CardTitle className="text-white">Weekly Attendance Trend</CardTitle>
+            <CardTitle className="text-gray-900">Weekly Attendance Trend</CardTitle>
           </CardHeader>
           <CardContent>
             <LineChart
@@ -108,9 +108,9 @@ export default function ReportsPage() {
         </Card>
 
         {/* Department Distribution */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardHeader>
-            <CardTitle className="text-white">Attendance by Department</CardTitle>
+            <CardTitle className="text-gray-900">Attendance by Department</CardTitle>
           </CardHeader>
           <CardContent>
             <BarChart data={departmentData} />
@@ -121,9 +121,9 @@ export default function ReportsPage() {
       {/* Additional Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Late Arrivals Trend */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardHeader>
-            <CardTitle className="text-white">Late Arrivals Trend</CardTitle>
+            <CardTitle className="text-gray-900">Late Arrivals Trend</CardTitle>
           </CardHeader>
           <CardContent>
             <LineChart data={lateArrivalsData} lines={[{ key: "count", color: "#f59e0b", name: "Late Arrivals" }]} />
@@ -131,9 +131,9 @@ export default function ReportsPage() {
         </Card>
 
         {/* Status Distribution */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardHeader>
-            <CardTitle className="text-white">Status Distribution</CardTitle>
+            <CardTitle className="text-gray-900">Status Distribution</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -141,10 +141,10 @@ export default function ReportsPage() {
                 <div key={idx} className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1">
                     <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                    <span className="text-slate-300">{item.name}</span>
+                    <span className="text-gray-600">{item.name}</span>
                   </div>
-                  <span className="text-white font-semibold">{item.value}%</span>
-                  <div className="w-32 bg-slate-700 rounded-full h-2 ml-4">
+                  <span className="text-gray-600 font-semibold">{item.value}%</span>
+                  <div className="w-32 bg-blue-200 rounded-full h-2 ml-4">
                     <div className={`h-2 rounded-full ${item.color}`} style={{ width: `${item.value}%` }}></div>
                   </div>
                 </div>
@@ -155,21 +155,21 @@ export default function ReportsPage() {
       </div>
 
       {/* Department Attendance Percentage */}
-      <Card className="bg-slate-800 border-slate-700">
+      <Card className="bg-white border-blue-100">
         <CardHeader>
-          <CardTitle className="text-white">Department Attendance Percentage</CardTitle>
+          <CardTitle className="text-gray-900">Department Attendance Percentage</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {departmentAttendance.map((item, idx) => (
               <div key={idx}>
                 <div className="flex justify-between mb-2">
-                  <span className="text-slate-300">{item.dept}</span>
-                  <span className="text-white font-semibold">{item.percentage}%</span>
+                  <span className="text-gray-600">{item.dept}</span>
+                  <span className="text-gray-600 font-semibold">{item.percentage}%</span>
                 </div>
-                <div className="w-full bg-slate-700 rounded-full h-3">
+                <div className="w-full bg-blue-100 rounded-full h-3">
                   <div
-                    className="h-3 rounded-full bg-gradient-to-r from-green-500 to-blue-500"
+                    className="h-3 rounded-full bg-gradient-to-r from-blue-900 to-blue-500"
                     style={{ width: `${item.percentage}%` }}
                   ></div>
                 </div>

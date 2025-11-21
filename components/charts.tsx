@@ -19,7 +19,7 @@ export function LineChart({ data, lines }: LineChartProps) {
   const maxValue = Math.max(...data.flatMap((d) => lines.map((l) => (d[l.key] as number) || 0)))
 
   return (
-    <div className="w-full h-64 flex items-end gap-8 p-4 bg-slate-700/30 rounded-lg">
+    <div className="w-full h-64 flex items-end gap-8 p-4 bg-blue-100/30 rounded-lg">
       {data.map((point, idx) => (
         <div key={idx} className="flex-1 flex flex-col items-center gap-2">
           <div className="flex gap-1 items-end h-40">
@@ -40,7 +40,7 @@ export function LineChart({ data, lines }: LineChartProps) {
               )
             })}
           </div>
-          <span className="text-xs text-slate-400">{String(point[Object.keys(point)[0]])}</span>
+          <span className="text-xs text-gray-600">{String(point[Object.keys(point)[0]])}</span>
         </div>
       ))}
     </div>
@@ -59,12 +59,12 @@ export function BarChart({ data }: BarChartProps) {
         return (
           <div key={idx}>
             <div className="flex justify-between mb-2">
-              <span className="text-sm text-slate-300">{item.name}</span>
+              <span className="text-sm text-gray-600">{item.name}</span>
               <span className="text-sm font-semibold text-white">{item.value}</span>
             </div>
-            <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-blue-100 rounded-full h-3 overflow-hidden">
               <div
-                className="h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all"
+                className="h-3 rounded-full bg-gradient-to-r from-blue-900 to-blue-500 transition-all"
                 style={{ width: `${percentage}%` }}
               ></div>
             </div>
@@ -76,5 +76,5 @@ export function BarChart({ data }: BarChartProps) {
 }
 
 export function PieChart() {
-  return <div className="w-24 h-24 rounded-full bg-gradient-to-r from-green-500 to-blue-500"></div>
+  return <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-900 to-blue-500"></div>
 }
