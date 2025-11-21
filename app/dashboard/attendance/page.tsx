@@ -201,9 +201,8 @@ export default function AttendancePage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Table */}
-      <Card className="bg-white border-blue-100">
+{/* Table */}
+<Card className="bg-white border-blue-100">
         <CardHeader>
           <CardTitle className="text-gray-600">Attendance Records ({filteredData.length})</CardTitle>
         </CardHeader>
@@ -238,17 +237,17 @@ export default function AttendancePage() {
               </TableHeader>
               <TableBody>
                 {filteredData.map((record, idx) => (
-                  <TableRow key={idx} className="hover:bg-blue-50">
-                    <TableCell className="font-medium text-gray-700">{record.name}</TableCell>
-                    <TableCell className="text-gray-700">{record.employeeId}</TableCell>
-                    <TableCell className="text-gray-700">{record.department}</TableCell>
-                    <TableCell className="text-gray-700">
+                  <TableRow key={idx} className="hover:bg-blue-50 h-16">
+                    <TableCell className="font-medium text-gray-700 py-4">{record.name}</TableCell>
+                    <TableCell className="text-gray-700 py-4">{record.employeeId}</TableCell>
+                    <TableCell className="text-gray-700 py-4">{record.department}</TableCell>
+                    <TableCell className="text-gray-700 py-4">
                       {new Date(record.clockInTime).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </TableCell>
-                    <TableCell className="text-gray-700">
+                    <TableCell className="text-gray-700 py-4">
                       {record.clockOutTime
                         ? new Date(record.clockOutTime).toLocaleTimeString([], {
                             hour: "2-digit",
@@ -256,8 +255,8 @@ export default function AttendancePage() {
                           })
                         : "-"}
                     </TableCell>
-                    <TableCell className="text-gray-700">{record.totalHours.toFixed(2)}h</TableCell>
-                    <TableCell>
+                    <TableCell className="text-gray-700 py-4">{record.totalHours.toFixed(2)}h</TableCell>
+                    <TableCell className="py-4">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(record.status)}`}
                       >

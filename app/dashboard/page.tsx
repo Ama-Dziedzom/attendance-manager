@@ -206,97 +206,99 @@ export default function DashboardPage() {
       {/* Real-time Feed */}
       <AttendanceFeed date={date} />
 
-      {/* Attendance Table */}
-      <Card>
+     {/* Attendance Table */}
+     <Card className="bg-white border-blue-100">
         <CardHeader>
-          <CardTitle>Attendance Records</CardTitle>
+          <CardTitle className="text-gray-600">Attendance Records</CardTitle>
           <CardDescription>
             View and manage attendance for {format(selectedDate, "MMMM dd, yyyy")}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => toggleSort("name")}
-                    className="h-8 w-full justify-start p-0 hover:bg-transparent"
-                  >
-                    Employee
-                    {getSortIcon("name")}
-                  </Button>
-                </TableHead>
-                <TableHead>ID</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => toggleSort("clockInTime")}
-                    className="h-8 w-full justify-start p-0 hover:bg-transparent"
-                  >
-                    Clock In
-                    {getSortIcon("clockInTime")}
-                  </Button>
-                </TableHead>
-                <TableHead>Clock Out</TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => toggleSort("totalHours")}
-                    className="h-8 w-full justify-start p-0 hover:bg-transparent"
-                  >
-                    Hours
-                    {getSortIcon("totalHours")}
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => toggleSort("status")}
-                    className="h-8 w-full justify-start p-0 hover:bg-blue-200"
-                  >
-                    Status
-                    {getSortIcon("status")}
-                  </Button>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {todayData.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    No attendance records for this date
-                  </TableCell>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-blue-50 hover:bg-blue-50">
+                  <TableHead className="text-gray-700 font-semibold">
+                    <Button
+                      variant="ghost"
+                      onClick={() => toggleSort("name")}
+                      className="h-8 w-full justify-start p-0 hover:bg-blue-100"
+                    >
+                      Employee
+                      {getSortIcon("name")}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-gray-700 font-semibold">ID</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Department</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">
+                    <Button
+                      variant="ghost"
+                      onClick={() => toggleSort("clockInTime")}
+                      className="h-8 w-full justify-start p-0 hover:bg-blue-100"
+                    >
+                      Clock In
+                      {getSortIcon("clockInTime")}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Clock Out</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">
+                    <Button
+                      variant="ghost"
+                      onClick={() => toggleSort("totalHours")}
+                      className="h-8 w-full justify-start p-0 hover:bg-blue-100"
+                    >
+                      Hours
+                      {getSortIcon("totalHours")}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-gray-700 font-semibold">
+                    <Button
+                      variant="ghost"
+                      onClick={() => toggleSort("status")}
+                      className="h-8 w-full justify-start p-0 hover:bg-blue-100"
+                    >
+                      Status
+                      {getSortIcon("status")}
+                    </Button>
+                  </TableHead>
                 </TableRow>
-              ) : (
-                todayData.map((record, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell className="font-medium">{record.name}</TableCell>
-                    <TableCell>{record.employeeId}</TableCell>
-                    <TableCell>{record.department}</TableCell>
-                    <TableCell>
-                      {new Date(record.clockInTime).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+              </TableHeader>
+              <TableBody>
+                {todayData.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center text-gray-700">
+                      No attendance records for this date
                     </TableCell>
-                    <TableCell>
-                      {record.clockOutTime
-                        ? new Date(record.clockOutTime).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "-"}
-                    </TableCell>
-                    <TableCell>{record.totalHours.toFixed(2)}h</TableCell>
-                    <TableCell>{getStatusBadge(record.status)}</TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  todayData.map((record, idx) => (
+                    <TableRow key={idx} className="hover:bg-blue-50 h-16">
+                      <TableCell className="font-medium text-gray-700 py-4">{record.name}</TableCell>
+                      <TableCell className="text-gray-700 py-4">{record.employeeId}</TableCell>
+                      <TableCell className="text-gray-700 py-4">{record.department}</TableCell>
+                      <TableCell className="text-gray-700 py-4">
+                        {new Date(record.clockInTime).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </TableCell>
+                      <TableCell className="text-gray-700 py-4">
+                        {record.clockOutTime
+                          ? new Date(record.clockOutTime).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "-"}
+                      </TableCell>
+                      <TableCell className="text-gray-700 py-4">{record.totalHours.toFixed(2)}h</TableCell>
+                      <TableCell className="py-4">{getStatusBadge(record.status)}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
