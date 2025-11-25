@@ -19,7 +19,7 @@ export default function EmployeeDetailPage() {
         <div className="text-center py-12">
           <p className="text-slate-400 mb-4">Employee not found</p>
           <Link href="/dashboard/employees">
-            <Button className="bg-blue-600 hover:bg-blue-700">Back to Employees</Button>
+            <Button className="bg-blue-900 hover:bg-blue-500">Back to Employees</Button>
           </Link>
         </div>
       </div>
@@ -52,35 +52,35 @@ export default function EmployeeDetailPage() {
       {/* Header */}
       <div>
         <Link href="/dashboard/employees">
-          <Button variant="ghost" className="text-blue-400 hover:text-blue-300 mb-4">
+          <Button variant="ghost" className="text-blue-900 hover:text-white mb-4">
             ← Back to Employees
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold text-white">{employee.name}</h1>
-        <p className="text-slate-400 mt-1">{employee.empId}</p>
+        <h1 className="text-3xl font-bold text-gray-900">{employee.name}</h1>
+        <p className="text-gray-500 mt-1">{employee.empId}</p>
       </div>
 
       {/* Employee Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardContent className="p-6">
             <p className="text-slate-400 text-sm">Department</p>
-            <p className="text-xl font-bold text-white mt-2">{employee.department}</p>
+            <p className="text-xl font-bold text-gray-600 mt-2">{employee.department}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardContent className="p-6">
             <p className="text-slate-400 text-sm">Email</p>
-            <p className="text-sm font-mono text-slate-300 mt-2">{employee.email}</p>
+            <p className="text-sm font-mono text-gray-600 mt-2">{employee.email}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardContent className="p-6">
             <p className="text-slate-400 text-sm">Attendance Records</p>
             <p className="text-xl font-bold text-blue-400 mt-2">{employeeAttendance.length}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardContent className="p-6">
             <p className="text-slate-400 text-sm">On-Time Rate</p>
             <p className="text-xl font-bold text-green-400 mt-2">{attendanceRate}%</p>
@@ -90,9 +90,9 @@ export default function EmployeeDetailPage() {
 
       {/* Attendance Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-white border-blue-100">
           <CardHeader>
-            <CardTitle className="text-white text-base">Attendance Summary</CardTitle>
+            <CardTitle className="text-gray-600 text-base">Attendance Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center">
@@ -107,7 +107,7 @@ export default function EmployeeDetailPage() {
               <span className="text-slate-300">Early Departure</span>
               <span className="text-blue-400 font-semibold">{earlyDepartureCount}</span>
             </div>
-            <div className="pt-4 border-t border-slate-700 flex justify-between items-center">
+            <div className="pt-4 border-t border-blue-100 flex justify-between items-center">
               <span className="text-slate-300">Total Records</span>
               <span className="text-white font-semibold">{employeeAttendance.length}</span>
             </div>

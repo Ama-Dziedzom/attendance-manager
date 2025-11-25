@@ -105,8 +105,8 @@ export default function EmployeesPage() {
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-white">{employee.name}</h3>
-                      <p className="text-sm text-slate-400">{employee.empId}</p>
+                      <h3 className="text-lg font-semibold text-gray-600">{employee.name}</h3>
+                      <p className="text-sm text-gray-600">{employee.empId}</p>
                     </div>
                     <User className="w-8 h-8 opacity-50 text-slate-400" />
                   </div>
@@ -125,9 +125,9 @@ export default function EmployeesPage() {
                     <div>
                       <p className="text-xs text-slate-400 mb-2">Attendance Rate</p>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-slate-700 rounded-full h-2">
+                        <div className="flex-1 bg-blue-100 rounded-full h-2">
                           <div
-                            className="h-2 rounded-full bg-gradient-to-r from-green-500 to-blue-500"
+                            className="h-2 rounded-full bg-gradient-to-r from-blue-900 to-blue-500"
                             style={{ width: `${attendanceRate}%` }}
                           ></div>
                         </div>
@@ -136,7 +136,7 @@ export default function EmployeesPage() {
                     </div>
                   </div>
 
-                  <Button className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white" asChild>
+                  <Button className="w-full mt-4 bg-blue-900 hover:bg-blue-700 text-white" asChild>
                     <span>View Details</span>
                   </Button>
                 </CardContent>
