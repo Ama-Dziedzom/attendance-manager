@@ -4,7 +4,10 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { employeeStorage, attendanceStorage } from "@/lib/storage"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { ArrowLeft, Building, Mail, Clock, CalendarDays, QrCode } from "lucide-react"
 
 export default function EmployeeDetailPage() {
   const params = useParams()
@@ -17,9 +20,9 @@ export default function EmployeeDetailPage() {
     return (
       <div className="p-8">
         <div className="text-center py-12">
-          <p className="text-slate-400 mb-4">Employee not found</p>
+          <p className="text-muted-foreground mb-4">Employee not found</p>
           <Link href="/dashboard/employees">
-            <Button className="bg-blue-900 hover:bg-blue-500">Back to Employees</Button>
+            <Button>Back to Employees</Button>
           </Link>
         </div>
       </div>
@@ -34,16 +37,26 @@ export default function EmployeeDetailPage() {
 
   const recentAttendance = employeeAttendance.slice(-5).reverse()
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case "On Time":
-        return "bg-green-950 text-green-400"
+        return "default" // usually primary color or green if styled
       case "Late":
-        return "bg-yellow-950 text-yellow-400"
+        return "destructive"
       case "Early Departure":
-        return "bg-blue-950 text-blue-400"
+        return "secondary"
       default:
-        return "bg-slate-800 text-slate-400"
+        return "outline"
+    }
+  }
+
+  // Custom coloring for specific statuses if needed beyond defaults
+  const getStatusColorClass = (status: string) => {
+    switch (status) {
+      case "On Time": return "bg-green-100 text-green-700 hover:bg-green-100/80 border-green-200"
+      case "Late": return "bg-yellow-100 text-yellow-700 hover:bg-yellow-100/80 border-yellow-200"
+      case "Early Departure": return "bg-blue-100 text-blue-700 hover:bg-blue-100/80 border-blue-200"
+      default: return ""
     }
   }
 
@@ -52,97 +65,117 @@ export default function EmployeeDetailPage() {
       {/* Header */}
       <div>
         <Link href="/dashboard/employees">
-          <Button variant="ghost" className="text-blue-900 hover:text-white mb-4">
-            ← Back to Employees
+          <Button variant="ghost" className="mb-4 pl-0 hover:bg-transparent hover:text-primary">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Employees
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900">{employee.name}</h1>
-        <p className="text-gray-500 mt-1">{employee.empId}</p>
+        <h1 className="text-3xl font-bold text-foreground">{employee.name}</h1>
+        <p className="text-muted-foreground mt-1 flex items-center gap-2">
+          <span className="font-mono bg-muted px-2 py-0.5 rounded text-sm">{employee.empId}</span>
+        </p>
       </div>
 
       {/* Employee Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-white border-blue-100">
+        <Card>
           <CardContent className="p-6">
-            <p className="text-slate-400 text-sm">Department</p>
-            <p className="text-xl font-bold text-gray-600 mt-2">{employee.department}</p>
+            <p className="text-muted-foreground text-sm flex items-center gap-2">
+              <Building className="h-4 w-4" /> Department
+            </p>
+            <p className="text-xl font-bold text-foreground mt-2">{employee.department}</p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-blue-100">
+        <Card>
           <CardContent className="p-6">
-            <p className="text-slate-400 text-sm">Email</p>
-            <p className="text-sm font-mono text-gray-600 mt-2">{employee.email}</p>
+            <p className="text-muted-foreground text-sm flex items-center gap-2">
+              <Mail className="h-4 w-4" /> Email
+            </p>
+            <p className="text-sm font-medium text-foreground mt-2 truncate" title={employee.email}>{employee.email}</p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-blue-100">
+        <Card>
           <CardContent className="p-6">
-            <p className="text-slate-400 text-sm">Attendance Records</p>
-            <p className="text-xl font-bold text-blue-400 mt-2">{employeeAttendance.length}</p>
+            <p className="text-muted-foreground text-sm flex items-center gap-2">
+              <Clock className="h-4 w-4" /> Attendance Records
+            </p>
+            <p className="text-xl font-bold text-primary mt-2">{employeeAttendance.length}</p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-blue-100">
+        <Card>
           <CardContent className="p-6">
-            <p className="text-slate-400 text-sm">On-Time Rate</p>
-            <p className="text-xl font-bold text-green-400 mt-2">{attendanceRate}%</p>
+            <p className="text-muted-foreground text-sm flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" /> On-Time Rate
+            </p>
+            <p className="text-xl font-bold text-green-600 mt-2">{attendanceRate}%</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Attendance Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="bg-white border-blue-100">
+        <Card className="h-full">
           <CardHeader>
-            <CardTitle className="text-gray-600 text-base">Attendance Summary</CardTitle>
+            <CardTitle>Attendance Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-slate-300">On Time</span>
-              <span className="text-green-400 font-semibold">{onTimeCount}</span>
+              <span className="text-muted-foreground">On Time</span>
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">{onTimeCount}</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-300">Late</span>
-              <span className="text-yellow-400 font-semibold">{lateCount}</span>
+              <span className="text-muted-foreground">Late</span>
+              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">{lateCount}</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-300">Early Departure</span>
-              <span className="text-blue-400 font-semibold">{earlyDepartureCount}</span>
+              <span className="text-muted-foreground">Early Departure</span>
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">{earlyDepartureCount}</Badge>
             </div>
-            <div className="pt-4 border-t border-blue-100 flex justify-between items-center">
-              <span className="text-slate-300">Total Records</span>
-              <span className="text-white font-semibold">{employeeAttendance.length}</span>
+            <div className="pt-4 border-t border-border flex justify-between items-center">
+              <span className="font-medium">Total Records</span>
+              <span className="font-bold text-foreground">{employeeAttendance.length}</span>
             </div>
           </CardContent>
         </Card>
 
         {/* Devices */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="h-full">
           <CardHeader>
-            <CardTitle className="text-white text-base">QR Code Generated</CardTitle>
+            <CardTitle>Credential Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-blue-400 mb-4">
-              {new Date(employee.timestamp).toLocaleDateString()}
-            </p>
-            <p className="text-sm text-slate-400">
-              QR code was generated on {new Date(employee.timestamp).toLocaleDateString()}
-            </p>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-primary/10 rounded-full">
+                <QrCode className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium">QR Code Generated</p>
+                <p className="text-sm text-muted-foreground">{new Date(employee.timestamp).toLocaleDateString()}</p>
+              </div>
+            </div>
+            <div className="text-sm bg-muted/50 p-4 rounded-lg border border-border">
+              <span className="text-muted-foreground">Hash:</span>
+              <code className="ml-2 bg-background px-1 py-0.5 rounded border border-border text-xs break-all">
+                {employee.hash || "N/A"}
+              </code>
+            </div>
           </CardContent>
         </Card>
 
         {/* Status Breakdown */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="h-full">
           <CardHeader>
-            <CardTitle className="text-white text-base">Status Breakdown</CardTitle>
+            <CardTitle>Status Breakdown</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <div>
               <div className="flex justify-between mb-1">
-                <span className="text-sm text-slate-300">On Time</span>
-                <span className="text-sm text-green-400">
+                <span className="text-sm font-medium">On Time</span>
+                <span className="text-sm text-muted-foreground">
                   {employeeAttendance.length > 0 ? ((onTimeCount / employeeAttendance.length) * 100).toFixed(0) : 0}%
                 </span>
               </div>
-              <div className="w-full bg-slate-700 rounded-full h-2">
+              <div className="w-full bg-secondary rounded-full h-2">
                 <div
                   className="h-2 rounded-full bg-green-500"
                   style={{
@@ -153,12 +186,12 @@ export default function EmployeeDetailPage() {
             </div>
             <div>
               <div className="flex justify-between mb-1">
-                <span className="text-sm text-slate-300">Late</span>
-                <span className="text-sm text-yellow-400">
+                <span className="text-sm font-medium">Late</span>
+                <span className="text-sm text-muted-foreground">
                   {employeeAttendance.length > 0 ? ((lateCount / employeeAttendance.length) * 100).toFixed(0) : 0}%
                 </span>
               </div>
-              <div className="w-full bg-slate-700 rounded-full h-2">
+              <div className="w-full bg-secondary rounded-full h-2">
                 <div
                   className="h-2 rounded-full bg-yellow-500"
                   style={{
@@ -172,51 +205,56 @@ export default function EmployeeDetailPage() {
       </div>
 
       {/* Recent Attendance */}
-      <Card className="bg-slate-800 border-slate-700">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">Recent Attendance</CardTitle>
+          <CardTitle>Recent Attendance</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-700 bg-slate-900">
-                  <th className="px-6 py-3 text-left text-slate-300 font-semibold">Date</th>
-                  <th className="px-6 py-3 text-left text-slate-300 font-semibold">Clock In</th>
-                  <th className="px-6 py-3 text-left text-slate-300 font-semibold">Clock Out</th>
-                  <th className="px-6 py-3 text-left text-slate-300 font-semibold">Hours</th>
-                  <th className="px-6 py-3 text-left text-slate-300 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentAttendance.map((record, idx) => (
-                  <tr key={idx} className="border-b border-slate-700 hover:bg-slate-700">
-                    <td className="px-6 py-4 text-slate-300">{new Date(record.clockInTime).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-slate-300">
-                      {new Date(record.clockInTime).toLocaleTimeString([], {
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Clock In</TableHead>
+                <TableHead>Clock Out</TableHead>
+                <TableHead>Hours</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recentAttendance.map((record, idx) => (
+                <TableRow key={idx}>
+                  <TableCell>{new Date(record.clockInTime).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    {new Date(record.clockInTime).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </TableCell>
+                  <TableCell>
+                    {record.clockOutTime
+                      ? new Date(record.clockOutTime).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
-                      })}
-                    </td>
-                    <td className="px-6 py-4 text-slate-300">
-                      {record.clockOutTime
-                        ? new Date(record.clockOutTime).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "-"}
-                    </td>
-                    <td className="px-6 py-4 text-slate-300">{record.totalHours.toFixed(2)}h</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(record.status)}`}>
-                        {record.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      })
+                      : "-"}
+                  </TableCell>
+                  <TableCell>{record.totalHours.toFixed(2)}h</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getStatusColorClass(record.status)}>
+                      {record.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {recentAttendance.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    No attendance records found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

@@ -5,8 +5,15 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { employeeStorage, attendanceStorage } from "@/lib/storage"
-import { User } from "lucide-react"
+import { User, Search, Filter } from "lucide-react"
 
 export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -44,45 +51,53 @@ export default function EmployeesPage() {
     }
 
     return filtered
-  }, [searchTerm, departmentFilter, sortBy])
+  }, [searchTerm, departmentFilter, sortBy, employees])
 
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Employee Directory</h1>
-        <p className="text-gray-500 mt-1">View and manage employee attendance records</p>
+        <h1 className="text-3xl font-bold text-foreground">Employee Directory</h1>
+        <p className="text-muted-foreground mt-1">View and manage employee attendance records</p>
       </div>
 
       {/* Filters */}
-      <Card className="bg-white border-blue-100">
+      <Card className="bg-card border-border">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4">
-            <Input
-              placeholder="Search by name or ID"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 bg-white border-blue-100 text-white placeholder:text-slate-500"
-            />
-            <select
-              value={departmentFilter}
-              onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="px-4 py-2 bg-white border border-blue-100 rounded text-slate-500 text-sm min-w-48"
-            >
-              <option value="all">All Departments</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
-            </select>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 bg-white border border-blue-100 rounded text-slate-500 text-sm min-w-48"
-            >
-              <option value="name">Sort by: Name</option>
-              <option value="department">Sort by: Department</option>
-            </select>
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or ID"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 bg-background border-input"
+              />
+            </div>
+            <div className="flex gap-4">
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Sort by: Name</SelectItem>
+                  <SelectItem value="department">Sort by: Department</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -94,49 +109,51 @@ export default function EmployeesPage() {
           const attendanceRate =
             employeeAttendance.length > 0
               ? (
-                  (employeeAttendance.filter((r) => r.status === "On Time").length / employeeAttendance.length) *
-                  100
-                ).toFixed(0)
+                (employeeAttendance.filter((r) => r.status === "On Time").length / employeeAttendance.length) *
+                100
+              ).toFixed(0)
               : 0
 
           return (
             <Link key={employee.id} href={`/dashboard/employees/${employee.empId}`}>
-              <Card className="bg-white border-blue-100 hover:border-blue-600 cursor-pointer transition-all h-full">
+              <Card className="bg-card border-border hover:border-primary cursor-pointer transition-all h-full hover:shadow-md">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-600">{employee.name}</h3>
-                      <p className="text-sm text-gray-600">{employee.empId}</p>
+                      <h3 className="text-lg font-semibold text-foreground">{employee.name}</h3>
+                      <p className="text-sm text-muted-foreground">{employee.empId}</p>
                     </div>
-                    <User className="w-8 h-8 opacity-50 text-slate-400" />
+                    <div className="p-2 bg-primary/10 rounded-full">
+                      <User className="w-5 h-5 text-primary" />
+                    </div>
                   </div>
 
                   <div className="space-y-3">
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Department</p>
-                      <p className="text-sm text-slate-300">{employee.department || "N/A"}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Department</p>
+                      <p className="text-sm text-foreground">{employee.department || "N/A"}</p>
                     </div>
 
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Email</p>
-                      <p className="text-sm text-slate-300">{employee.email || "N/A"}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Email</p>
+                      <p className="text-sm text-foreground">{employee.email || "N/A"}</p>
                     </div>
 
                     <div>
-                      <p className="text-xs text-slate-400 mb-2">Attendance Rate</p>
+                      <p className="text-xs text-muted-foreground mb-2">Attendance Rate</p>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-blue-100 rounded-full h-2">
+                        <div className="flex-1 bg-secondary rounded-full h-2">
                           <div
-                            className="h-2 rounded-full bg-gradient-to-r from-blue-900 to-blue-500"
+                            className="h-2 rounded-full bg-primary"
                             style={{ width: `${attendanceRate}%` }}
                           ></div>
                         </div>
-                        <span className="text-sm font-semibold text-green-400">{attendanceRate}%</span>
+                        <span className="text-sm font-semibold text-primary">{attendanceRate}%</span>
                       </div>
                     </div>
                   </div>
 
-                  <Button className="w-full mt-4 bg-blue-900 hover:bg-blue-700 text-white" asChild>
+                  <Button className="w-full mt-4" variant="secondary" asChild>
                     <span>View Details</span>
                   </Button>
                 </CardContent>
@@ -147,9 +164,12 @@ export default function EmployeesPage() {
       </div>
 
       {filteredEmployees.length === 0 && (
-        <Card className="bg-slate-800 border-slate-700">
-          <CardContent className="p-8 text-center">
-            <p className="text-slate-400">No employees found matching your criteria</p>
+        <Card className="bg-muted/50 border-dashed border-muted-foreground/25">
+          <CardContent className="p-12 text-center text-muted-foreground">
+            <div className="flex justify-center mb-4">
+              <Search className="h-10 w-10 opacity-20" />
+            </div>
+            <p>No employees found matching your criteria</p>
           </CardContent>
         </Card>
       )}

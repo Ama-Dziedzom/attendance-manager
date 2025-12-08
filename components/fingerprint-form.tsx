@@ -4,6 +4,15 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { toast } from "sonner"
+import { Info } from "lucide-react"
 
 interface Agency {
     id: string
@@ -35,12 +44,12 @@ export function FingerprintForm({ onSubmit, agencies, isScanning = false }: Fing
 
         // Validate all fields
         if (!formData.name.trim()) {
-            alert("Please enter employee name")
+            toast.error("Please enter employee name")
             return
         }
 
         if (!formData.agency) {
-            alert("Please select an agency")
+            toast.error("Please select an agency")
             return
         }
 
@@ -58,8 +67,8 @@ export function FingerprintForm({ onSubmit, agencies, isScanning = false }: Fing
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-                <Label htmlFor="name" className="text-gray-700">
-                    Employee Name <span className="text-red-500">*</span>
+                <Label htmlFor="name">
+                    Employee Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
                     id="name"
@@ -68,37 +77,32 @@ export function FingerprintForm({ onSubmit, agencies, isScanning = false }: Fing
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="John Doe"
                     className="mt-1"
-                    required
                     disabled={isScanning}
                 />
             </div>
 
             {/* Agency Dropdown */}
             <div>
-                <Label htmlFor="agency" className="text-gray-700">
-                    Agency <span className="text-red-500">*</span>
+                <Label htmlFor="agency">
+                    Agency <span className="text-destructive">*</span>
                 </Label>
-                <div className="relative mt-1">
-                    <select
-                        id="agency"
+                <div className="mt-1">
+                    <Select
                         value={formData.agency}
-                        onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
-                        className="w-full h-10 px-3 pr-10 border border-input rounded-md bg-background text-foreground appearance-none cursor-pointer hover:border-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
-                        required
+                        onValueChange={(value) => setFormData({ ...formData, agency: value })}
                         disabled={isScanning}
                     >
-                        <option value="" disabled>Select agency...</option>
-                        {agencies.map((agency) => (
-                            <option key={agency.id} value={agency.id}>
-                                {agency.name} ({agency.code})
-                            </option>
-                        ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
+                        <SelectTrigger id="agency" className="w-full">
+                            <SelectValue placeholder="Select agency..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {agencies.map((agency) => (
+                                <SelectItem key={agency.id} value={agency.id}>
+                                    {agency.name} ({agency.code})
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 {formData.agency && (
                     <p className="text-xs text-muted-foreground mt-1">
@@ -108,7 +112,7 @@ export function FingerprintForm({ onSubmit, agencies, isScanning = false }: Fing
             </div>
 
             <div>
-                <Label htmlFor="department" className="text-gray-700">
+                <Label htmlFor="department">
                     Department
                 </Label>
                 <Input
@@ -123,7 +127,7 @@ export function FingerprintForm({ onSubmit, agencies, isScanning = false }: Fing
             </div>
 
             <div>
-                <Label htmlFor="email" className="text-gray-700">
+                <Label htmlFor="email">
                     Email
                 </Label>
                 <Input
@@ -139,16 +143,17 @@ export function FingerprintForm({ onSubmit, agencies, isScanning = false }: Fing
 
             <Button
                 type="submit"
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                className="w-full"
                 disabled={isScanning}
             >
                 {isScanning ? "Scanning..." : "Register Fingerprint"}
             </Button>
 
             {/* Info box about auto-generated IDs */}
-            <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-xs text-green-800">
-                    <span className="font-semibold">Note:</span> Employee ID will be automatically generated based on the selected agency (e.g., HO0001, AC0001).
+            <div className="p-3 bg-muted border rounded-md flex gap-2 items-start">
+                <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">Note:</span> Employee ID will be automatically generated based on the selected agency (e.g., HO0001, AC0001).
                 </p>
             </div>
         </form>

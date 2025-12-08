@@ -3,11 +3,23 @@
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { FingerprintForm } from "./fingerprint-form"
 import { FingerprintDisplay } from "./fingerprint-display"
 import { FingerprintScanner } from "./fingerprint-scanner"
 import { employeeStorage, type Employee as StorageEmployee, type BiometricCredential } from "@/lib/storage"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Upload, Fingerprint, Eye, Search, AlertCircle, CheckCircle2, UserPlus } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 // Agency list with codes
 const AGENCIES = [
@@ -259,38 +271,39 @@ export function FingerprintGenerator() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
+        <div className="min-h-screen bg-background">
             {/* Header */}
-            <div className="bg-white border-b border-green-100 shadow-sm">
+            <div className="bg-card border-b border-border shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-green-700 rounded-lg flex items-center justify-center">
-                            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C9.243 2 7 4.243 7 7v3H6c-1.103 0-2 .897-2 2v8c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2v-8c0-1.103-.897-2-2-2h-1V7c0-2.757-2.243-5-5-5zm3 8V7c0-1.654-1.346-3-3-3S9 5.346 9 7v3h6z" />
-                            </svg>
+                        <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                            <Fingerprint className="w-6 h-6 text-primary-foreground" />
                         </div>
-                        <h1 className="text-3xl font-bold text-gray-900">Employee Fingerprint Registration</h1>
+                        <h1 className="text-3xl font-bold text-foreground">Employee Fingerprint Registration</h1>
                     </div>
-                    <p className="text-gray-600 ml-13">Register and manage employee fingerprints for attendance</p>
+                    <p className="text-muted-foreground ml-13">Register and manage employee fingerprints for attendance</p>
                 </div>
             </div>
 
             {/* Success Message */}
             {successMessage && (
-                <div className="bg-green-50 border-l-4 border-green-500 p-4 mx-4 mt-4 rounded">
-                    <p className="text-green-800 font-medium">{successMessage}</p>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                    <Alert variant="default" className="border-green-200 bg-green-50 text-green-900">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        <AlertTitle>Success</AlertTitle>
+                        <AlertDescription>{successMessage}</AlertDescription>
+                    </Alert>
                 </div>
             )}
 
             {/* Error Message */}
             {errorMessage && (
-                <div className="bg-red-50 border-l-4 border-red-500 p-4 mx-4 mt-4 rounded">
-                    <div className="flex items-start gap-3">
-                        <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                        </svg>
-                        <p className="text-red-800 font-medium whitespace-pre-line">{errorMessage}</p>
-                    </div>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Error</AlertTitle>
+                        <AlertDescription className="whitespace-pre-line">{errorMessage}</AlertDescription>
+                    </Alert>
                 </div>
             )}
 
@@ -299,37 +312,46 @@ export function FingerprintGenerator() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     {/* Form Section */}
                     <div className="lg:col-span-1">
-                        <Card className="p-6 border-green-100">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Register Employee</h2>
-                            <FingerprintForm
-                                onSubmit={handleAddEmployee}
-                                agencies={AGENCIES}
-                                isScanning={isScanning}
-                            />
+                        <Card className="h-full">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <UserPlus className="w-5 h-5 text-primary" />
+                                    Register Employee
+                                </CardTitle>
+                                <CardDescription>Enter details to register new fingerprint</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <FingerprintForm
+                                    onSubmit={handleAddEmployee}
+                                    agencies={AGENCIES}
+                                    isScanning={isScanning}
+                                />
 
-                            <div className="mt-6 pt-6 border-t border-gray-200">
-                                <h3 className="text-sm font-semibold text-gray-900 mb-3">Bulk Upload</h3>
-                                <input type="file" ref={fileInputRef} onChange={handleCSVUpload} accept=".csv" className="hidden" />
-                                <Button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    variant="outline"
-                                    className="w-full text-green-600 border-green-200 hover:bg-green-50"
-                                    disabled={isScanning}
-                                >
-                                    Upload CSV
-                                </Button>
-                                <p className="text-xs text-gray-500 mt-2">
-                                    CSV format: name,department,email,agencyId
-                                </p>
-                                <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700">
-                                    <p className="font-semibold mb-1">Valid Agency IDs:</p>
-                                    <ul className="space-y-0.5">
-                                        {AGENCIES.map(a => (
-                                            <li key={a.id}>• {a.id} ({a.code}) - {a.name}</li>
-                                        ))}
-                                    </ul>
+                                <div className="mt-6 pt-6 border-t border-border">
+                                    <h3 className="text-sm font-semibold text-foreground mb-3">Bulk Upload</h3>
+                                    <input type="file" ref={fileInputRef} onChange={handleCSVUpload} accept=".csv" className="hidden" />
+                                    <Button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        variant="outline"
+                                        className="w-full"
+                                        disabled={isScanning}
+                                    >
+                                        <Upload className="w-4 h-4 mr-2" />
+                                        Upload CSV
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                        CSV format: name,department,email,agencyId
+                                    </p>
+                                    <div className="mt-2 p-2 bg-muted rounded text-xs text-muted-foreground">
+                                        <p className="font-semibold mb-1 text-foreground">Valid Agency IDs:</p>
+                                        <ul className="space-y-0.5 max-h-32 overflow-y-auto">
+                                            {AGENCIES.map(a => (
+                                                <li key={a.id}>• {a.id} ({a.code}) - {a.name}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
                                 </div>
-                            </div>
+                            </CardContent>
                         </Card>
                     </div>
 
@@ -346,16 +368,17 @@ export function FingerprintGenerator() {
                         ) : selectedEmployee ? (
                             <FingerprintDisplay employee={selectedEmployee} />
                         ) : (
-                            <Card className="p-12 border-green-100 flex flex-col items-center justify-center min-h-96">
-                                <div className="text-center">
-                                    <div className="text-green-300 mb-4">
-                                        <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 2C9.243 2 7 4.243 7 7v3H6c-1.103 0-2 .897-2 2v8c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2v-8c0-1.103-.897-2-2-2h-1V7c0-2.757-2.243-5-5-5zm3 8V7c0-1.654-1.346-3-3-3S9 5.346 9 7v3h6z" />
-                                        </svg>
+                            <Card className="flex flex-col items-center justify-center min-h-[400px]">
+                                <CardContent className="flex flex-col items-center text-center p-10">
+                                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+                                        <Fingerprint className="w-12 h-12 text-primary" />
                                     </div>
-                                    <p className="text-gray-600">Add an employee or upload a CSV to register fingerprints</p>
-                                    <p className="text-sm text-gray-500 mt-2">Employee IDs will be auto-generated based on agency</p>
-                                </div>
+                                    <h3 className="text-xl font-semibold text-foreground mb-2">Fingerprint Registration Manager</h3>
+                                    <p className="text-muted-foreground max-w-sm mb-4">Add an employee or upload a CSV to register fingerprints. Select an employee from the list to view details.</p>
+                                    <p className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                                        Employee IDs auto-generated based on agency
+                                    </p>
+                                </CardContent>
                             </Card>
                         )}
                     </div>
@@ -363,51 +386,56 @@ export function FingerprintGenerator() {
 
                 {/* Employee List */}
                 {employees.length > 0 && (
-                    <div className="mt-8">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Registered Employees</h2>
-                        <Card className="p-6 border-green-100">
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b border-gray-200">
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Employee ID</th>
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Name</th>
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Agency</th>
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Fingerprint ID</th>
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Registered</th>
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {employees.map((emp) => (
-                                            <tr key={emp.id} className="border-b border-gray-100 hover:bg-green-50 transition-colors">
-                                                <td className="py-3 px-4 text-sm font-medium text-gray-900">{emp.empId}</td>
-                                                <td className="py-3 px-4 text-sm text-gray-900">{emp.name}</td>
-                                                <td className="py-3 px-4 text-sm text-gray-600">{emp.agency}</td>
-                                                <td className="py-3 px-4 text-sm text-green-600 font-mono">{emp.fingerprintId}</td>
-                                                <td className="py-3 px-4">
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                        </svg>
-                                                        Registered
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <Button
-                                                        onClick={() => setSelectedEmployee(emp)}
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="text-green-600 border-green-200 hover:bg-green-50"
-                                                    >
-                                                        View
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-foreground">Registered Employees</h2>
+                            <Badge variant="secondary" className="text-sm">
+                                Total: {employees.length}
+                            </Badge>
+                        </div>
+
+                        <Card>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Employee ID</TableHead>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Agency</TableHead>
+                                        <TableHead>Fingerprint ID</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Action</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {employees.map((emp) => (
+                                        <TableRow key={emp.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedEmployee(emp)}>
+                                            <TableCell className="font-medium">{emp.empId}</TableCell>
+                                            <TableCell>{emp.name}</TableCell>
+                                            <TableCell className="text-muted-foreground">{emp.agency}</TableCell>
+                                            <TableCell className="font-mono text-sm text-primary">{emp.fingerprintId}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
+                                                    <CheckCircle2 className="w-3 h-3" />
+                                                    Registered
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setSelectedEmployee(emp)
+                                                    }}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                >
+                                                    <Eye className="w-4 h-4 mr-2" />
+                                                    View
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
                         </Card>
                     </div>
                 )}

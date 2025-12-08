@@ -1,9 +1,13 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { employeeStorage, attendanceStorage } from "@/lib/storage"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Smartphone, Laptop, Search, AlertTriangle, CheckCircle, Info, ShieldAlert } from "lucide-react"
 
 export default function DevicesPage() {
   const [searchEmployee, setSearchEmployee] = useState("")
@@ -13,11 +17,11 @@ export default function DevicesPage() {
   // Get devices from attendance records (simplified - in production this would be a separate device table)
   const employees = employeeStorage.getAll()
   const allAttendance = attendanceStorage.getAll()
-  
+
   const extendedDevices = employees.flatMap((emp, idx) => {
     const empAttendance = allAttendance.filter(a => a.employeeId === emp.empId)
     const lastRecord = empAttendance.length > 0 ? empAttendance[empAttendance.length - 1] : null
-    
+
     return [{
       id: `Device-${emp.empId}`,
       employeeId: emp.empId,
@@ -51,18 +55,18 @@ export default function DevicesPage() {
     }
 
     return filtered
-  }, [searchEmployee, sortBy, filterStatus])
+  }, [searchEmployee, sortBy, filterStatus, extendedDevices])
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return "bg-green-950 text-green-400 border-green-800"
+        return <Badge className="bg-green-100 text-green-700 hover:bg-green-100/80 border-green-200"><CheckCircle className="w-3 h-3 mr-1" /> Active</Badge>
       case "inactive":
-        return "bg-gray-950 text-gray-400 border-gray-800"
+        return <Badge variant="secondary"><Info className="w-3 h-3 mr-1" /> Inactive</Badge>
       case "flagged":
-        return "bg-red-950 text-red-400 border-red-800"
+        return <Badge variant="destructive"><AlertTriangle className="w-3 h-3 mr-1" /> Flagged</Badge>
       default:
-        return "bg-slate-800 text-slate-400 border-slate-700"
+        return <Badge variant="outline">{status}</Badge>
     }
   }
 
@@ -76,121 +80,133 @@ export default function DevicesPage() {
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Device Management</h1>
-        <p className="text-slate-400 mt-1">Monitor and manage registered employee devices</p>
+        <h1 className="text-3xl font-bold text-foreground">Device Management</h1>
+        <p className="text-muted-foreground mt-1">Monitor and manage registered employee devices</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800 border-slate-700">
+        <Card>
           <CardContent className="p-6">
-            <p className="text-slate-400 text-sm">Total Devices</p>
-            <p className="text-3xl font-bold text-blue-400 mt-2">{stats.totalDevices}</p>
+            <p className="text-muted-foreground text-sm font-medium">Total Devices</p>
+            <p className="text-3xl font-bold text-primary mt-2">{stats.totalDevices}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800 border-slate-700">
+        <Card>
           <CardContent className="p-6">
-            <p className="text-slate-400 text-sm">Active Devices</p>
-            <p className="text-3xl font-bold text-green-400 mt-2">{stats.activeDevices}</p>
+            <p className="text-muted-foreground text-sm font-medium">Active Devices</p>
+            <p className="text-3xl font-bold text-green-600 mt-2">{stats.activeDevices}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800 border-slate-700">
+        <Card>
           <CardContent className="p-6">
-            <p className="text-slate-400 text-sm">Inactive</p>
-            <p className="text-3xl font-bold text-gray-400 mt-2">{stats.inactiveDevices}</p>
+            <p className="text-muted-foreground text-sm font-medium">Inactive</p>
+            <p className="text-3xl font-bold text-muted-foreground mt-2">{stats.inactiveDevices}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800 border-slate-700">
+        <Card>
           <CardContent className="p-6">
-            <p className="text-slate-400 text-sm">Flagged</p>
-            <p className="text-3xl font-bold text-red-400 mt-2">{stats.flaggedDevices}</p>
+            <p className="text-muted-foreground text-sm font-medium">Flagged</p>
+            <p className="text-3xl font-bold text-destructive mt-2">{stats.flaggedDevices}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card className="bg-slate-800 border-slate-700">
+      <Card>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4">
-            <Input
-              placeholder="Search by employee name or ID"
-              value={searchEmployee}
-              onChange={(e) => setSearchEmployee(e.target.value)}
-              className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
-            />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-            >
-              <option value="lastUsed">Sort by: Last Used</option>
-              <option value="registered">Sort by: Registered</option>
-            </select>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="flagged">Flagged</option>
-            </select>
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by employee name or ID"
+                value={searchEmployee}
+                onChange={(e) => setSearchEmployee(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lastUsed">Sort by: Last Used</SelectItem>
+                <SelectItem value="registered">Sort by: Registered</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="flagged">Flagged</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
 
       {/* Devices Table */}
-      <Card className="bg-slate-800 border-slate-700 overflow-hidden">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">Registered Devices ({filteredDevices.length})</CardTitle>
+          <CardTitle>Registered Devices ({filteredDevices.length})</CardTitle>
+          <CardDescription>List of all devices currently registered for attendance</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-700 bg-slate-900">
-                  <th className="px-6 py-3 text-left text-slate-300 font-semibold">Employee</th>
-                  <th className="px-6 py-3 text-left text-slate-300 font-semibold">Device Name</th>
-                  <th className="px-6 py-3 text-left text-slate-300 font-semibold">Type</th>
-                  <th className="px-6 py-3 text-left text-slate-300 font-semibold">Registered</th>
-                  <th className="px-6 py-3 text-left text-slate-300 font-semibold">Last Used</th>
-                  <th className="px-6 py-3 text-left text-slate-300 font-semibold">IP Address</th>
-                  <th className="px-6 py-3 text-left text-slate-300 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDevices.map((device, idx) => (
-                  <tr key={idx} className="border-b border-slate-700 hover:bg-slate-700 transition-colors">
-                    <td className="px-6 py-4 text-white">{device.employeeName}</td>
-                    <td className="px-6 py-4 text-slate-300">{device.name}</td>
-                    <td className="px-6 py-4">
-                      <span className="text-slate-300">{device.type === "mobile" ? "📱 Mobile" : "💻 Desktop"}</span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-300">{device.registeredDate}</td>
-                    <td className="px-6 py-4 text-slate-300">{device.lastUsed}</td>
-                    <td className="px-6 py-4 text-slate-300 font-mono text-xs">{device.ipAddress}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(device.status)}`}
-                      >
-                        {device.status.charAt(0).toUpperCase() + device.status.slice(1)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Employee</TableHead>
+                <TableHead>Device Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Registered</TableHead>
+                <TableHead>Last Used</TableHead>
+                <TableHead>IP Address</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredDevices.map((device, idx) => (
+                <TableRow key={idx}>
+                  <TableCell className="font-medium">{device.employeeName}</TableCell>
+                  <TableCell className="text-muted-foreground">{device.name}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {device.type === "mobile" ? <Smartphone className="h-4 w-4" /> : <Laptop className="h-4 w-4" />}
+                      <span className="capitalize">{device.type}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{device.registeredDate}</TableCell>
+                  <TableCell>{device.lastUsed}</TableCell>
+                  <TableCell className="font-mono text-xs">{device.ipAddress}</TableCell>
+                  <TableCell>
+                    {getStatusBadge(device.status)}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredDevices.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No devices found matching criteria
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
       {/* Audit Log */}
-      <Card className="bg-slate-800 border-slate-700">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">Recent Device Audit Log</CardTitle>
+          <CardTitle>Recent Device Audit Log</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           {[
             {
               action: "Device Registered",
@@ -223,16 +239,26 @@ export default function DevicesPage() {
           ].map((log, idx) => (
             <div
               key={idx}
-              className="flex items-center justify-between p-3 bg-slate-700 rounded-lg border border-slate-600"
+              className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border"
             >
-              <div className="flex-1">
-                <p className="text-white font-semibold">{log.action}</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  {log.user} - {log.device}
-                </p>
+              <div className="flex items-start gap-4">
+                <div className={`p-2 rounded-full ${log.status === 'success' ? 'bg-green-100 text-green-600' :
+                    log.status === 'warning' ? 'bg-yellow-100 text-yellow-600' :
+                      'bg-blue-100 text-blue-600'
+                  }`}>
+                  {log.status === 'success' ? <CheckCircle className="h-4 w-4" /> :
+                    log.status === 'warning' ? <ShieldAlert className="h-4 w-4" /> :
+                      <Info className="h-4 w-4" />}
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">{log.action}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {log.user} • {log.device}
+                  </p>
+                </div>
               </div>
               <div className="text-right">
-                <p className="text-xs text-slate-400">{log.time}</p>
+                <p className="text-xs text-muted-foreground">{log.time}</p>
               </div>
             </div>
           ))}
