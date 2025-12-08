@@ -1,6 +1,14 @@
 // Data storage utility using localStorage
 // This can be replaced with a backend API later
 
+export interface BiometricCredential {
+  credentialId: string
+  publicKey: string
+  counter: number
+  registeredAt: string
+  deviceType: string
+}
+
 export interface Employee {
   id: string
   empId: string
@@ -10,6 +18,10 @@ export interface Employee {
   agency: string
   timestamp: string
   hash: string
+  fingerprintId?: string
+  fingerprintRegistered?: boolean
+  fingerprintTimestamp?: string
+  biometricCredential?: BiometricCredential
 }
 
 export interface AttendanceRecord {
@@ -60,6 +72,10 @@ export const employeeStorage = {
     return this.getAll().find((e) => e.empId === empId)
   },
 
+  getByCredentialId(credentialId: string): Employee | undefined {
+    return this.getAll().find((e) => e.biometricCredential?.credentialId === credentialId)
+  },
+
   delete(id: string): void {
     if (typeof window === "undefined") return
     const employees = this.getAll().filter((e) => e.id !== id)
@@ -107,7 +123,7 @@ export const attendanceStorage = {
   clockIn(employeeId: string, employeeName: string, department: string, agency?: string): AttendanceRecord {
     const today = new Date().toISOString().split("T")[0]
     const now = new Date().toISOString()
-    
+
     // Check if already clocked in today
     const existing = this.getTodayRecord(employeeId)
     if (existing && !existing.clockOutTime) {

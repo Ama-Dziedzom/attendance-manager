@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { QrCode, Scan, LayoutDashboard } from "lucide-react"
+import { QrCode, Scan, LayoutDashboard, Fingerprint } from "lucide-react"
 
 export default function Home() {
   return (
@@ -18,7 +18,7 @@ export default function Home() {
         </div>
 
         {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* QR Scanner */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
@@ -51,6 +51,24 @@ export default function Home() {
             <CardContent>
               <Link href="/generator">
                 <Button className="w-full">Open Generator</Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Fingerprint Registration */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <Fingerprint className="w-6 h-6 text-primary" />
+              </div>
+              <CardTitle>Register Fingerprints</CardTitle>
+              <CardDescription>
+                Register employee fingerprints for attendance
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/fingerprint">
+                <Button className="w-full">Open Registration</Button>
               </Link>
             </CardContent>
           </Card>
