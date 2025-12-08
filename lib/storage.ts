@@ -25,6 +25,7 @@ export interface Employee {
 }
 
 export interface AttendanceRecord {
+  employeeName: any
   id: string
   employeeId: string
   name: string

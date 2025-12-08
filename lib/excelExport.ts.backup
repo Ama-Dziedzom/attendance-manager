@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -25,7 +25,7 @@ export function ExportButtons({ records, employeeId, employeeName }: ExportButto
       const todayRecords = records || attendanceStorage.getByDate(today)
 
       // Transform records to match Excel format
-      const formattedRecords = todayRecords.map((record: any) => ({
+      const formattedRecords = todayRecords.map(record => ({
         employeeId: record.employeeId,
         name: record.employeeName,
         department: record.department || 'N/A',
@@ -54,14 +54,9 @@ export function ExportButtons({ records, employeeId, employeeName }: ExportButto
 
     setIsExporting(true)
     try {
-      // Get all records and filter by date range
-      const allRecords = attendanceStorage.getAll()
-      const rangeRecords = allRecords.filter((record: any) => {
-        const recordDate = new Date(record.clockInTime).toISOString().split('T')[0]
-        return recordDate >= startDate && recordDate <= endDate
-      })
+      const rangeRecords = attendanceStorage.getByDateRange(startDate, endDate)
 
-      const formattedRecords = rangeRecords.map((record: any) => ({
+      const formattedRecords = rangeRecords.map(record => ({
         employeeId: record.employeeId,
         name: record.employeeName,
         department: record.department || 'N/A',
@@ -92,7 +87,7 @@ export function ExportButtons({ records, employeeId, employeeName }: ExportButto
     try {
       const employeeRecords = attendanceStorage.getByEmployeeId(employeeId)
 
-      const formattedRecords = employeeRecords.map((record: any) => ({
+      const formattedRecords = employeeRecords.map(record => ({
         employeeId: record.employeeId,
         name: record.employeeName,
         department: record.department || 'N/A',
@@ -130,45 +125,49 @@ export function ExportButtons({ records, employeeId, employeeName }: ExportButto
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <Button
-        onClick={handleExportToday}
-        disabled={isExporting}
-        className="bg-green-600 hover:bg-green-700 text-white"
-      >
-        <FileSpreadsheet className="w-4 h-4 mr-2" />
-        Export Today
-      </Button>
-
-      <Button
-        onClick={handleExportDateRange}
-        disabled={isExporting}
-        variant="outline"
-        className="border-green-600 text-green-600 hover:bg-green-50"
-      >
-        <Calendar className="w-4 h-4 mr-2" />
-        Export Date Range
-      </Button>
-
-      {employeeId && employeeName && (
-        <Button
-          onClick={handleExportEmployee}
-          disabled={isExporting}
-          variant="outline"
-          className="border-blue-600 text-blue-600 hover:bg-blue-50"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Export {employeeName}
+    <div className= "flex flex-wrap gap-2" >
+    <Button
+        onClick={ handleExportToday }
+  disabled = { isExporting }
+  className = "bg-green-600 hover:bg-green-700 text-white"
+    >
+    <FileSpreadsheet className="w-4 h-4 mr-2" />
+      Export Today
         </Button>
-      )}
 
-      {isExporting && (
-        <span className="text-sm text-gray-500 flex items-center">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+        < Button
+  onClick = { handleExportDateRange }
+  disabled = { isExporting }
+  variant = "outline"
+  className = "border-green-600 text-green-600 hover:bg-green-50"
+    >
+    <Calendar className="w-4 h-4 mr-2" />
+      Export Date Range
+        </Button>
+
+  {
+    employeeId && employeeName && (
+      <Button
+          onClick={ handleExportEmployee }
+    disabled = { isExporting }
+    variant = "outline"
+    className = "border-blue-600 text-blue-600 hover:bg-blue-50"
+      >
+      <Download className="w-4 h-4 mr-2" />
+        Export { employeeName }
+    </Button>
+      )
+  }
+
+  {
+    isExporting && (
+      <span className="text-sm text-gray-500 flex items-center" >
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2" > </div>
           Exporting...
-        </span>
-      )}
-    </div>
+    </span>
+      )
+  }
+  </div>
   )
 }
 
@@ -177,58 +176,63 @@ export function ExportDropdownButton({ records }: ExportButtonsProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <div className="relative">
-      <Button
-        onClick={() => setIsOpen(!isOpen)}
-        className="bg-green-600 hover:bg-green-700 text-white"
-      >
-        <Download className="w-4 h-4 mr-2" />
-        Export to Excel
-      </Button>
+    <div className= "relative" >
+    <Button
+        onClick={ () => setIsOpen(!isOpen) }
+  className = "bg-green-600 hover:bg-green-700 text-white"
+    >
+    <Download className="w-4 h-4 mr-2" />
+      Export to Excel
+        </Button>
 
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-          <div className="py-1">
-            <button
-              onClick={() => {
-                // Export logic here
-                setIsOpen(false)
-              }}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            >
-              Export Today's Attendance
-            </button>
-            <button
-              onClick={() => {
-                // Export logic here
-                setIsOpen(false)
-              }}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            >
-              Export This Week
-            </button>
-            <button
-              onClick={() => {
-                // Export logic here
-                setIsOpen(false)
-              }}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            >
-              Export This Month
-            </button>
-            <button
-              onClick={() => {
-                // Export logic here
-                setIsOpen(false)
-              }}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            >
-              Export Custom Range
-            </button>
-          </div>
-        </div>
-      )}
+  {
+    isOpen && (
+      <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10" >
+        <div className="py-1" >
+          <button
+              onClick={
+      () => {
+        // Export logic here
+        setIsOpen(false)
+      }
+    }
+    className = "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+      >
+      Export Today's Attendance
+        </button>
+        < button
+    onClick = {() => {
+      // Export logic here
+      setIsOpen(false)
+    }
+  }
+  className = "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+    >
+    Export This Week
+      </button>
+      < button
+  onClick = {() => {
+    // Export logic here
+    setIsOpen(false)
+  }
+}
+className = "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+  >
+  Export This Month
+    </button>
+    < button
+onClick = {() => {
+  // Export logic here
+  setIsOpen(false)
+}}
+className = "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+  >
+  Export Custom Range
+    </button>
     </div>
+    </div>
+      )}
+</div>
   )
 }
 
@@ -261,16 +265,16 @@ const mapRecordsToExcel = (records: any[]) => {
 
 export const exportDailyAttendanceToExcel = (records: any[], date: string) => {
   const excelData = mapRecordsToExcel(records)
-  saveExcelFile(excelData, Attendance_Daily_.xlsx)
+  saveExcelFile(excelData, `Attendance_Daily_${date}.xlsx`)
 }
 
 export const exportDateRangeAttendanceToExcel = (records: any[], startDate: string, endDate: string) => {
   const excelData = mapRecordsToExcel(records)
-  saveExcelFile(excelData, Attendance_Range__to_.xlsx)
+  saveExcelFile(excelData, `Attendance_Range_${startDate}_to_${endDate}.xlsx`)
 }
 
 export const exportEmployeeAttendanceToExcel = (employeeId: string, employeeName: string, records: any[]) => {
   const excelData = mapRecordsToExcel(records)
   const safeName = employeeName.replace(/[^a-z0-9]/gi, '_').toLowerCase()
-  saveExcelFile(excelData, Attendance_.xlsx)
+  saveExcelFile(excelData, `Attendance_${safeName}.xlsx`)
 }
