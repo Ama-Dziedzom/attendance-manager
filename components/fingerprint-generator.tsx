@@ -11,12 +11,13 @@ import { employeeStorage, type Employee as StorageEmployee, type BiometricCreden
 
 // Agency list with codes
 const AGENCIES = [
-    { id: "head-office", name: "Head Office", code: "HO" },
-    { id: "branch-accra", name: "Accra Branch", code: "AC" },
-    { id: "branch-kumasi", name: "Kumasi Branch", code: "KU" },
-    { id: "branch-takoradi", name: "Takoradi Branch", code: "TA" },
-    { id: "branch-tema", name: "Tema Branch", code: "TE" },
-    { id: "remote", name: "Remote/WFH", code: "RE" }
+    { id: "ninani-group", name: "Ninani Group", code: "NG" },
+    { id: "rezultz", name: "Rezultz", code: "RZ" },
+    { id: "id", name: "ID", code: "ID" },
+    { id: "tpmc", name: "TPMC", code: "TP" },
+    { id: "innovaddb", name: "InnovaDDB", code: "IN" },
+    { id: "brandalert", name: "BrandAlert", code: "BA" },
+    { id: "p2p", name: "P2P", code: "P2" }
 ]
 
 export interface Employee {
