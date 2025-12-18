@@ -1,5 +1,11 @@
 "use client"
 
+/**
+ * Enrollment Success Display
+ * Shows employee details after successful fingerprint enrollment
+ * Confirms biometric registration and displays employee information
+ */
+
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Fingerprint, CheckCircle2, User, Building, Mail, Calendar, ShieldCheck } from "lucide-react"

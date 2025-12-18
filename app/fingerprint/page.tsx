@@ -1,5 +1,5 @@
-import { FingerprintGenerator } from "@/components/fingerprint-generator"
+import { EnrollmentFlow } from "@/components/enrollment-flow"
 
 export default function FingerprintPage() {
-    return <FingerprintGenerator />
+    return <EnrollmentFlow />
 }

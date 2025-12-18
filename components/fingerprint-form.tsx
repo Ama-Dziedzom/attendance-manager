@@ -1,5 +1,11 @@
 "use client"
 
+/**
+ * Employee Information Form
+ * Used during enrollment to collect basic employee details
+ * Part of the SLK20R enrollment workflow
+ */
+
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
