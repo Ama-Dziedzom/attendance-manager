@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Clock, AlertCircle, CheckCircle, Building, Fingerprint } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { employeeStorage, attendanceStorage } from "@/lib/storage"
+import { db } from "@/lib/supabase/db"
 import { verifyFingerprint, isPlatformAuthenticatorAvailable } from "@/lib/webauthn-helper"
+import { toast } from "sonner"
 
 interface ScanResult {
     employeeId: string
@@ -16,41 +17,34 @@ interface ScanResult {
     agency: string
 }
 
-interface DeviceFingerprint {
-    id: string
-    userAgent: string
-    screenResolution: string
-    timezone: string
-    language: string
-}
-
-interface Employee {
-    id: string
-    name: string
-    registeredDevices: DeviceFingerprint[]
-    lastScan?: ScanResult
-}
-
-// Agency list
-const AGENCIES = [
-    { id: "ninani-group", name: "Ninani Group" },
-    { id: "rezultz", name: "Rezultz" },
-    { id: "id", name: "ID" },
-    { id: "tpmc", name: "TPMC" },
-    { id: "innovaddb", name: "InnovaDDB" },
-    { id: "brandalert", name: "BrandAlert" },
-    { id: "p2p", name: "P2P" }
-]
-
 export function BiometricScanner() {
     const [scanState, setScanState] = useState<"agency-select" | "ready" | "scanning" | "success" | "error">("agency-select")
     const [selectedAgency, setSelectedAgency] = useState<string>("")
+    const [agencies, setAgencies] = useState<any[]>([])
     const [currentTime, setCurrentTime] = useState<string>("")
     const [clockInMode, setClockInMode] = useState(true)
     const [scanResult, setScanResult] = useState<ScanResult | null>(null)
     const [errorMessage, setErrorMessage] = useState("")
     const [isMounted, setIsMounted] = useState(false)
     const [isFingerprintAvailable, setIsFingerprintAvailable] = useState(false)
+    const [isLoadingAgencies, setIsLoadingAgencies] = useState(true)
+
+    // Load agencies from Supabase
+    useEffect(() => {
+        const loadAgencies = async () => {
+            try {
+                const data = await db.agencies.getAll()
+                setAgencies(data)
+            } catch (error) {
+                console.error("Error loading agencies:", error)
+                toast.error("Failed to load agencies")
+            } finally {
+                setIsLoadingAgencies(false)
+            }
+        }
+
+        loadAgencies()
+    }, [])
 
     // Set mounted state to avoid hydration mismatch
     useEffect(() => {
@@ -102,7 +96,7 @@ export function BiometricScanner() {
         setErrorMessage("")
     }
 
-    // Handle fingerprint verification
+    // Handle fingerprint verification with Supabase
     const handleFingerprintScan = async () => {
         setScanState("scanning")
         setErrorMessage("")
@@ -112,53 +106,67 @@ export function BiometricScanner() {
             const result = await verifyFingerprint()
             console.log("✅ Fingerprint verified:", result.credentialId)
 
-            // Find employee by credential ID
-            const employee = employeeStorage.getByCredentialId(result.credentialId)
+            // Find employee by credential ID from Supabase
+            const credential = await db.biometric.getByCredentialId(result.credentialId)
+
+            if (!credential) {
+                setScanState("error")
+                setErrorMessage("Fingerprint not registered. Please register your fingerprint first.")
+                toast.error("Fingerprint not registered")
+                setTimeout(() => resumeScanning(), 3000)
+                return
+            }
+
+            // Get employee details
+            const employee = await db.employees.getById(credential.employee_id)
 
             if (!employee) {
                 setScanState("error")
-                setErrorMessage("Fingerprint not registered. Please register your fingerprint first.")
+                setErrorMessage("Employee not found.")
+                toast.error("Employee not found")
                 setTimeout(() => resumeScanning(), 3000)
                 return
             }
 
             console.log("👤 Employee found:", employee.name)
 
-            // Process attendance
-            const agencyName = AGENCIES.find(a => a.id === selectedAgency)?.name || selectedAgency
-            let attendanceRecord
+            // Use database function to clock in/out
+            const agencyName = agencies.find(a => a.id === selectedAgency)?.name || selectedAgency
+            let attendanceResult
 
             if (clockInMode) {
-                console.log("⏰ Clocking IN with fingerprint at agency:", agencyName)
-                attendanceRecord = attendanceStorage.clockIn(
-                    employee.empId,
-                    employee.name,
-                    employee.department,
-                    agencyName
-                )
+                console.log("⏰ Clocking IN with fingerprint...")
+                attendanceResult = await db.attendance.clockIn(employee.emp_id, 'fingerprint')
             } else {
-                console.log("⏰ Clocking OUT with fingerprint from agency:", agencyName)
-                attendanceRecord = attendanceStorage.clockOut(employee.empId)
-
-                if (!attendanceRecord) {
-                    setScanState("error")
-                    setErrorMessage("No clock-in record found for today")
-                    setTimeout(() => resumeScanning(), 3000)
-                    return
-                }
+                console.log("⏰ Clocking OUT with fingerprint...")
+                attendanceResult = await db.attendance.clockOut(employee.emp_id)
             }
 
-            console.log("✅ Attendance record:", attendanceRecord)
+            console.log("✅ Attendance result:", attendanceResult)
+
+            // Check for errors from database function
+            if (!attendanceResult.success) {
+                setScanState("error")
+                setErrorMessage(attendanceResult.error || "Failed to record attendance")
+                toast.error(attendanceResult.error)
+                setTimeout(() => resumeScanning(), 3000)
+                return
+            }
+
+            // Update last used timestamp
+            await db.biometric.updateLastUsed(result.credentialId)
 
             // Success
             setScanState("success")
             setScanResult({
-                employeeId: employee.empId,
+                employeeId: employee.emp_id,
                 name: employee.name,
                 timestamp: new Date().toLocaleTimeString(),
                 type: clockInMode ? "in" : "out",
                 agency: agencyName
             })
+
+            toast.success(`${employee.name} clocked ${clockInMode ? 'in' : 'out'} successfully!`)
 
             console.log("🎉 SUCCESS! Clock", clockInMode ? "IN" : "OUT", "for", employee.name, "with fingerprint")
 
@@ -171,12 +179,25 @@ export function BiometricScanner() {
             console.error("❌ Fingerprint verification error:", error)
             setScanState("error")
             setErrorMessage(error.message || "Fingerprint verification failed. Please try again.")
+            toast.error("Fingerprint verification failed")
             setTimeout(() => resumeScanning(), 3000)
         }
     }
 
     const resetScanner = () => {
         resumeScanning()
+    }
+
+    // Show loading while agencies are being fetched
+    if (isLoadingAgencies) {
+        return (
+            <div className="w-full h-screen bg-background flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -233,7 +254,7 @@ export function BiometricScanner() {
                                         className="w-full h-14 px-4 pr-10 border-2 border-input rounded-lg bg-background text-foreground appearance-none cursor-pointer hover:border-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
                                     >
                                         <option value="" disabled>Choose your location...</option>
-                                        {AGENCIES.map((agency) => (
+                                        {agencies.map((agency) => (
                                             <option key={agency.id} value={agency.id}>
                                                 {agency.name}
                                             </option>
@@ -248,7 +269,7 @@ export function BiometricScanner() {
                                 {selectedAgency && (
                                     <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
                                         <Building className="w-4 h-4" />
-                                        Selected: {AGENCIES.find(a => a.id === selectedAgency)?.name}
+                                        Selected: {agencies.find(a => a.id === selectedAgency)?.name}
                                     </p>
                                 )}
                             </div>
@@ -283,7 +304,7 @@ export function BiometricScanner() {
                         <div className="mb-4 px-4 py-2 bg-primary/10 rounded-full flex items-center gap-2">
                             <Building className="w-4 h-4 text-primary" />
                             <span className="text-sm font-medium">
-                                {AGENCIES.find(a => a.id === selectedAgency)?.name || "Unknown Agency"}
+                                {agencies.find(a => a.id === selectedAgency)?.name || "Unknown Agency"}
                             </span>
                             <button
                                 onClick={backToAgencySelect}
@@ -369,7 +390,7 @@ export function BiometricScanner() {
                         <div className="mb-4 px-4 py-2 bg-primary/10 rounded-full flex items-center gap-2">
                             <Building className="w-4 h-4 text-primary" />
                             <span className="text-sm font-medium">
-                                {AGENCIES.find(a => a.id === selectedAgency)?.name || "Unknown Agency"}
+                                {agencies.find(a => a.id === selectedAgency)?.name || "Unknown Agency"}
                             </span>
                         </div>
 
@@ -411,11 +432,6 @@ export function BiometricScanner() {
                         </div>
                         <h2 className="text-2xl font-bold text-center">Clocked {scanResult.type === "in" ? "In" : "Out"}</h2>
                         <Card className="w-full p-4">
-                            <img
-                                src={scanResult.photo || "/placeholder.svg"}
-                                alt={scanResult.name}
-                                className="w-20 h-20 rounded-full mx-auto mb-3"
-                            />
                             <p className="text-center font-semibold text-lg">{scanResult.name}</p>
                             <p className="text-center text-sm text-muted-foreground">{scanResult.employeeId}</p>
                             <div className="flex items-center justify-center gap-2 mt-2">

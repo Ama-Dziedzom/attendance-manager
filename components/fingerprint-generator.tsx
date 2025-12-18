@@ -4,11 +4,21 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { FingerprintForm } from "./fingerprint-form"
 import { FingerprintDisplay } from "./fingerprint-display"
 import { FingerprintScanner } from "./fingerprint-scanner"
-import { employeeStorage, type Employee as StorageEmployee, type BiometricCredential } from "@/lib/storage"
+import { db } from "@/lib/supabase/db"
+import { mapDbEmployeeToEmployee, type Employee } from "@/lib/types"
+
+// BiometricCredential type for Windows Hello
+interface BiometricCredential {
+    credentialId: string
+    publicKey: string
+    counter: number
+    deviceType: string
+    registeredAt: string
+}
+
 import {
     Table,
     TableBody,
@@ -18,61 +28,37 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Upload, Fingerprint, Eye, Search, AlertCircle, CheckCircle2, UserPlus } from "lucide-react"
+import { Upload, Fingerprint, Eye, AlertCircle, CheckCircle2, UserPlus, Loader2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-
-// Agency list with codes
-const AGENCIES = [
-    { id: "ninani-group", name: "Ninani Group", code: "NG" },
-    { id: "rezultz", name: "Rezultz", code: "RZ" },
-    { id: "id", name: "ID", code: "ID" },
-    { id: "tpmc", name: "TPMC", code: "TP" },
-    { id: "innovaddb", name: "InnovaDDB", code: "IN" },
-    { id: "brandalert", name: "BrandAlert", code: "BA" },
-    { id: "p2p", name: "P2P", code: "P2" }
-]
-
-export interface Employee {
-    id: string
-    empId: string
-    name: string
-    department: string
-    email: string
-    agency: string
-    timestamp: string
-    hash: string
-    fingerprintId?: string
-    fingerprintRegistered?: boolean
-    fingerprintTimestamp?: string
-    biometricCredential?: BiometricCredential
-}
+import { toast } from "sonner"
 
 export function FingerprintGenerator() {
     const [employees, setEmployees] = useState<Employee[]>([])
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
     const [isScanning, setIsScanning] = useState(false)
-    const [pendingEmployee, setPendingEmployee] = useState<Employee | null>(null)
+    const [pendingEmployee, setPendingEmployee] = useState<any>(null)
     const [successMessage, setSuccessMessage] = useState("")
     const [errorMessage, setErrorMessage] = useState("")
+    const [isLoading, setIsLoading] = useState(true)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    // Load employees from storage on mount
+    // Load employees from Supabase on mount
     useEffect(() => {
-        const storedEmployees = employeeStorage.getAll()
-        if (storedEmployees.length > 0) {
-            setEmployees(storedEmployees as Employee[])
-        }
+        loadEmployees()
     }, [])
 
-    const generateHash = (empId: string, timestamp: string): string => {
-        const data = `${empId}:${timestamp}:SECURE_TOKEN`
-        let hash = 0
-        for (let i = 0; i < data.length; i++) {
-            const char = data.charCodeAt(i)
-            hash = (hash << 5) - hash + char
-            hash = hash & hash
+    const loadEmployees = async () => {
+        try {
+            setIsLoading(true)
+            const data = await db.employees.getAll()
+            const mapped = data.map(mapDbEmployeeToEmployee)
+            setEmployees(mapped)
+        } catch (error) {
+            console.error("Error loading employees:", error)
+            toast.error("Failed to load employees")
+        } finally {
+            setIsLoading(false)
         }
-        return Math.abs(hash).toString(16).slice(0, 16)
     }
 
     // Generate unique fingerprint ID
@@ -82,192 +68,107 @@ export function FingerprintGenerator() {
         return `FP-${empId}-${random}-${timestamp.toString(36).toUpperCase()}`
     }
 
-    // Generate unique employee ID based on agency
-    const generateEmployeeId = (agencyId: string): string => {
-        const agency = AGENCIES.find(a => a.id === agencyId)
-        const agencyCode = agency?.code || "XX"
-
-        // Get existing employee IDs for this agency
-        const existingIds = employees
-            .filter(e => e.empId.startsWith(agencyCode))
-            .map(e => {
-                const numPart = e.empId.substring(2)
-                return parseInt(numPart, 10)
-            })
-            .filter(num => !isNaN(num))
-
-        // Find next available number
-        let nextNumber = 1
-        while (existingIds.includes(nextNumber)) {
-            nextNumber++
-        }
-
-        // Format as 4-digit number with leading zeros
-        const numberPart = nextNumber.toString().padStart(4, '0')
-
-        return `${agencyCode}${numberPart}`
-    }
-
-    // Check if employee ID already exists
-    const isDuplicateEmployeeId = (empId: string): boolean => {
-        return employees.some(emp => emp.empId.toLowerCase() === empId.toLowerCase())
-    }
-
-    const handleAddEmployee = (formData: {
+    const handleAddEmployee = async (formData: {
         name: string
-        department: string
+        departmentId: string
         email: string
-        agency: string
+        agencyId: string
     }) => {
-        // Generate employee ID based on selected agency
-        const generatedEmpId = generateEmployeeId(formData.agency)
+        try {
+            // Generate unique employee ID
+            const agency = await db.agencies.getAll().then(agencies =>
+                agencies.find(a => a.id === formData.agencyId)
+            )
 
-        // Double-check for duplicates
-        if (isDuplicateEmployeeId(generatedEmpId)) {
-            setErrorMessage(`Error: Generated Employee ID "${generatedEmpId}" already exists. Please try again.`)
+            const agencyCode = agency?.name.substring(0, 3).toUpperCase() || 'EMP'
+            const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
+            const generatedEmpId = `${agencyCode}-${random}`
+
+            const timestamp = new Date().toISOString()
+            const fingerprintId = generateFingerprintId(generatedEmpId)
+
+            // Create employee in database first
+            const newEmployee = await db.employees.create({
+                emp_id: generatedEmpId,
+                name: formData.name,
+                email: formData.email || null,
+                department_id: formData.departmentId,
+                agency_id: formData.agencyId,
+                employee_type: 'full_time',
+                hire_date: new Date().toISOString().split('T')[0],
+                is_active: true,
+            })
+
+            // Start scanning animation with employee data
+            setPendingEmployee({
+                ...newEmployee,
+                fingerprintId,
+            })
+            setIsScanning(true)
+
+        } catch (error: any) {
+            console.error("Error creating employee:", error)
+            setErrorMessage(error.message || "Failed to create employee")
+            toast.error("Failed to create employee")
             setTimeout(() => setErrorMessage(""), 5000)
-            return
         }
-
-        const timestamp = new Date().toISOString()
-        const hash = generateHash(generatedEmpId, timestamp)
-        const fingerprintId = generateFingerprintId(generatedEmpId)
-        const agency = AGENCIES.find(a => a.id === formData.agency)
-
-        const newEmployee: Employee = {
-            id: `emp_${Date.now()}`,
-            empId: generatedEmpId,
-            name: formData.name,
-            department: formData.department,
-            email: formData.email,
-            agency: agency?.name || formData.agency,
-            timestamp,
-            hash,
-            fingerprintId,
-            fingerprintRegistered: true,
-            fingerprintTimestamp: timestamp,
-        }
-
-        // Start scanning animation
-        setPendingEmployee(newEmployee)
-        setIsScanning(true)
     }
 
-    const handleScanComplete = (credential: BiometricCredential) => {
+    const handleScanComplete = async (credential: BiometricCredential) => {
         if (!pendingEmployee) return
 
-        // Add biometric credential to employee
-        const employeeWithCredential: Employee = {
-            ...pendingEmployee,
-            biometricCredential: credential,
-            fingerprintRegistered: true,
-            fingerprintTimestamp: credential.registeredAt,
-        }
+        try {
+            // Save biometric credential to Supabase
+            await db.biometric.register({
+                employee_id: pendingEmployee.id,
+                credential_id: credential.credentialId,
+                fingerprint_id: pendingEmployee.fingerprintId,
+                public_key: credential.publicKey,
+                counter: credential.counter,
+                device_type: credential.deviceType,
+                is_active: true,
+            })
 
-        // Save to storage
-        employeeStorage.save(employeeWithCredential as StorageEmployee)
-
-        // Verify it was saved
-        const savedEmployee = employeeStorage.getByEmpId(employeeWithCredential.empId)
-        console.log("Employee saved:", employeeWithCredential)
-        console.log("Employee retrieved from storage:", savedEmployee)
-
-        if (!savedEmployee) {
-            console.error("ERROR: Employee was not saved to storage!")
-            setErrorMessage(`Warning: Employee may not have been saved correctly`)
-            setTimeout(() => setErrorMessage(""), 5000)
-        } else {
-            setSuccessMessage(`Fingerprint registered successfully for ${employeeWithCredential.name} (ID: ${employeeWithCredential.empId})`)
+            setSuccessMessage(
+                `Fingerprint registered successfully for ${pendingEmployee.name} (ID: ${pendingEmployee.emp_id})`
+            )
+            toast.success("Fingerprint registered successfully!")
             setTimeout(() => setSuccessMessage(""), 5000)
-        }
 
-        setEmployees([employeeWithCredential, ...employees])
-        setSelectedEmployee(employeeWithCredential)
-        setIsScanning(false)
-        setPendingEmployee(null)
+            // Reload employees to get updated biometric status
+            await loadEmployees()
+
+            setIsScanning(false)
+            setPendingEmployee(null)
+
+        } catch (error: any) {
+            console.error("Error saving biometric credential:", error)
+            setErrorMessage(error.message || "Failed to save biometric credential")
+            toast.error("Failed to save fingerprint")
+            setTimeout(() => setErrorMessage(""), 5000)
+
+            setIsScanning(false)
+            setPendingEmployee(null)
+        }
     }
 
     const handleScanError = (error: string) => {
         setErrorMessage(error)
+        toast.error(error)
         setTimeout(() => setErrorMessage(""), 5000)
         setIsScanning(false)
         setPendingEmployee(null)
     }
 
-    const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0]
-        if (!file) return
-
-        const reader = new FileReader()
-        reader.onload = (e) => {
-            const text = e.target?.result as string
-            const lines = text.split("\n").slice(1)
-            const newEmployees: Employee[] = []
-            const errors: string[] = []
-
-            lines.forEach((line, index) => {
-                if (!line.trim()) return
-
-                // CSV format: name,department,email,agencyId
-                const [name, department, email, agencyId] = line.split(",").map((s) => s.trim())
-
-                if (name && agencyId) {
-                    // Validate agency exists
-                    const agency = AGENCIES.find(a => a.id === agencyId || a.name === agencyId)
-
-                    if (!agency) {
-                        errors.push(`Line ${index + 2}: Invalid agency "${agencyId}"`)
-                        return
-                    }
-
-                    // Generate employee ID
-                    const generatedEmpId = generateEmployeeId(agency.id)
-
-                    const timestamp = new Date().toISOString()
-                    const hash = generateHash(generatedEmpId, timestamp)
-                    const fingerprintId = generateFingerprintId(generatedEmpId)
-
-                    newEmployees.push({
-                        id: `emp_${Date.now()}_${Math.random()}`,
-                        empId: generatedEmpId,
-                        name,
-                        department: department || "",
-                        email: email || "",
-                        agency: agency.name,
-                        timestamp,
-                        hash,
-                        fingerprintId,
-                        fingerprintRegistered: true,
-                        fingerprintTimestamp: timestamp,
-                    })
-                } else {
-                    errors.push(`Line ${index + 2}: Missing name or agency`)
-                }
-            })
-
-            if (errors.length > 0) {
-                setErrorMessage(`CSV Upload Errors:\n${errors.join('\n')}`)
-                setTimeout(() => setErrorMessage(""), 8000)
-            }
-
-            if (newEmployees.length > 0) {
-                // Save all to storage
-                const allEmployeesToSave = [...newEmployees, ...employees] as StorageEmployee[]
-                employeeStorage.saveAll(allEmployeesToSave)
-
-                // Verify employees were saved
-                console.log(`Saved ${allEmployeesToSave.length} employees to storage`)
-                const savedCount = employeeStorage.getAll().length
-                console.log(`Verified: ${savedCount} employees in storage`)
-
-                setEmployees([...newEmployees, ...employees])
-                setSuccessMessage(`${newEmployees.length} fingerprints registered successfully${errors.length > 0 ? ` (${errors.length} errors)` : ''}`)
-                setTimeout(() => setSuccessMessage(""), 5000)
-            }
-        }
-
-        reader.readAsText(file)
-        if (fileInputRef.current) fileInputRef.current.value = ""
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                    <p className="text-muted-foreground">Loading employees...</p>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -323,34 +224,8 @@ export function FingerprintGenerator() {
                             <CardContent>
                                 <FingerprintForm
                                     onSubmit={handleAddEmployee}
-                                    agencies={AGENCIES}
                                     isScanning={isScanning}
                                 />
-
-                                <div className="mt-6 pt-6 border-t border-border">
-                                    <h3 className="text-sm font-semibold text-foreground mb-3">Bulk Upload</h3>
-                                    <input type="file" ref={fileInputRef} onChange={handleCSVUpload} accept=".csv" className="hidden" />
-                                    <Button
-                                        onClick={() => fileInputRef.current?.click()}
-                                        variant="outline"
-                                        className="w-full"
-                                        disabled={isScanning}
-                                    >
-                                        <Upload className="w-4 h-4 mr-2" />
-                                        Upload CSV
-                                    </Button>
-                                    <p className="text-xs text-muted-foreground mt-2">
-                                        CSV format: name,department,email,agencyId
-                                    </p>
-                                    <div className="mt-2 p-2 bg-muted rounded text-xs text-muted-foreground">
-                                        <p className="font-semibold mb-1 text-foreground">Valid Agency IDs:</p>
-                                        <ul className="space-y-0.5 max-h-32 overflow-y-auto">
-                                            {AGENCIES.map(a => (
-                                                <li key={a.id}>• {a.id} ({a.code}) - {a.name}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -359,9 +234,9 @@ export function FingerprintGenerator() {
                     <div className="lg:col-span-2">
                         {isScanning && pendingEmployee ? (
                             <FingerprintScanner
-                                employeeId={pendingEmployee.empId}
+                                employeeId={pendingEmployee.emp_id}
                                 employeeName={pendingEmployee.name}
-                                employeeEmail={pendingEmployee.email}
+                                employeeEmail={pendingEmployee.email || ''}
                                 onScanComplete={handleScanComplete}
                                 onError={handleScanError}
                             />
@@ -374,9 +249,9 @@ export function FingerprintGenerator() {
                                         <Fingerprint className="w-12 h-12 text-primary" />
                                     </div>
                                     <h3 className="text-xl font-semibold text-foreground mb-2">Fingerprint Registration Manager</h3>
-                                    <p className="text-muted-foreground max-w-sm mb-4">Add an employee or upload a CSV to register fingerprints. Select an employee from the list to view details.</p>
+                                    <p className="text-muted-foreground max-w-sm mb-4">Add an employee to register their fingerprint. Select an employee from the list to view details.</p>
                                     <p className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                                        Employee IDs auto-generated based on agency
+                                        All data saved to cloud database
                                     </p>
                                 </CardContent>
                             </Card>
@@ -389,9 +264,14 @@ export function FingerprintGenerator() {
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-bold text-foreground">Registered Employees</h2>
-                            <Badge variant="secondary" className="text-sm">
-                                Total: {employees.length}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-sm">
+                                    Total: {employees.length}
+                                </Badge>
+                                <Badge variant="outline" className="text-sm bg-green-50 text-green-700 border-green-300">
+                                    With Biometric: {employees.filter(e => e.biometricRegistered).length}
+                                </Badge>
+                            </div>
                         </div>
 
                         <Card>
@@ -401,23 +281,34 @@ export function FingerprintGenerator() {
                                         <TableHead>Employee ID</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Agency</TableHead>
-                                        <TableHead>Fingerprint ID</TableHead>
+                                        <TableHead>Department</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead className="text-right">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {employees.map((emp) => (
-                                        <TableRow key={emp.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedEmployee(emp)}>
+                                        <TableRow
+                                            key={emp.id}
+                                            className="cursor-pointer hover:bg-muted/50"
+                                            onClick={() => setSelectedEmployee(emp)}
+                                        >
                                             <TableCell className="font-medium">{emp.empId}</TableCell>
                                             <TableCell>{emp.name}</TableCell>
-                                            <TableCell className="text-muted-foreground">{emp.agency}</TableCell>
-                                            <TableCell className="font-mono text-sm text-primary">{emp.fingerprintId}</TableCell>
+                                            <TableCell className="text-muted-foreground">{emp.agency || '—'}</TableCell>
+                                            <TableCell className="text-muted-foreground">{emp.department || '—'}</TableCell>
                                             <TableCell>
-                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
-                                                    <CheckCircle2 className="w-3 h-3" />
-                                                    Registered
-                                                </Badge>
+                                                {emp.biometricRegistered ? (
+                                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
+                                                        <CheckCircle2 className="w-3 h-3" />
+                                                        Registered
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-300 gap-1">
+                                                        <AlertCircle className="w-3 h-3" />
+                                                        Pending
+                                                    </Badge>
+                                                )}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Button
@@ -438,6 +329,19 @@ export function FingerprintGenerator() {
                             </Table>
                         </Card>
                     </div>
+                )}
+
+                {/* Empty State */}
+                {employees.length === 0 && !isLoading && (
+                    <Card className="p-12">
+                        <div className="text-center">
+                            <Fingerprint className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                            <h3 className="text-lg font-semibold text-foreground mb-2">No Employees Yet</h3>
+                            <p className="text-muted-foreground mb-4">
+                                Register your first employee using the form above.
+                            </p>
+                        </div>
+                    </Card>
                 )}
             </div>
         </div>

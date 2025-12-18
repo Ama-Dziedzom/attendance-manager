@@ -1,72 +1,152 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { attendanceStorage } from "@/lib/storage"
+import { db } from "@/lib/supabase/db"
+import { formatStatus, getStatusColor } from "@/lib/types"
 import { useEffect, useState } from "react"
+import { RealtimeChannel } from "@supabase/supabase-js"
+
+interface AttendanceRecord {
+  id: string
+  employee_id: string
+  date: string
+  clock_in_time: string
+  clock_out_time: string | null
+  status: string
+  employee?: {
+    name: string
+    emp_id: string
+    department?: { name: string }
+  }
+}
 
 interface AttendanceFeedProps {
-  date: string
+  date?: string
 }
 
 export function AttendanceFeed({ date }: AttendanceFeedProps) {
-  const [todayData, setTodayData] = useState(
-    attendanceStorage
-      .getByDate(date)
-      .slice(0, 10)
-      .sort((a, b) => new Date(b.clockInTime).getTime() - new Date(a.clockInTime).getTime())
-  )
+  const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const loadData = () => {
-      const data = attendanceStorage
-        .getByDate(date)
-        .slice(0, 10)
-        .sort((a, b) => new Date(b.clockInTime).getTime() - new Date(a.clockInTime).getTime())
-      setTodayData(data)
+    let subscription: RealtimeChannel | null = null
+
+    const loadData = async () => {
+      try {
+        setIsLoading(true)
+        // Get today's attendance if no date provided
+        const records = date
+          ? await db.attendance.getRecords(date, date)
+          : await db.attendance.getToday()
+
+        // Sort by clock in time (most recent first) and take top 10
+        const sorted = records
+          .sort((a, b) => new Date(b.clock_in_time).getTime() - new Date(a.clock_in_time).getTime())
+          .slice(0, 10)
+
+        setAttendanceData(sorted)
+      } catch (error) {
+        console.error("Error loading attendance:", error)
+      } finally {
+        setIsLoading(false)
+      }
     }
+
+    // Load initial data
     loadData()
-    const interval = setInterval(loadData, 5000)
-    return () => clearInterval(interval)
+
+    // Subscribe to real-time updates
+    subscription = db.attendance.subscribeToUpdates((payload) => {
+      console.log("📡 Real-time attendance update:", payload)
+
+      if (payload.eventType === 'INSERT') {
+        // Add new record to the top
+        setAttendanceData((prev) => {
+          const newData = [payload.new as AttendanceRecord, ...prev].slice(0, 10)
+          return newData
+        })
+      } else if (payload.eventType === 'UPDATE') {
+        // Update existing record
+        setAttendanceData((prev) =>
+          prev.map((record) =>
+            record.id === payload.new.id ? (payload.new as AttendanceRecord) : record
+          )
+        )
+      }
+    })
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe()
+      }
+    }
   }, [date])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "On Time":
-        return "bg-green-50 text-green-600 border-green-600"
-      case "Late":
-        return "bg-yellow-50 text-yellow-600 border-yellow-600"
-      case "Absent":
-        return "bg-red-50 text-red-600 border-red-600"
-      default:
-        return "bg-slate-800 text-slate-400 border-slate-700"
-    }
+  if (isLoading) {
+    return (
+      <Card className="bg-white border-blue-100">
+        <CardHeader>
+          <CardTitle className="text-gray-600">Real-time Attendance Feed</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
     <Card className="bg-white border-blue-100">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-gray-600">Real-time Attendance Feed</CardTitle>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-xs text-muted-foreground">Live</span>
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {todayData.map((record, idx) => (
-            <div
-              key={idx}
-              className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100 hover:border-blue-500 transition-colors"
-            >
-              <div className="flex-1">
-                <p className="font-semibold text-gray-600">{record.name}</p>
-                <p className="text-xs text-gray-400">ID: {record.employeeId}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Clocked in at {new Date(record.clockInTime).toLocaleTimeString()}
-                </p>
+        {attendanceData.length === 0 ? (
+          <div className="text-center p-8 text-muted-foreground">
+            <p>No attendance records for today yet.</p>
+            <p className="text-xs mt-2">Waiting for clock-ins...</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {attendanceData.map((record) => (
+              <div
+                key={record.id}
+                className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100 hover:border-blue-500 transition-colors"
+              >
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-600">
+                    {record.employee?.name || 'Unknown Employee'}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    ID: {record.employee?.emp_id || 'N/A'}
+                  </p>
+                  {record.employee?.department && (
+                    <p className="text-xs text-gray-500">
+                      {record.employee.department.name}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Clocked in at {new Date(record.clock_in_time).toLocaleTimeString()}
+                    {record.clock_out_time && (
+                      <span className="ml-2">
+                        • Out at {new Date(record.clock_out_time).toLocaleTimeString()}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className={`px-3 py-1 rounded-full border text-sm font-medium ${getStatusColor(record.status)}`}>
+                  {formatStatus(record.status)}
+                </div>
               </div>
-              <div className={`px-3 py-1 rounded-full border text-sm font-medium ${getStatusColor(record.status)}`}>
-                {record.status}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   )

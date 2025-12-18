@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import { attendanceStorage } from "@/lib/storage"
+// import { attendanceStorage } from "@/lib/storage" // TODO: Replace with Supabase
 import * as XLSX from 'xlsx'
 import { FileSpreadsheet, FileText, AlertTriangle, Save, Trash2, Clock, ShieldCheck, Mail, Calendar as CalendarIcon } from "lucide-react"
 
@@ -46,7 +46,8 @@ export default function SettingsPage() {
   }
 
   const exportToCSV = () => {
-    const allRecords = attendanceStorage.getAll()
+    // const allRecords = attendanceStorage.getAll()
+    const allRecords: any[] = [] // TODO: Replace with Supabase
     const filtered = allRecords.filter(
       (record) => record.date >= dateRange.start && record.date <= dateRange.end,
     )
@@ -76,7 +77,8 @@ export default function SettingsPage() {
 
   const exportToExcel = () => {
     try {
-      const allRecords = attendanceStorage.getAll()
+      // const allRecords = attendanceStorage.getAll()
+      const allRecords: any[] = [] // TODO: Replace with Supabase
       const filtered = allRecords.filter(
         (record) => record.date >= dateRange.start && record.date <= dateRange.end,
       )

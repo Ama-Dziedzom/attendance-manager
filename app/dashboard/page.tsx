@@ -3,16 +3,16 @@
 import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AttendanceFeed } from "@/components/attendance-feed"
-import { attendanceStorage, type AttendanceRecord } from "@/lib/storage"
+import { db } from "@/lib/supabase/db"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { 
-  CalendarIcon, 
-  Users, 
-  UserCheck, 
-  UserX, 
-  Clock, 
+import {
+  CalendarIcon,
+  Users,
+  UserCheck,
+  UserX,
+  Clock,
   TrendingUp,
   ArrowUpDown,
   ArrowUp,
@@ -29,6 +29,21 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 
+interface AttendanceRecord {
+  id: string
+  employee_id: string
+  date: string
+  clock_in_time: string
+  clock_out_time: string | null
+  total_hours: number | null
+  status: string
+  employee?: {
+    name: string
+    emp_id: string
+    department?: { name: string }
+  }
+}
+
 type SortKey = "name" | "clockInTime" | "status" | "totalHours"
 type SortOrder = "asc" | "desc"
 
@@ -38,6 +53,7 @@ export default function DashboardPage() {
   const [sortKey, setSortKey] = useState<SortKey>("clockInTime")
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   // Update date string when selectedDate changes
   useEffect(() => {
@@ -45,27 +61,46 @@ export default function DashboardPage() {
     setDate(dateString)
   }, [selectedDate])
 
-  // Load attendance data from storage
+  // Load attendance data from Supabase
   useEffect(() => {
-    const loadData = () => {
-      const data = attendanceStorage.getByDate(date)
-      setAttendanceData(data)
+    const loadData = async () => {
+      try {
+        setIsLoading(true)
+        const data = await db.attendance.getRecords(date, date)
+        setAttendanceData(data as any[])
+      } catch (error) {
+        console.error("Error loading attendance:", error)
+      } finally {
+        setIsLoading(false)
+      }
     }
+
     loadData()
-    const interval = setInterval(loadData, 5000)
+
+    // Refresh every 30 seconds
+    const interval = setInterval(loadData, 30000)
     return () => clearInterval(interval)
   }, [date])
 
   const todayData = useMemo(() => {
     const filtered = attendanceData.filter((record) => record.date === date)
-    
-    filtered.sort((a, b) => {
-      let aVal: any = a[sortKey]
-      let bVal: any = b[sortKey]
 
-      if (sortKey === "clockInTime") {
-        aVal = new Date(a.clockInTime).getTime()
-        bVal = new Date(b.clockInTime).getTime()
+    filtered.sort((a, b) => {
+      let aVal: any
+      let bVal: any
+
+      if (sortKey === "name") {
+        aVal = a.employee?.name || ''
+        bVal = b.employee?.name || ''
+      } else if (sortKey === "clockInTime") {
+        aVal = new Date(a.clock_in_time).getTime()
+        bVal = new Date(b.clock_in_time).getTime()
+      } else if (sortKey === "totalHours") {
+        aVal = a.total_hours || 0
+        bVal = b.total_hours || 0
+      } else if (sortKey === "status") {
+        aVal = a.status
+        bVal = b.status
       }
 
       if (aVal < bVal) return sortOrder === "asc" ? -1 : 1
@@ -79,11 +114,11 @@ export default function DashboardPage() {
   // Calculate metrics
   const metrics = useMemo(() => {
     const total = todayData.length
-    const present = todayData.filter(r => r.clockInTime).length
-    const onTime = todayData.filter(r => r.status === "On Time").length
-    const late = todayData.filter(r => r.status === "Late").length
-    const avgHours = total > 0 
-      ? todayData.reduce((sum, r) => sum + r.totalHours, 0) / total 
+    const present = todayData.filter(r => r.clock_in_time).length
+    const onTime = todayData.filter(r => r.status === "on_time").length
+    const late = todayData.filter(r => r.status === "late").length
+    const avgHours = total > 0
+      ? todayData.reduce((sum, r) => sum + (r.total_hours || 0), 0) / total
       : 0
 
     return { total, present, onTime, late, avgHours }
@@ -100,12 +135,16 @@ export default function DashboardPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "On Time":
+      case "on_time":
         return <Badge variant="default" className="bg-green-500">On Time</Badge>
-      case "Late":
+      case "late":
         return <Badge variant="default" className="bg-yellow-500">Late</Badge>
-      case "Early Departure":
+      case "early_departure":
         return <Badge variant="default" className="bg-blue-500">Early</Badge>
+      case "half_day":
+        return <Badge variant="default" className="bg-purple-500">Half Day</Badge>
+      case "absent":
+        return <Badge variant="destructive">Absent</Badge>
       default:
         return <Badge variant="secondary">{status}</Badge>
     }
@@ -126,7 +165,7 @@ export default function DashboardPage() {
             Attendance Overview for {format(selectedDate, "MMMM dd, yyyy")}
           </p>
         </div>
-        
+
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -206,8 +245,8 @@ export default function DashboardPage() {
       {/* Real-time Feed */}
       <AttendanceFeed date={date} />
 
-     {/* Attendance Table */}
-     <Card className="bg-white border-blue-100">
+      {/* Attendance Table */}
+      <Card className="bg-white border-blue-100">
         <CardHeader>
           <CardTitle className="text-gray-600">Attendance Records</CardTitle>
           <CardDescription>
@@ -274,24 +313,24 @@ export default function DashboardPage() {
                 ) : (
                   todayData.map((record, idx) => (
                     <TableRow key={idx} className="hover:bg-blue-50 h-16">
-                      <TableCell className="font-medium text-gray-700 py-4">{record.name}</TableCell>
-                      <TableCell className="text-gray-700 py-4">{record.employeeId}</TableCell>
-                      <TableCell className="text-gray-700 py-4">{record.department}</TableCell>
+                      <TableCell className="font-medium text-gray-700 py-4">{record.employee?.name || 'Unknown'}</TableCell>
+                      <TableCell className="text-gray-700 py-4">{record.employee?.emp_id || 'N/A'}</TableCell>
+                      <TableCell className="text-gray-700 py-4">{record.employee?.department?.name || '-'}</TableCell>
                       <TableCell className="text-gray-700 py-4">
-                        {new Date(record.clockInTime).toLocaleTimeString([], {
+                        {new Date(record.clock_in_time).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </TableCell>
                       <TableCell className="text-gray-700 py-4">
-                        {record.clockOutTime
-                          ? new Date(record.clockOutTime).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                        {record.clock_out_time
+                          ? new Date(record.clock_out_time).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
                           : "-"}
                       </TableCell>
-                      <TableCell className="text-gray-700 py-4">{record.totalHours.toFixed(2)}h</TableCell>
+                      <TableCell className="text-gray-700 py-4">{(record.total_hours || 0).toFixed(2)}h</TableCell>
                       <TableCell className="py-4">{getStatusBadge(record.status)}</TableCell>
                     </TableRow>
                   ))

@@ -2,52 +2,85 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { attendanceStorage, employeeStorage } from "@/lib/storage"
+import { db } from "@/lib/supabase/db"
 
 interface MetricsProps {
-  date: string
+  date?: string
 }
 
 export function DashboardMetrics({ date }: MetricsProps) {
   const [metrics, setMetrics] = useState({
+    totalEmployees: 0,
     clockedIn: 0,
-    absent: 0,
+    onTime: 0,
     late: 0,
-    earlyDeparture: 0,
+    absent: 0,
   })
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const loadMetrics = () => {
-      const todayData = attendanceStorage.getByDate(date)
-      const totalEmployees = employeeStorage.getAll().length
+    const loadMetrics = async () => {
+      try {
+        setIsLoading(true)
 
-      setMetrics({
-        clockedIn: todayData.filter((r) => r.clockInTime).length,
-        absent: Math.max(0, totalEmployees - todayData.length),
-        late: todayData.filter((r) => r.status === "Late").length,
-        earlyDeparture: todayData.filter((r) => r.status === "Early Departure").length,
-      })
+        // Get today's date if not provided
+        const targetDate = date || new Date().toISOString().split('T')[0]
+
+        // Get all active employees
+        const employees = await db.employees.getAll()
+        const totalEmployees = employees.length
+
+        // Get today's attendance records
+        const attendanceRecords = await db.attendance.getRecords(targetDate, targetDate)
+
+        // Calculate metrics
+        const clockedIn = attendanceRecords.length
+        const onTime = attendanceRecords.filter(r => r.status === 'on_time').length
+        const late = attendanceRecords.filter(r => r.status === 'late').length
+        const absent = Math.max(0, totalEmployees - clockedIn)
+
+        setMetrics({
+          totalEmployees,
+          clockedIn,
+          onTime,
+          late,
+          absent,
+        })
+      } catch (error) {
+        console.error("Error loading metrics:", error)
+      } finally {
+        setIsLoading(false)
+      }
     }
-    
+
     loadMetrics()
-    const interval = setInterval(loadMetrics, 5000)
+
+    // Refresh metrics every 30 seconds
+    const interval = setInterval(loadMetrics, 30000)
     return () => clearInterval(interval)
   }, [date])
 
   const metricCards = [
     {
-      label: "Total Clocked In",
+      label: "Total Employees",
+      value: metrics.totalEmployees,
+      icon: "👥",
+      color: "bg-slate-950 border-slate-800",
+      textColor: "text-slate-400",
+    },
+    {
+      label: "Present Today",
       value: metrics.clockedIn,
       icon: "✓",
       color: "bg-green-950 border-green-800",
       textColor: "text-green-400",
     },
     {
-      label: "Absences",
-      value: metrics.absent,
-      icon: "✗",
-      color: "bg-red-950 border-red-800",
-      textColor: "text-red-400",
+      label: "On Time",
+      value: metrics.onTime,
+      icon: "⭐",
+      color: "bg-blue-950 border-blue-800",
+      textColor: "text-blue-400",
     },
     {
       label: "Late Arrivals",
@@ -56,14 +89,24 @@ export function DashboardMetrics({ date }: MetricsProps) {
       color: "bg-yellow-950 border-yellow-800",
       textColor: "text-yellow-400",
     },
-    {
-      label: "Early Departures",
-      value: metrics.earlyDeparture,
-      icon: "→",
-      color: "bg-blue-950 border-blue-800",
-      textColor: "text-blue-400",
-    },
   ]
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="bg-slate-950 border-slate-800 border">
+            <CardContent className="p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-slate-800 rounded w-24 mb-4"></div>
+                <div className="h-8 bg-slate-800 rounded w-16"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

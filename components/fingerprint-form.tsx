@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,31 +13,52 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import { Info } from "lucide-react"
-
-interface Agency {
-    id: string
-    name: string
-    code: string
-}
+import { db } from "@/lib/supabase/db"
 
 interface FingerprintFormProps {
     onSubmit: (data: {
         name: string
-        department: string
+        departmentId: string
         email: string
-        agency: string
+        agencyId: string
     }) => void
-    agencies: Agency[]
     isScanning?: boolean
 }
 
-export function FingerprintForm({ onSubmit, agencies, isScanning = false }: FingerprintFormProps) {
+export function FingerprintForm({ onSubmit, isScanning = false }: FingerprintFormProps) {
     const [formData, setFormData] = useState({
         name: "",
-        department: "",
+        departmentId: "",
         email: "",
-        agency: "",
+        agencyId: "",
     })
+
+    const [agencies, setAgencies] = useState<any[]>([])
+    const [departments, setDepartments] = useState<any[]>([])
+    const [isLoadingData, setIsLoadingData] = useState(true)
+
+    // Load agencies and departments from Supabase
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                setIsLoadingData(true)
+                const [agenciesData, deptData] = await Promise.all([
+                    db.agencies.getAll(),
+                    db.departments.getAll(),
+                ])
+
+                setAgencies(agenciesData)
+                setDepartments(deptData)
+            } catch (error) {
+                console.error("Error loading data:", error)
+                toast.error("Failed to load form data")
+            } finally {
+                setIsLoadingData(false)
+            }
+        }
+
+        loadData()
+    }, [])
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
@@ -48,8 +69,13 @@ export function FingerprintForm({ onSubmit, agencies, isScanning = false }: Fing
             return
         }
 
-        if (!formData.agency) {
+        if (!formData.agencyId) {
             toast.error("Please select an agency")
+            return
+        }
+
+        if (!formData.departmentId) {
+            toast.error("Please select a department")
             return
         }
 
@@ -58,10 +84,18 @@ export function FingerprintForm({ onSubmit, agencies, isScanning = false }: Fing
         // Reset form
         setFormData({
             name: "",
-            department: "",
+            departmentId: "",
             email: "",
-            agency: "",
+            agencyId: "",
         })
+    }
+
+    if (isLoadingData) {
+        return (
+            <div className="flex items-center justify-center p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        )
     }
 
     return (
@@ -88,8 +122,8 @@ export function FingerprintForm({ onSubmit, agencies, isScanning = false }: Fing
                 </Label>
                 <div className="mt-1">
                     <Select
-                        value={formData.agency}
-                        onValueChange={(value) => setFormData({ ...formData, agency: value })}
+                        value={formData.agencyId}
+                        onValueChange={(value) => setFormData({ ...formData, agencyId: value })}
                         disabled={isScanning}
                     >
                         <SelectTrigger id="agency" className="w-full">
@@ -98,32 +132,42 @@ export function FingerprintForm({ onSubmit, agencies, isScanning = false }: Fing
                         <SelectContent>
                             {agencies.map((agency) => (
                                 <SelectItem key={agency.id} value={agency.id}>
-                                    {agency.name} ({agency.code})
+                                    {agency.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                 </div>
-                {formData.agency && (
+                {formData.agencyId && (
                     <p className="text-xs text-muted-foreground mt-1">
-                        Employee ID will start with: <span className="font-semibold">{agencies.find(a => a.id === formData.agency)?.code}</span>
+                        Selected: <span className="font-semibold">{agencies.find(a => a.id === formData.agencyId)?.name}</span>
                     </p>
                 )}
             </div>
 
+            {/* Department Dropdown */}
             <div>
                 <Label htmlFor="department">
-                    Department
+                    Department <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                    id="department"
-                    type="text"
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    placeholder="Engineering"
-                    className="mt-1"
-                    disabled={isScanning}
-                />
+                <div className="mt-1">
+                    <Select
+                        value={formData.departmentId}
+                        onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
+                        disabled={isScanning}
+                    >
+                        <SelectTrigger id="department" className="w-full">
+                            <SelectValue placeholder="Select department..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {departments.map((dept) => (
+                                <SelectItem key={dept.id} value={dept.id}>
+                                    {dept.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             <div>
@@ -153,7 +197,7 @@ export function FingerprintForm({ onSubmit, agencies, isScanning = false }: Fing
             <div className="p-3 bg-muted border rounded-md flex gap-2 items-start">
                 <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                    <span className="font-semibold text-foreground">Note:</span> Employee ID will be automatically generated based on the selected agency (e.g., HO0001, AC0001).
+                    <span className="font-semibold text-foreground">Note:</span> Employee ID will be automatically generated based on the selected agency.
                 </p>
             </div>
         </form>

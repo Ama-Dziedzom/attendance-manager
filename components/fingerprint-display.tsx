@@ -2,21 +2,8 @@
 
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import type { BiometricCredential } from "@/lib/storage"
 import { Fingerprint, CheckCircle2, User, Building, Mail, Calendar, ShieldCheck } from "lucide-react"
-
-interface Employee {
-    id: string
-    empId: string
-    name: string
-    department: string
-    email: string
-    agency: string
-    timestamp: string
-    fingerprintId?: string
-    fingerprintRegistered?: boolean
-    biometricCredential?: BiometricCredential
-}
+import type { Employee } from "@/lib/types"
 
 interface FingerprintDisplayProps {
     employee: Employee
@@ -89,33 +76,18 @@ export function FingerprintDisplay({ employee }: FingerprintDisplayProps) {
                         </div>
                     )}
 
-                    {employee.biometricCredential && (
+                    {/* Biometric credential details - TODO: Add back when needed */}
+                    {employee.biometricRegistered && (
                         <div className="pt-3 border-t">
                             <div className="flex items-center gap-2 mb-2">
                                 <ShieldCheck className="w-4 h-4 text-primary" />
-                                <p className="text-sm font-semibold text-foreground">Biometric Credential</p>
+                                <p className="text-sm font-semibold text-foreground">Biometric Status</p>
                             </div>
                             <div className="space-y-2 pl-6">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Credential ID</p>
-                                    <p className="text-[10px] font-mono text-foreground break-all">
-                                        {employee.biometricCredential.credentialId.substring(0, 40)}...
-                                    </p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Device Type</p>
-                                        <p className="text-xs font-semibold text-foreground capitalize">
-                                            {employee.biometricCredential.deviceType}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Registered</p>
-                                        <p className="text-xs font-semibold text-foreground">
-                                            {formatDate(employee.biometricCredential.registeredAt)}
-                                        </p>
-                                    </div>
-                                </div>
+                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                    Registered
+                                </Badge>
                             </div>
                         </div>
                     )}
@@ -124,7 +96,7 @@ export function FingerprintDisplay({ employee }: FingerprintDisplayProps) {
                         <Calendar className="w-4 h-4 text-muted-foreground mt-1" />
                         <div>
                             <p className="text-sm text-muted-foreground">Registered On</p>
-                            <p className="font-semibold text-foreground">{formatDate(employee.timestamp)}</p>
+                            <p className="font-semibold text-foreground">{formatDate(employee.createdAt)}</p>
                         </div>
                     </div>
                 </div>
