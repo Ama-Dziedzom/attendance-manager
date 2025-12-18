@@ -1,9 +1,9 @@
-import { QRScanner } from "@/components/qr-scanner"
+import { BiometricScanner } from "@/components/biometric-scanner"
 
 export default function ScanPage() {
   return (
     <main className="min-h-screen bg-background">
-      <QRScanner />
+      <BiometricScanner />
     </main>
   )
 }

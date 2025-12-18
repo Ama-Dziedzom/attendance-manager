@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import type { Employee } from "./qr-code-generator"
+import type { Employee } from "@/lib/types"
 
 interface EmployeeTableProps {
   employees: Employee[]
