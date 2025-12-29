@@ -25,6 +25,39 @@ import {
 } from "lucide-react"
 import Papa from "papaparse"
 
+/**
+ * Parse date from DD/MM/YYYY or DD-MM-YYYY format to YYYY-MM-DD format
+ * @param dateStr - Date string in DD/MM/YYYY or DD-MM-YYYY format
+ * @returns Date string in YYYY-MM-DD format or null if invalid
+ */
+function parseDateToISO(dateStr: string | null): string | null {
+    if (!dateStr || dateStr.trim() === "") return null
+
+    const trimmed = dateStr.trim()
+
+    // Try DD/MM/YYYY, DD-MM-YYYY, or DD.MM.YYYY format
+    const ddmmyyyyMatch = trimmed.match(/^(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{2,4})$/)
+    if (ddmmyyyyMatch) {
+        let [, day, month, year] = ddmmyyyyMatch
+        const paddedDay = day.padStart(2, '0')
+        const paddedMonth = month.padStart(2, '0')
+        if (year.length === 2) year = '20' + year
+        return `${year}-${paddedMonth}-${paddedDay}`
+    }
+
+    // Try YYYY-MM-DD, YYYY/MM/DD, or YYYY.MM.DD format
+    const yyyymmddMatch = trimmed.match(/^(\d{4})[\.\/\-](\d{1,2})[\.\/\-](\d{1,2})$/)
+    if (yyyymmddMatch) {
+        const [, year, month, day] = yyyymmddMatch
+        const paddedDay = day.padStart(2, '0')
+        const paddedMonth = month.padStart(2, '0')
+        return `${year}-${paddedMonth}-${paddedDay}`
+    }
+
+    console.warn(`Invalid date format: ${dateStr}`)
+    return null
+}
+
 interface UploadedEmployee {
     id: string
     empId: string
@@ -75,16 +108,11 @@ export function BulkUploadFlow({ onEmployeeSelect }: BulkUploadFlowProps) {
         setIsUploading(true)
 
         try {
-            // Parse CSV file
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
                 complete: async (results: { data: any[] }) => {
                     const csvData = results.data as any[]
-
-                    console.log("CSV Parse Results:", results)
-                    console.log("CSV Data Length:", csvData.length)
-                    console.log("First Row:", csvData[0])
 
                     if (csvData.length === 0) {
                         toast.error("CSV file is empty")
@@ -92,196 +120,97 @@ export function BulkUploadFlow({ onEmployeeSelect }: BulkUploadFlowProps) {
                         return
                     }
 
-                    // Fetch reference data
                     const [departments, agencies] = await Promise.all([
                         db.departments.getAll(),
                         db.agencies.getAll(),
                     ])
 
-                    console.log("Available Departments:", departments.map(d => d.name))
-                    console.log("Available Agencies:", agencies.map(a => a.name))
-
-                    // Fetch all existing employees once to optimize
                     const allEmployees = await db.employees.getAll()
-
                     const processedEmployees: UploadedEmployee[] = []
-                    const skippedRows: Array<{ row: number, reason: string, data: any }> = []
-                    let rowNumber = 0
+                    const skippedRows: Array<{ row: number, reason: string }> = []
 
-                    for (const row of csvData) {
-                        rowNumber++
+                    for (let i = 0; i < csvData.length; i++) {
+                        const row = csvData[i]
+                        const name = (row.name || row.Name || "").trim()
+                        const email = (row.email || row.Email || "").trim() || null
+                        const deptName = (row.department || row.Department || "").trim()
+                        const agencyName = (row.agency || row.Agency || "").trim()
+                        const gender = (row.gender || row.Gender || "").trim() || null
+                        const maritalStatus = (row.marital_status || row["Marital Status"] || "").trim() || null
+                        const address = (row.address || row.Address || "").trim() || null
+                        const emergencyContact = (row.emergency_contact || row["Emergency Contact"] || "").trim() || null
+                        const education = (row.education || row.Education || "").trim() || null
+                        const jobTitle = (row.job_title || row["Job Title"] || row.position || "").trim() || null
+                        const employmentType = (row.employment_type || row["Employment Type"] || "").trim() || null
+                        const dateJoinRaw = (row.date_join || row["Date Join"] || row.hire_date || "").trim() || null
+                        const dateJoin = parseDateToISO(dateJoinRaw)
 
-                        // Map CSV columns (flexible mapping)
-                        const name = (row.name || row.Name || row.employee_name || row["Employee Name"] || "").trim()
-                        const email = (row.email || row.Email || row.employee_email || "").trim()
-                        const deptName = (row.department || row.Department || row.dept || "").trim()
-                        const agencyName = (row.agency || row.Agency || row.agency_name || "").trim()
-                        const gender = (row.gender || row.Gender || "").trim()
-                        const maritalStatus = (row.marital_status || row["Marital Status"] || row.maritalStatus || "").trim()
-                        const address = (row.address || row.Address || "").trim()
-                        const emergencyContact = (row.emergency_contact || row["Emergency Contact"] || row.emergencyContact || "").trim()
-                        const education = (row.education || row.Education || "").trim()
-                        const jobTitle = (row.job_title || row["Job Title"] || row.jobTitle || row.position || row.Position || "").trim()
-                        const employmentType = (row.employment_type || row["Employment Type"] || row.employmentType || "").trim()
-                        const dateJoin = (row.date_join || row["Date Join"] || row.dateJoin || row.hire_date || row.hireDate || "").trim()
+                        if (dateJoinRaw && !dateJoin) {
+                            skippedRows.push({ row: i + 2, reason: `Invalid date format: "${dateJoinRaw}". Expected DD/MM/YYYY.` })
+                            continue
+                        }
 
                         if (!name) {
-                            skippedRows.push({
-                                row: rowNumber,
-                                reason: "Missing name",
-                                data: row
-                            })
+                            skippedRows.push({ row: i + 2, reason: "Missing name" })
                             continue
                         }
 
-                        // Find department and agency by name
-                        const dept = departments.find(d =>
-                            d.name.toLowerCase() === deptName?.toLowerCase()
-                        )
-                        const agency = agencies.find(a =>
-                            a.name.toLowerCase() === agencyName?.toLowerCase()
-                        )
+                        const dept = departments.find(d => d.name.toLowerCase() === deptName.toLowerCase())
+                        const agency = agencies.find(a => a.name.toLowerCase() === agencyName.toLowerCase())
 
                         if (!dept || !agency) {
-                            skippedRows.push({
-                                row: rowNumber,
-                                reason: !dept ? `Department "${deptName}" not found` : `Agency "${agencyName}" not found`,
-                                data: row
-                            })
+                            skippedRows.push({ row: i + 2, reason: !dept ? `Department "${deptName}" not found` : `Agency "${agencyName}" not found` })
                             continue
                         }
 
-                        // Helper to normalize empty strings to null for comparison/storage
-                        const normalize = (v: string | null | undefined) => v && v.trim() !== "" ? v.trim() : null
-
-                        // Helper to parse dates from various formats to ISO (YYYY-MM-DD)
-                        const parseDate = (dateStr: string | null | undefined): string | null => {
-                            if (!dateStr || dateStr.trim() === "") return null
-                            const trimmed = dateStr.trim()
-
-                            // Already in ISO format (YYYY-MM-DD)
-                            if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-                                return trimmed
-                            }
-
-                            // DD/MM/YYYY or DD-MM-YYYY format
-                            const dmyMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
-                            if (dmyMatch) {
-                                const [, day, month, year] = dmyMatch
-                                return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-                            }
-
-                            // MM/DD/YYYY format (US style) - assume if first number > 12, it's DD/MM
-                            const mdyMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
-                            if (mdyMatch) {
-                                const [, first, second, year] = mdyMatch
-                                // If first > 12, treat as DD/MM/YYYY
-                                if (parseInt(first) > 12) {
-                                    return `${year}-${second.padStart(2, '0')}-${first.padStart(2, '0')}`
-                                }
-                                // Otherwise treat as MM/DD/YYYY
-                                return `${year}-${first.padStart(2, '0')}-${second.padStart(2, '0')}`
-                            }
-
-                            // Try to parse with Date object as fallback
-                            try {
-                                const parsed = new Date(trimmed)
-                                if (!isNaN(parsed.getTime())) {
-                                    return parsed.toISOString().split('T')[0]
-                                }
-                            } catch {
-                                // Ignore parse errors
-                            }
-
-                            // Return as-is if we can't parse it (database will error if invalid)
-                            return trimmed
-                        }
-
-                        // Check if employee already exists (by name+agency OR by email)
-                        const normalizedEmail = normalize(email)
                         const existingEmp = allEmployees.find((e: any) =>
                             (e.name.toLowerCase() === name.toLowerCase() && e.agency_id === agency.id) ||
-                            (normalizedEmail && e.email && e.email.toLowerCase() === normalizedEmail.toLowerCase())
+                            (email && e.email?.toLowerCase() === email.toLowerCase())
                         )
 
                         if (existingEmp) {
+                            // Update if changed
+                            const hasChanged = existingEmp.email !== email || existingEmp.department_id !== dept.id ||
+                                existingEmp.gender !== gender || existingEmp.marital_status !== maritalStatus ||
+                                existingEmp.address !== address || existingEmp.emergency_contact !== emergencyContact ||
+                                existingEmp.education !== education || existingEmp.job_title !== jobTitle ||
+                                existingEmp.employment_type !== employmentType || existingEmp.date_join !== dateJoin
 
-                            // Check if info has changed
-                            const hasChanged =
-                                existingEmp.email !== normalize(email) ||
-                                existingEmp.department_id !== dept.id ||
-                                existingEmp.gender !== normalize(gender) ||
-                                existingEmp.marital_status !== normalize(maritalStatus) ||
-                                existingEmp.address !== normalize(address) ||
-                                existingEmp.emergency_contact !== normalize(emergencyContact) ||
-                                existingEmp.education !== normalize(education) ||
-                                existingEmp.job_title !== normalize(jobTitle) ||
-                                existingEmp.employment_type !== normalize(employmentType) ||
-                                existingEmp.date_join !== parseDate(dateJoin)
-
-                            let updatedEmp = existingEmp
                             if (hasChanged) {
-                                console.log(`Updating employee ${name}...`)
                                 try {
-                                    updatedEmp = await db.employees.update(existingEmp.id, {
-                                        email: normalize(email),
-                                        department_id: dept.id,
-                                        gender: normalize(gender),
-                                        marital_status: normalize(maritalStatus),
-                                        address: normalize(address),
-                                        emergency_contact: normalize(emergencyContact),
-                                        education: normalize(education),
-                                        job_title: normalize(jobTitle),
-                                        employment_type: normalize(employmentType),
-                                        date_join: parseDate(dateJoin),
+                                    await db.employees.update(existingEmp.id, {
+                                        email, department_id: dept.id, gender, marital_status: maritalStatus,
+                                        address, emergency_contact: emergencyContact, education,
+                                        job_title: jobTitle, employment_type: employmentType, date_join: dateJoin,
                                     })
-                                } catch (updateError: any) {
-                                    console.error(`Failed to update employee ${name}:`, updateError?.message || updateError)
-                                    // Continue with existing data if update fails
+                                } catch (err: any) {
+                                    console.error(`Update failed for ${name}:`, err)
                                 }
                             }
 
                             processedEmployees.push({
-                                id: updatedEmp.id,
-                                empId: updatedEmp.emp_id || "",
-                                name: updatedEmp.name,
-                                email: updatedEmp.email || email,
+                                id: existingEmp.id,
+                                empId: existingEmp.emp_id || "",
+                                name: existingEmp.name,
+                                email: existingEmp.email || email,
                                 departmentId: dept.id,
                                 departmentName: dept.name,
                                 agencyId: agency.id,
                                 agencyName: agency.name,
-                                gender: updatedEmp.gender,
-                                maritalStatus: updatedEmp.marital_status,
-                                address: updatedEmp.address,
-                                emergencyContact: updatedEmp.emergency_contact,
-                                education: updatedEmp.education,
-                                jobTitle: updatedEmp.job_title,
-                                employmentType: updatedEmp.employment_type,
-                                dateJoin: updatedEmp.date_join,
+                                gender, maritalStatus, address, emergencyContact, education, jobTitle, employmentType, dateJoin,
                                 status: "exists",
-                                biometricRegistered: !!(updatedEmp.biometric_credential as any[])?.[0],
+                                biometricRegistered: !!(existingEmp.biometric_credential as any[])?.[0],
                             })
                         } else {
                             // Create new employee
-                            const agencyPrefix = agency.name.slice(0, 3).toUpperCase()
-                            const empId = `${agencyPrefix}-${Date.now().toString().slice(-8)}`
-
                             try {
+                                const agencyPrefix = agency.name.slice(0, 3).toUpperCase()
                                 const newEmp = await db.employees.create({
-                                    emp_id: empId,
-                                    name: name,
-                                    department_id: dept.id,
-                                    agency_id: agency.id,
-                                    email: normalize(email),
-                                    gender: normalize(gender),
-                                    marital_status: normalize(maritalStatus),
-                                    address: normalize(address),
-                                    emergency_contact: normalize(emergencyContact),
-                                    education: normalize(education),
-                                    job_title: normalize(jobTitle),
-                                    employment_type: normalize(employmentType),
-                                    date_join: parseDate(dateJoin),
-                                    is_active: true,
+                                    emp_id: `${agencyPrefix}-${Date.now()}-${i}`,
+                                    name, department_id: dept.id, agency_id: agency.id,
+                                    email, gender, marital_status: maritalStatus, address,
+                                    emergency_contact: emergencyContact, education, job_title: jobTitle,
+                                    employment_type: employmentType, date_join: dateJoin, is_active: true,
                                 })
 
                                 processedEmployees.push({
@@ -293,61 +222,29 @@ export function BulkUploadFlow({ onEmployeeSelect }: BulkUploadFlowProps) {
                                     departmentName: dept.name,
                                     agencyId: agency.id,
                                     agencyName: agency.name,
-                                    gender: normalize(gender),
-                                    maritalStatus: normalize(maritalStatus),
-                                    address: normalize(address),
-                                    emergencyContact: normalize(emergencyContact),
-                                    education: normalize(education),
-                                    jobTitle: normalize(jobTitle),
-                                    employmentType: normalize(employmentType),
-                                    dateJoin: parseDate(dateJoin),
+                                    gender, maritalStatus, address, emergencyContact, education, jobTitle, employmentType, dateJoin,
                                     status: "imported",
                                     biometricRegistered: false,
                                 })
-                            } catch (createError: any) {
-                                console.error(`Failed to create employee ${name}:`, createError?.message || createError)
-                                skippedRows.push({
-                                    row: rowNumber,
-                                    reason: `Failed to create: ${createError?.message || 'Unknown error'}`,
-                                    data: row
-                                })
+                            } catch (err: any) {
+                                console.error(`Create failed for ${name}:`, err)
+                                skippedRows.push({ row: i + 2, reason: `Failed to create: ${err.message}` })
                             }
                         }
                     }
 
-                    // Deduplicate by employee ID (in case same employee matched multiple times)
-                    const uniqueEmployees = processedEmployees.filter(
-                        (emp, index, self) => index === self.findIndex(e => e.id === emp.id)
-                    )
-
-                    setEmployees(uniqueEmployees)
+                    setEmployees(processedEmployees)
                     setUploadComplete(true)
                     setIsUploading(false)
 
                     const newCount = processedEmployees.filter(e => e.status === "imported").length
                     const existingCount = processedEmployees.filter(e => e.status === "exists").length
 
-                    console.log("Processing Summary:")
-                    console.log(`Total rows in CSV: ${csvData.length}`)
-                    console.log(`Successfully processed: ${processedEmployees.length}`)
-                    console.log(`Skipped: ${skippedRows.length}`)
-
                     if (skippedRows.length > 0) {
-                        console.log("Skipped rows details:", skippedRows)
-                    }
-
-                    if (processedEmployees.length === 0) {
-                        toast.error(
-                            `No employees could be processed. ${skippedRows.length} rows skipped. Check console for details.`
-                        )
-                    } else if (skippedRows.length > 0) {
-                        toast.warning(
-                            `Processed ${processedEmployees.length} employees (${newCount} new, ${existingCount} existing). ${skippedRows.length} rows skipped - check console for details.`
-                        )
+                        console.warn(`Skipped ${skippedRows.length} rows:`, skippedRows)
+                        toast.warning(`Processed ${processedEmployees.length} employees. ${skippedRows.length} rows skipped.`)
                     } else {
-                        toast.success(
-                            `Processed ${processedEmployees.length} employees (${newCount} new, ${existingCount} existing)`
-                        )
+                        toast.success(`Processed ${processedEmployees.length} employees (${newCount} new, ${existingCount} existing)`)
                     }
                 },
                 error: (error: any) => {
@@ -365,8 +262,8 @@ export function BulkUploadFlow({ onEmployeeSelect }: BulkUploadFlowProps) {
 
     const downloadTemplate = () => {
         const template = `name,email,department,agency,gender,marital_status,address,emergency_contact,education,job_title,employment_type,date_join
-John Doe,john@example.com,Engineering,Main Office,male,single,"123 Main St, City",Jane Doe - 000-111,Bachelors,Software Engineer,full-time,2023-01-01
-Jane Smith,jane@example.com,HR,Main Office,female,married,"456 Park Ave, Town",John Smith - 222-333,Masters,HR Manager,full-time,2023-02-15`
+John Doe,john@example.com,Engineering,Main Office,male,single,"123 Main St, City",Jane Doe - 000-111,Bachelors,Software Engineer,full-time,01/01/2023
+Jane Smith,jane@example.com,HR,Main Office,female,married,"456 Park Ave, Town",John Smith - 222-333,Masters,HR Manager,full-time,15/02/2023`
 
         const blob = new Blob([template], { type: 'text/csv' })
         const url = window.URL.createObjectURL(blob)
@@ -446,14 +343,9 @@ Jane Smith,jane@example.com,HR,Main Office,female,married,"456 Park Ave, Town",J
                         <Alert>
                             <AlertCircle className="h-4 w-4" />
                             <AlertDescription>
-                                <div className="space-y-2">
-                                    <p className="font-medium">CSV Format Requirements:</p>
-                                    <ul className="list-disc list-inside text-sm space-y-1">
-                                        <li>Columns: <code>name</code>, <code>email</code>, <code>department</code>, <code>agency</code>, <code>gender</code>, <code>marital_status</code>, <code>address</code>, <code>emergency_contact</code>, <code>education</code>, <code>job_title</code>, <code>employment_type</code>, <code>date_join</code></li>
-                                        <li>Department and agency names must match existing records</li>
-                                        <li>Existing employees will be detected automatically</li>
-                                    </ul>
-                                </div>
+                                <strong>CSV Format:</strong> name, email, department, agency (required) + optional fields (gender, marital_status, address, emergency_contact, education, job_title, employment_type, date_join).
+                                <br />
+                                <strong>Date Format:</strong> Use DD/MM/YYYY or YYYY-MM-DD for date_join (e.g., 22/02/2023 or 2023-02-22)
                             </AlertDescription>
                         </Alert>
                     </div>

@@ -117,6 +117,11 @@ export default function EmployeeDetailPage() {
     }
   }
 
+  const capitalize = (str: string | null | undefined) => {
+    if (!str || str.toLowerCase() === 'n/a') return "N/A"
+    return str.replace(/_/g, ' ').split(/ +/).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
+  }
+
   useEffect(() => {
     loadEmployeeData()
   }, [employeeId])
@@ -151,31 +156,50 @@ export default function EmployeeDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50/50 pb-20">
-        {/* Header Banner Skeleton */}
-        <div className="h-64 bg-slate-900 border-b relative overflow-hidden">
-          <div className="container mx-auto px-8 h-full flex flex-col justify-between py-8 relative z-0">
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-9 w-36 bg-white/10" />
-              <div className="flex gap-2">
-                <Skeleton className="h-9 w-24 bg-white/10" />
-                <Skeleton className="h-9 w-28 bg-white/10" />
-              </div>
-            </div>
+      <div className="min-h-screen bg-muted/30 pb-20">
+        {/* Search/Breadcrumb Header Skeleton */}
+        <div className="bg-background border-b px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-9 w-32" />
+            <Separator orientation="vertical" className="h-4" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-32" />
           </div>
         </div>
 
-        <div className="container mx-auto px-8 -mt-20 relative">
+        <div className="container mx-auto px-8 py-8">
           <div className="flex flex-col gap-8">
-            <div className="flex flex-col md:flex-row items-end gap-6">
-              <Skeleton className="h-40 w-40 rounded-2xl" />
-              <div className="pb-4 flex-1 space-y-3">
-                <Skeleton className="h-9 w-64" />
-                <Skeleton className="h-5 w-96" />
+            {/* Profile Header Section Skeleton */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-background p-8 rounded-xl border shadow-sm">
+              <div className="flex items-center gap-6">
+                <Skeleton className="h-24 w-24 rounded-full" />
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+                  <div className="flex gap-4">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-4 w-full md:w-auto">
+                <Skeleton className="h-16 w-full md:w-48 rounded-lg" />
+                <Skeleton className="h-16 w-full md:w-48 rounded-lg" />
               </div>
             </div>
 
-            <Skeleton className="h-10 w-48" />
+            {/* Tabs Skeleton */}
+            <div className="flex gap-2">
+              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-10 w-28" />
+            </div>
 
             <Card className="rounded-xl border-none shadow-sm">
               <CardHeader className="pb-4">
@@ -272,7 +296,7 @@ export default function EmployeeDetailPage() {
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground font-medium">
                   <div className="flex items-center gap-1.5">
                     <Building className="h-4 w-4 opacity-70" />
-                    {employee.department?.name || "N/A"}
+                    {capitalize(employee.department?.name)}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Briefcase className="h-4 w-4 opacity-70" />
@@ -324,20 +348,20 @@ export default function EmployeeDetailPage() {
                   {/* Left Column */}
                   <div className="space-y-6">
                     <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Fullname</p>
-                      <p className="font-semibold text-slate-800">{employee.name}</p>
+                      <p className="text-xs text-muted-foreground">Full Name</p>
+                      <p className="font-semibold text-slate-800">{capitalize(employee.name)}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Gender</p>
-                      <p className="font-semibold text-slate-800">{employee.gender || "N/A"}</p>
+                      <p className="font-semibold text-slate-800">{capitalize(employee.gender)}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Marital Status</p>
-                      <p className="font-semibold text-slate-800">{employee.marital_status || "N/A"}</p>
+                      <p className="font-semibold text-slate-800">{capitalize(employee.marital_status)}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Address</p>
-                      <p className="font-semibold text-slate-800">{employee.address || "N/A"}</p>
+                      <p className="font-semibold text-slate-800">{capitalize(employee.address)}</p>
                     </div>
                   </div>
                   {/* Right Column */}
@@ -348,7 +372,7 @@ export default function EmployeeDetailPage() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Education</p>
-                      <p className="font-semibold text-slate-800">{employee.education || "N/A"}</p>
+                      <p className="font-semibold text-slate-800">{capitalize(employee.education)}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Emergency Contact</p>
@@ -375,7 +399,7 @@ export default function EmployeeDetailPage() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Employment Type</p>
-                      <p className="font-semibold text-slate-800">{employee.employment_type || "N/A"}</p>
+                      <p className="font-semibold text-slate-800">{capitalize(employee.employment_type)}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Date Join</p>
@@ -394,7 +418,7 @@ export default function EmployeeDetailPage() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Department</p>
-                      <p className="font-semibold text-slate-800">{employee.department?.name || "N/A"}</p>
+                      <p className="font-semibold text-slate-800">{capitalize(employee.department?.name)}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Status</p>

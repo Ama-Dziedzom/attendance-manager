@@ -38,6 +38,11 @@ interface Employee {
 }
 
 export default function EmployeesPage() {
+  const capitalize = (str: string | null | undefined) => {
+    if (!str || str.toLowerCase() === 'n/a') return "N/A"
+    return str.replace(/_/g, ' ').split(/ +/).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
+  }
+
   const [searchTerm, setSearchTerm] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState("all")
   const [agencyFilter, setAgencyFilter] = useState("all")
@@ -220,7 +225,7 @@ export default function EmployeesPage() {
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-foreground">{employee.name}</h3>
+                        <h3 className="text-lg font-semibold text-foreground">{capitalize(employee.name)}</h3>
                         <p className="text-sm text-muted-foreground">{employee.empId}</p>
                       </div>
                       <div className="p-2 bg-primary/10 rounded-full">
@@ -231,7 +236,7 @@ export default function EmployeesPage() {
                     <div className="space-y-3">
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">Department</p>
-                        <p className="text-sm text-foreground">{employee.department || "N/A"}</p>
+                        <p className="text-sm text-foreground">{capitalize(employee.department)}</p>
                       </div>
 
                       <div>
@@ -288,8 +293,8 @@ export default function EmployeesPage() {
                 {filteredEmployees.map((employee) => (
                   <tr key={employee.id} className="hover:bg-muted/50 transition-colors">
                     <td className="px-6 py-4 text-sm font-medium text-foreground">{employee.empId}</td>
-                    <td className="px-6 py-4 text-sm text-foreground">{employee.name}</td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">{employee.department || "N/A"}</td>
+                    <td className="px-6 py-4 text-sm text-foreground">{capitalize(employee.name)}</td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">{capitalize(employee.department)}</td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">{employee.agency || "N/A"}</td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">{employee.email || "N/A"}</td>
                     <td className="px-6 py-4 text-center">
