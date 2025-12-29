@@ -27,6 +27,14 @@ interface FingerprintFormProps {
         departmentId: string
         email: string
         agencyId: string
+        gender?: string
+        maritalStatus?: string
+        address?: string
+        emergencyContact?: string
+        education?: string
+        jobTitle?: string
+        employmentType?: string
+        dateJoin?: string
     }) => void
     isScanning?: boolean
 }
@@ -37,24 +45,47 @@ export function FingerprintForm({ onSubmit, isScanning = false }: FingerprintFor
         departmentId: "",
         email: "",
         agencyId: "",
+        gender: "",
+        maritalStatus: "",
+        address: "",
+        emergencyContact: "",
+        education: "",
+        jobTitle: "",
+        employmentType: "",
+        dateJoin: "",
     })
 
     const [agencies, setAgencies] = useState<any[]>([])
     const [departments, setDepartments] = useState<any[]>([])
+    const [genders, setGenders] = useState<any[]>([])
+    const [maritalStatuses, setMaritalStatuses] = useState<any[]>([])
+    const [employmentTypes, setEmploymentTypes] = useState<any[]>([])
     const [isLoadingData, setIsLoadingData] = useState(true)
 
-    // Load agencies and departments from Supabase
+    // Load agencies, departments and lookups from Supabase
     useEffect(() => {
         const loadData = async () => {
             try {
                 setIsLoadingData(true)
-                const [agenciesData, deptData] = await Promise.all([
+                const [
+                    agenciesData,
+                    deptData,
+                    gendersData,
+                    maritalData,
+                    employmentData
+                ] = await Promise.all([
                     db.agencies.getAll(),
                     db.departments.getAll(),
+                    db.lookups.getGenders(),
+                    db.lookups.getMaritalStatuses(),
+                    db.lookups.getEmploymentTypes(),
                 ])
 
                 setAgencies(agenciesData)
                 setDepartments(deptData)
+                setGenders(gendersData)
+                setMaritalStatuses(maritalData)
+                setEmploymentTypes(employmentData)
             } catch (error) {
                 console.error("Error loading data:", error)
                 toast.error("Failed to load form data")
@@ -93,6 +124,14 @@ export function FingerprintForm({ onSubmit, isScanning = false }: FingerprintFor
             departmentId: "",
             email: "",
             agencyId: "",
+            gender: "",
+            maritalStatus: "",
+            address: "",
+            emergencyContact: "",
+            education: "",
+            jobTitle: "",
+            employmentType: "",
+            dateJoin: "",
         })
     }
 
@@ -186,6 +225,132 @@ export function FingerprintForm({ onSubmit, isScanning = false }: FingerprintFor
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="john.doe@company.com"
+                    className="mt-1"
+                    disabled={isScanning}
+                />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select
+                        value={formData.gender}
+                        onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                        disabled={isScanning}
+                    >
+                        <SelectTrigger id="gender" className="mt-1">
+                            <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {genders.map((g) => (
+                                <SelectItem key={g.id} value={g.name.toLowerCase()}>
+                                    {g.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div>
+                    <Label htmlFor="marital_status">Marital Status</Label>
+                    <Select
+                        value={formData.maritalStatus}
+                        onValueChange={(value) => setFormData({ ...formData, maritalStatus: value })}
+                        disabled={isScanning}
+                    >
+                        <SelectTrigger id="marital_status" className="mt-1">
+                            <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {maritalStatuses.map((ms) => (
+                                <SelectItem key={ms.id} value={ms.name.toLowerCase()}>
+                                    {ms.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+
+            <div>
+                <Label htmlFor="address">Address</Label>
+                <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="123 Main St, City"
+                    className="mt-1"
+                    disabled={isScanning}
+                />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="emergency_contact">Emergency Contact</Label>
+                    <Input
+                        id="emergency_contact"
+                        value={formData.emergencyContact}
+                        onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
+                        placeholder="Name - Phone"
+                        className="mt-1"
+                        disabled={isScanning}
+                    />
+                </div>
+
+                <div>
+                    <Label htmlFor="education">Education</Label>
+                    <Input
+                        id="education"
+                        value={formData.education}
+                        onChange={(e) => setFormData({ ...formData, education: e.target.value })}
+                        placeholder="Degree/Qualification"
+                        className="mt-1"
+                        disabled={isScanning}
+                    />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="job_title">Job Title</Label>
+                    <Input
+                        id="job_title"
+                        value={formData.jobTitle}
+                        onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+                        placeholder="Software Engineer"
+                        className="mt-1"
+                        disabled={isScanning}
+                    />
+                </div>
+
+                <div>
+                    <Label htmlFor="employment_type">Employment Type</Label>
+                    <Select
+                        value={formData.employmentType}
+                        onValueChange={(value) => setFormData({ ...formData, employmentType: value })}
+                        disabled={isScanning}
+                    >
+                        <SelectTrigger id="employment_type" className="mt-1">
+                            <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {employmentTypes.map((et) => (
+                                <SelectItem key={et.id} value={et.name.toLowerCase()}>
+                                    {et.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+
+            <div>
+                <Label htmlFor="date_join">Date Joined</Label>
+                <Input
+                    id="date_join"
+                    type="date"
+                    value={formData.dateJoin}
+                    onChange={(e) => setFormData({ ...formData, dateJoin: e.target.value })}
                     className="mt-1"
                     disabled={isScanning}
                 />

@@ -85,7 +85,12 @@ export const employeeService = {
         const { data, error } = await supabase
             .from('employees')
             .insert(employee)
-            .select()
+            .select(`
+                *,
+                department:departments(id, name),
+                agency:agencies(id, name),
+                biometric_credential:biometric_credentials(*)
+            `)
             .single()
 
         if (error) throw error
@@ -95,15 +100,27 @@ export const employeeService = {
     /**
      * Update employee
      */
-    async update(id: string, updates: Partial<Employee>) {
-        const { data, error } = await supabase
+    async update(id: string, updates: Partial<Database['public']['Tables']['employees']['Update']>) {
+        const { error } = await supabase
             .from('employees')
             .update(updates)
             .eq('id', id)
-            .select()
-            .single()
 
         if (error) throw error
+
+        // Fetch the updated record with joins
+        const { data, error: fetchError } = await supabase
+            .from('employees')
+            .select(`
+                *,
+                department:departments(id, name),
+                agency:agencies(id, name),
+                biometric_credential:biometric_credentials(*)
+            `)
+            .eq('id', id)
+            .single()
+
+        if (fetchError) throw fetchError
         return data
     },
 
@@ -290,11 +307,7 @@ export const attendanceService = {
     async getEmployeeRecords(employeeId: string, limit: number = 30) {
         const { data, error } = await supabase
             .from('attendance_records')
-            .select(`
-        *,
-        location:locations(name),
-        shift:shifts(name)
-      `)
+            .select('*')
             .eq('employee_id', employeeId)
             .order('date', { ascending: false })
             .limit(limit)
@@ -408,6 +421,37 @@ export const dashboardService = {
 }
 
 // =====================================================================================
+// LOOKUP TABLES
+// =====================================================================================
+
+export const lookupService = {
+    async getGenders() {
+        const { data, error } = await supabase
+            .from('genders')
+            .select('*')
+            .order('name')
+        if (error) throw error
+        return data || []
+    },
+    async getMaritalStatuses() {
+        const { data, error } = await supabase
+            .from('marital_statuses')
+            .select('*')
+            .order('name')
+        if (error) throw error
+        return data || []
+    },
+    async getEmploymentTypes() {
+        const { data, error } = await supabase
+            .from('employment_types')
+            .select('*')
+            .order('name')
+        if (error) throw error
+        return data || []
+    }
+}
+
+// =====================================================================================
 // EXPORT ALL SERVICES
 // =====================================================================================
 
@@ -418,6 +462,7 @@ export const db = {
     departments: departmentService,
     agencies: agencyService,
     dashboard: dashboardService,
+    lookups: lookupService,
 }
 
 // Default export

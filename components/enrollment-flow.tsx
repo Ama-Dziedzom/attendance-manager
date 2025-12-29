@@ -34,6 +34,14 @@ export function EnrollmentFlow() {
         departmentId: string
         email: string
         agencyId: string
+        gender?: string
+        maritalStatus?: string
+        address?: string
+        emergencyContact?: string
+        education?: string
+        jobTitle?: string
+        employmentType?: string
+        dateJoin?: string
     } | null>(null)
 
     // Bulk upload state
@@ -43,6 +51,14 @@ export function EnrollmentFlow() {
         departmentId: string
         email: string
         agencyId: string
+        gender?: string | null
+        maritalStatus?: string | null
+        address?: string | null
+        emergencyContact?: string | null
+        education?: string | null
+        jobTitle?: string | null
+        employmentType?: string | null
+        dateJoin?: string | null
     } | null>(null)
 
     const [registeredEmployee, setRegisteredEmployee] = useState<Employee | null>(null)
@@ -54,6 +70,14 @@ export function EnrollmentFlow() {
         departmentId: string
         email: string
         agencyId: string
+        gender?: string
+        maritalStatus?: string
+        address?: string
+        emergencyContact?: string
+        education?: string
+        jobTitle?: string
+        employmentType?: string
+        dateJoin?: string
     }) => {
         setEmployeeData(data)
         setIsScanning(true)
@@ -67,6 +91,14 @@ export function EnrollmentFlow() {
         departmentId: string
         email: string
         agencyId: string
+        gender?: string | null
+        maritalStatus?: string | null
+        address?: string | null
+        emergencyContact?: string | null
+        education?: string | null
+        jobTitle?: string | null
+        employmentType?: string | null
+        dateJoin?: string | null
     }) => {
         setSelectedEmployee(employee)
         setIsScanning(true)
@@ -110,6 +142,14 @@ export function EnrollmentFlow() {
                     department_id: empData.departmentId,
                     agency_id: empData.agencyId,
                     email: empData.email || null,
+                    gender: empData.gender || null,
+                    marital_status: empData.maritalStatus || null,
+                    address: empData.address || null,
+                    emergency_contact: empData.emergencyContact || null,
+                    education: empData.education || null,
+                    job_title: empData.jobTitle || null,
+                    employment_type: empData.employmentType || null,
+                    date_join: empData.dateJoin || null,
                     is_active: true,
                 })
             }
@@ -118,6 +158,7 @@ export function EnrollmentFlow() {
             await db.biometric.register({
                 employee_id: newEmployee.id,
                 credential_id: cred.credentialId,
+                fingerprint_id: `FP-${newEmployee.emp_id}-${cred.credentialId.slice(0, 8)}`,
                 public_key: cred.publicKey,
                 counter: cred.counter,
                 device_type: cred.deviceType || "windows-hello",
