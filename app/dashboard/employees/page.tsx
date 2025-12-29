@@ -22,26 +22,11 @@ import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { BulkUploadFlow } from "@/components/bulk-upload-flow"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { cn } from "@/lib/utils"
+import { cn, capitalize } from "@/lib/utils"
+import { type Employee, mapDbEmployeeToEmployee } from "@/lib/types"
 
-interface Employee {
-  id: string
-  empId: string
-  name: string
-  email: string | null
-  department: string | null
-  departmentId: string
-  agency: string | null
-  agencyId: string
-  isActive: boolean
-  biometricRegistered: boolean
-}
 
 export default function EmployeesPage() {
-  const capitalize = (str: string | null | undefined) => {
-    if (!str || str.toLowerCase() === 'n/a') return "N/A"
-    return str.replace(/_/g, ' ').split(/ +/).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
-  }
 
   const [searchTerm, setSearchTerm] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState("all")
@@ -76,18 +61,7 @@ export default function EmployeesPage() {
       ])
 
       // Map to Employee interface
-      const mappedEmployees: Employee[] = employeesData.map((emp: any) => ({
-        id: emp.id,
-        empId: emp.emp_id || "N/A",
-        name: emp.name,
-        email: emp.email,
-        department: emp.department?.name || null,
-        departmentId: emp.department_id,
-        agency: emp.agency?.name || null,
-        agencyId: emp.agency_id,
-        isActive: emp.is_active,
-        biometricRegistered: !!(emp.biometric_credential as any[])?.length,
-      }))
+      const mappedEmployees: Employee[] = employeesData.map((emp: any) => mapDbEmployeeToEmployee(emp))
 
       setEmployees(mappedEmployees)
 

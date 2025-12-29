@@ -14,9 +14,9 @@ export type DbBiometricCredential = Database['public']['Tables']['biometric_cred
 export type DbAttendanceRecord = Database['public']['Tables']['attendance_records']['Row']
 export type DbDepartment = Database['public']['Tables']['departments']['Row']
 export type DbAgency = Database['public']['Tables']['agencies']['Row']
-export type DbShift = Database['public']['Tables']['shifts']['Row']
-export type DbLeaveType = Database['public']['Tables']['leave_types']['Row']
-export type DbLeaveRequest = Database['public']['Tables']['leave_requests']['Row']
+// export type DbShift = Database['public']['Tables']['shifts']['Row']
+// export type DbLeaveType = Database['public']['Tables']['leave_types']['Row']
+// export type DbLeaveRequest = Database['public']['Tables']['leave_requests']['Row']
 
 // =====================================================================================
 // FRONTEND-FRIENDLY TYPES (with denormalized data)
@@ -39,6 +39,12 @@ export interface Employee {
     location: string | null
     employeeType: string | null
     hireDate: string | null
+    gender: string | null
+    maritalStatus: string | null
+    address: string | null
+    emergencyContact: string | null
+    education: string | null
+    dateJoin: string | null
     isActive: boolean
     createdAt: string
     biometricRegistered: boolean
@@ -161,12 +167,26 @@ export function mapDbEmployeeToEmployee(dbEmployee: any): Employee {
         location: dbEmployee.location?.name || null,
         employeeType: dbEmployee.employee_type,
         hireDate: dbEmployee.hire_date,
+        gender: dbEmployee.gender,
+        maritalStatus: dbEmployee.marital_status,
+        address: dbEmployee.address,
+        emergencyContact: dbEmployee.emergency_contact,
+        education: dbEmployee.education,
+        dateJoin: dbEmployee.date_join,
         isActive: dbEmployee.is_active ?? true,
         createdAt: dbEmployee.created_at,
-        biometricRegistered: !!dbEmployee.biometric_credential,
-        fingerprintId: dbEmployee.biometric_credential?.fingerprint_id,
-        biometricDeviceType: dbEmployee.biometric_credential?.device_type,
-        biometricRegisteredAt: dbEmployee.biometric_credential?.registered_at,
+        biometricRegistered: Array.isArray(dbEmployee.biometric_credential)
+            ? dbEmployee.biometric_credential.length > 0
+            : !!dbEmployee.biometric_credential,
+        fingerprintId: Array.isArray(dbEmployee.biometric_credential)
+            ? dbEmployee.biometric_credential[0]?.fingerprint_id
+            : dbEmployee.biometric_credential?.fingerprint_id,
+        biometricDeviceType: Array.isArray(dbEmployee.biometric_credential)
+            ? dbEmployee.biometric_credential[0]?.device_type
+            : dbEmployee.biometric_credential?.device_type,
+        biometricRegisteredAt: Array.isArray(dbEmployee.biometric_credential)
+            ? dbEmployee.biometric_credential[0]?.registered_at
+            : dbEmployee.biometric_credential?.registered_at,
     }
 }
 

@@ -49,33 +49,9 @@ import {
   YAxis,
   Tooltip as RechartsTooltip
 } from 'recharts'
+import { capitalize, cn } from "@/lib/utils"
+import { type Employee, type AttendanceRecord, mapDbEmployeeToEmployee } from "@/lib/types"
 
-interface EmployeeData {
-  id: string
-  emp_id: string
-  name: string
-  email: string | null
-  department: { name: string } | null
-  agency: { name: string } | null
-  biometric_credential: any[]
-  created_at: string
-  gender?: string | null
-  marital_status?: string | null
-  address?: string | null
-  emergency_contact?: string | null
-  education?: string | null
-  job_title?: string | null
-  employment_type?: string | null
-  date_join?: string | null
-}
-
-interface AttendanceRecord {
-  date: string
-  clock_in_time: string
-  clock_out_time: string | null
-  total_hours: number
-  status: string
-}
 
 const ATTENDANCE_METRICS = [
   { subject: 'Punctuality', A: 85, fullMark: 100 },
@@ -89,7 +65,7 @@ export default function EmployeeDetailPage() {
   const params = useParams()
   const employeeId = params.id as string
 
-  const [employee, setEmployee] = useState<EmployeeData | null>(null)
+  const [employee, setEmployee] = useState<Employee | null>(null)
   const [employeeAttendance, setEmployeeAttendance] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [isEnrolling, setIsEnrolling] = useState(false)
@@ -98,28 +74,16 @@ export default function EmployeeDetailPage() {
     try {
       setLoading(true)
       const empData = await db.employees.getByEmpId(employeeId)
-      setEmployee(empData as any)
-
-      if (empData?.id) {
+      if (empData) {
+        setEmployee(mapDbEmployeeToEmployee(empData))
         const attendance = await db.attendance.getEmployeeRecords(empData.id, 30)
         setEmployeeAttendance(attendance as any)
       }
     } catch (error: any) {
-      console.error("Error loading employee data:", {
-        message: error?.message,
-        details: error?.details,
-        hint: error?.hint,
-        code: error?.code,
-        error
-      })
+      console.error("Error loading employee data:", error)
     } finally {
       setLoading(false)
     }
-  }
-
-  const capitalize = (str: string | null | undefined) => {
-    if (!str || str.toLowerCase() === 'n/a') return "N/A"
-    return str.replace(/_/g, ' ').split(/ +/).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
   }
 
   useEffect(() => {
@@ -133,7 +97,7 @@ export default function EmployeeDetailPage() {
       await db.biometric.register({
         employee_id: employee.id,
         credential_id: cred.credentialId,
-        fingerprint_id: `FP-${employee.emp_id}-${cred.credentialId.slice(0, 8)}`,
+        fingerprint_id: `FP-${employee.empId}-${cred.credentialId.slice(0, 8)}`,
         public_key: cred.publicKey,
         counter: cred.counter,
         device_type: cred.deviceType || "slk20r",
@@ -296,15 +260,15 @@ export default function EmployeeDetailPage() {
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground font-medium">
                   <div className="flex items-center gap-1.5">
                     <Building className="h-4 w-4 opacity-70" />
-                    {capitalize(employee.department?.name)}
+                    {capitalize(employee.department)}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Briefcase className="h-4 w-4 opacity-70" />
-                    {employee.agency?.name || "Independent"}
+                    {employee.agency || "Independent"}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Fingerprint className="h-4 w-4 opacity-70" />
-                    ID: {employee.emp_id}
+                    ID: {employee.empId}
                   </div>
                 </div>
               </div>
@@ -357,7 +321,7 @@ export default function EmployeeDetailPage() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Marital Status</p>
-                      <p className="font-semibold text-slate-800">{capitalize(employee.marital_status)}</p>
+                      <p className="font-semibold text-slate-800">{capitalize(employee.maritalStatus)}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Address</p>
@@ -378,7 +342,7 @@ export default function EmployeeDetailPage() {
                       <p className="text-xs text-muted-foreground">Emergency Contact</p>
                       <p className="font-semibold text-slate-800 flex items-center gap-2">
                         <Phone className="h-4 w-4 text-emerald-600" />
-                        {employee.emergency_contact || "N/A"}
+                        {employee.emergencyContact || "N/A"}
                       </p>
                     </div>
                   </div>
@@ -395,18 +359,18 @@ export default function EmployeeDetailPage() {
                   <div className="space-y-6">
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Employment ID</p>
-                      <p className="font-semibold text-slate-800">{employee.emp_id}</p>
+                      <p className="font-semibold text-slate-800">{employee.empId}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Employment Type</p>
-                      <p className="font-semibold text-slate-800">{capitalize(employee.employment_type)}</p>
+                      <p className="font-semibold text-slate-800">{capitalize(employee.employeeType)}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Date Join</p>
                       <p className="font-semibold text-slate-800">
-                        {employee.date_join
-                          ? new Date(employee.date_join).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                          : new Date(employee.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        {employee.dateJoin
+                          ? new Date(employee.dateJoin).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                          : new Date(employee.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                       </p>
                     </div>
                   </div>
@@ -414,11 +378,11 @@ export default function EmployeeDetailPage() {
                   <div className="space-y-6">
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Job Title</p>
-                      <p className="font-semibold text-slate-800">{employee.job_title || "N/A"}</p>
+                      <p className="font-semibold text-slate-800">{employee.jobTitle || "N/A"}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Department</p>
-                      <p className="font-semibold text-slate-800">{capitalize(employee.department?.name)}</p>
+                      <p className="font-semibold text-slate-800">{capitalize(employee.department)}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Status</p>
@@ -433,7 +397,7 @@ export default function EmployeeDetailPage() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Left Column: Biometric Status & Registration */}
                 <div className="lg:col-span-4 space-y-6">
-                  {employee.biometric_credential && employee.biometric_credential.length > 0 ? (
+                  {employee.biometricRegistered ? (
                     <Card className="rounded-xl border-none shadow-sm overflow-hidden border-t-4 border-t-emerald-500">
                       <CardHeader className="pb-2">
                         <div className="flex items-center gap-2 text-emerald-600 mb-2">
@@ -450,11 +414,11 @@ export default function EmployeeDetailPage() {
                         <div className="space-y-4">
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-muted-foreground">Device Type</span>
-                            <span className="font-bold">{employee.biometric_credential[0].device_type || "SLK20R Scanner"}</span>
+                            <span className="font-bold">{employee.biometricDeviceType || "SLK20R Scanner"}</span>
                           </div>
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-muted-foreground">Enrolled At</span>
-                            <span className="font-bold">{new Date(employee.biometric_credential[0].created_at).toLocaleDateString()}</span>
+                            <span className="font-bold">{employee.biometricRegisteredAt ? new Date(employee.biometricRegisteredAt).toLocaleDateString() : 'N/A'}</span>
                           </div>
                           <Button variant="outline" className="w-full mt-4 font-bold text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100">
                             Revoke Access
@@ -554,22 +518,22 @@ export default function EmployeeDetailPage() {
                           <TableRow key={i} className="hover:bg-slate-50/50">
                             <TableCell className="font-medium text-slate-700">{new Date(record.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</TableCell>
                             <TableCell className="font-medium">
-                              {record.clock_in_time ? (
+                              {record.clockInTime ? (
                                 <div className="flex items-center gap-2">
                                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                  {new Date(record.clock_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {new Date(record.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                               ) : "--:--"}
                             </TableCell>
                             <TableCell className="font-medium text-slate-500">
-                              {record.clock_out_time ? (
+                              {record.clockOutTime ? (
                                 <div className="flex items-center gap-2">
                                   <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                                  {new Date(record.clock_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {new Date(record.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                               ) : "--:--"}
                             </TableCell>
-                            <TableCell className="font-medium">{record.total_hours?.toFixed(1) || "0.0"}h</TableCell>
+                            <TableCell className="font-medium">{record.totalHours?.toFixed(1) || "0.0"}h</TableCell>
                             <TableCell className="text-right">
                               <Badge variant="outline" className={`rounded-md font-bold px-2.5 py-0.5 border-none ${record.status === 'on_time' ? 'bg-emerald-50 text-emerald-700' :
                                 record.status === 'late' ? 'bg-orange-50 text-orange-700' :

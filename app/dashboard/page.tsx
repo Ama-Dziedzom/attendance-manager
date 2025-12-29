@@ -28,21 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-
-interface AttendanceRecord {
-  id: string
-  employee_id: string
-  date: string
-  clock_in_time: string
-  clock_out_time: string | null
-  total_hours: number | null
-  status: string
-  employee?: {
-    name: string
-    emp_id: string
-    department?: { name: string }
-  }
-}
+import { type AttendanceRecord, mapDbAttendanceToAttendance } from "@/lib/types"
 
 type SortKey = "name" | "clockInTime" | "status" | "totalHours"
 type SortOrder = "asc" | "desc"
@@ -67,7 +53,8 @@ export default function DashboardPage() {
       try {
         setIsLoading(true)
         const data = await db.attendance.getRecords(date, date)
-        setAttendanceData(data as any[])
+        const mapped = data.map(mapDbAttendanceToAttendance)
+        setAttendanceData(mapped)
       } catch (error) {
         console.error("Error loading attendance:", error)
       } finally {
@@ -83,21 +70,21 @@ export default function DashboardPage() {
   }, [date])
 
   const todayData = useMemo(() => {
-    const filtered = attendanceData.filter((record) => record.date === date)
+    const filtered = [...attendanceData]
 
     filtered.sort((a, b) => {
       let aVal: any
       let bVal: any
 
       if (sortKey === "name") {
-        aVal = a.employee?.name || ''
-        bVal = b.employee?.name || ''
+        aVal = a.employeeName || ''
+        bVal = b.employeeName || ''
       } else if (sortKey === "clockInTime") {
-        aVal = new Date(a.clock_in_time).getTime()
-        bVal = new Date(b.clock_in_time).getTime()
+        aVal = new Date(a.clockInTime).getTime()
+        bVal = new Date(b.clockInTime).getTime()
       } else if (sortKey === "totalHours") {
-        aVal = a.total_hours || 0
-        bVal = b.total_hours || 0
+        aVal = a.totalHours || 0
+        bVal = b.totalHours || 0
       } else if (sortKey === "status") {
         aVal = a.status
         bVal = b.status
@@ -109,16 +96,16 @@ export default function DashboardPage() {
     })
 
     return filtered
-  }, [attendanceData, date, sortKey, sortOrder])
+  }, [attendanceData, sortKey, sortOrder])
 
   // Calculate metrics
   const metrics = useMemo(() => {
     const total = todayData.length
-    const present = todayData.filter(r => r.clock_in_time).length
+    const present = todayData.filter(r => r.clockInTime).length
     const onTime = todayData.filter(r => r.status === "on_time").length
     const late = todayData.filter(r => r.status === "late").length
     const avgHours = total > 0
-      ? todayData.reduce((sum, r) => sum + (r.total_hours || 0), 0) / total
+      ? todayData.reduce((sum, r) => sum + (r.totalHours || 0), 0) / total
       : 0
 
     return { total, present, onTime, late, avgHours }
@@ -246,7 +233,7 @@ export default function DashboardPage() {
       <AttendanceFeed date={date} />
 
       {/* Attendance Table */}
-      <Card className="bg-white border-blue-100">
+      <Card className="bg-white border-blue-100 shadow-sm">
         <CardHeader>
           <CardTitle className="text-gray-600">Attendance Records</CardTitle>
           <CardDescription>
@@ -254,15 +241,15 @@ export default function DashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          <div className="rounded-md border border-blue-50">
             <Table>
               <TableHeader>
-                <TableRow className="bg-blue-50 hover:bg-blue-50">
+                <TableRow className="bg-blue-50/50 hover:bg-blue-50/50">
                   <TableHead className="text-gray-700 font-semibold">
                     <Button
                       variant="ghost"
                       onClick={() => toggleSort("name")}
-                      className="h-8 w-full justify-start p-0 hover:bg-blue-100"
+                      className="h-8 w-full justify-start p-0 hover:bg-transparent"
                     >
                       Employee
                       {getSortIcon("name")}
@@ -274,7 +261,7 @@ export default function DashboardPage() {
                     <Button
                       variant="ghost"
                       onClick={() => toggleSort("clockInTime")}
-                      className="h-8 w-full justify-start p-0 hover:bg-blue-100"
+                      className="h-8 w-full justify-start p-0 hover:bg-transparent"
                     >
                       Clock In
                       {getSortIcon("clockInTime")}
@@ -285,17 +272,17 @@ export default function DashboardPage() {
                     <Button
                       variant="ghost"
                       onClick={() => toggleSort("totalHours")}
-                      className="h-8 w-full justify-start p-0 hover:bg-blue-100"
+                      className="h-8 w-full justify-start p-0 hover:bg-transparent"
                     >
                       Hours
                       {getSortIcon("totalHours")}
                     </Button>
                   </TableHead>
-                  <TableHead className="text-gray-700 font-semibold">
+                  <TableHead className="text-gray-700 font-semibold text-right">
                     <Button
                       variant="ghost"
                       onClick={() => toggleSort("status")}
-                      className="h-8 w-full justify-start p-0 hover:bg-blue-100"
+                      className="h-8 w-full justify-end p-0 hover:bg-transparent"
                     >
                       Status
                       {getSortIcon("status")}
@@ -312,26 +299,26 @@ export default function DashboardPage() {
                   </TableRow>
                 ) : (
                   todayData.map((record, idx) => (
-                    <TableRow key={idx} className="hover:bg-blue-50 h-16">
-                      <TableCell className="font-medium text-gray-700 py-4">{record.employee?.name || 'Unknown'}</TableCell>
-                      <TableCell className="text-gray-700 py-4">{record.employee?.emp_id || 'N/A'}</TableCell>
-                      <TableCell className="text-gray-700 py-4">{record.employee?.department?.name || '-'}</TableCell>
+                    <TableRow key={idx} className="hover:bg-blue-50/30 transition-colors h-16">
+                      <TableCell className="font-medium text-gray-700 py-4">{record.employeeName}</TableCell>
+                      <TableCell className="text-gray-700 py-4">{record.empId}</TableCell>
+                      <TableCell className="text-gray-700 py-4">{record.department || '-'}</TableCell>
                       <TableCell className="text-gray-700 py-4">
-                        {new Date(record.clock_in_time).toLocaleTimeString([], {
+                        {new Date(record.clockInTime).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </TableCell>
                       <TableCell className="text-gray-700 py-4">
-                        {record.clock_out_time
-                          ? new Date(record.clock_out_time).toLocaleTimeString([], {
+                        {record.clockOutTime
+                          ? new Date(record.clockOutTime).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
                           })
                           : "-"}
                       </TableCell>
-                      <TableCell className="text-gray-700 py-4">{(record.total_hours || 0).toFixed(2)}h</TableCell>
-                      <TableCell className="py-4">{getStatusBadge(record.status)}</TableCell>
+                      <TableCell className="text-gray-700 py-4">{(record.totalHours || 0).toFixed(2)}h</TableCell>
+                      <TableCell className="py-4 text-right">{getStatusBadge(record.status)}</TableCell>
                     </TableRow>
                   ))
                 )}

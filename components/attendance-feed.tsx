@@ -2,23 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { db } from "@/lib/supabase/db"
-import { formatStatus, getStatusColor } from "@/lib/types"
+import { formatStatus, getStatusColor, type AttendanceRecord, mapDbAttendanceToAttendance } from "@/lib/types"
 import { useEffect, useState } from "react"
 import { RealtimeChannel } from "@supabase/supabase-js"
-
-interface AttendanceRecord {
-  id: string
-  employee_id: string
-  date: string
-  clock_in_time: string
-  clock_out_time: string | null
-  status: string
-  employee?: {
-    name: string
-    emp_id: string
-    department?: { name: string }
-  }
-}
 
 interface AttendanceFeedProps {
   date?: string
@@ -39,9 +25,10 @@ export function AttendanceFeed({ date }: AttendanceFeedProps) {
           ? await db.attendance.getRecords(date, date)
           : await db.attendance.getToday()
 
-        // Sort by clock in time (most recent first) and take top 10
+        // Map and Sort by clock in time (most recent first) and take top 10
         const sorted = records
-          .sort((a, b) => new Date(b.clock_in_time).getTime() - new Date(a.clock_in_time).getTime())
+          .map(mapDbAttendanceToAttendance)
+          .sort((a, b) => new Date(b.clockInTime).getTime() - new Date(a.clockInTime).getTime())
           .slice(0, 10)
 
         setAttendanceData(sorted)
@@ -62,14 +49,14 @@ export function AttendanceFeed({ date }: AttendanceFeedProps) {
       if (payload.eventType === 'INSERT') {
         // Add new record to the top
         setAttendanceData((prev) => {
-          const newData = [payload.new as AttendanceRecord, ...prev].slice(0, 10)
+          const newData = [mapDbAttendanceToAttendance(payload.new), ...prev].slice(0, 10)
           return newData
         })
       } else if (payload.eventType === 'UPDATE') {
         // Update existing record
         setAttendanceData((prev) =>
           prev.map((record) =>
-            record.id === payload.new.id ? (payload.new as AttendanceRecord) : record
+            record.id === payload.new.id ? mapDbAttendanceToAttendance(payload.new) : record
           )
         )
       }
@@ -121,21 +108,21 @@ export function AttendanceFeed({ date }: AttendanceFeedProps) {
               >
                 <div className="flex-1">
                   <p className="font-semibold text-gray-600">
-                    {record.employee?.name || 'Unknown Employee'}
+                    {record.employeeName}
                   </p>
                   <p className="text-xs text-gray-400">
-                    ID: {record.employee?.emp_id || 'N/A'}
+                    ID: {record.empId}
                   </p>
-                  {record.employee?.department && (
+                  {record.department && (
                     <p className="text-xs text-gray-500">
-                      {record.employee.department.name}
+                      {record.department}
                     </p>
                   )}
                   <p className="text-xs text-gray-500 mt-1">
-                    Clocked in at {new Date(record.clock_in_time).toLocaleTimeString()}
-                    {record.clock_out_time && (
+                    Clocked in at {new Date(record.clockInTime).toLocaleTimeString()}
+                    {record.clockOutTime && (
                       <span className="ml-2">
-                        • Out at {new Date(record.clock_out_time).toLocaleTimeString()}
+                        • Out at {new Date(record.clockOutTime).toLocaleTimeString()}
                       </span>
                     )}
                   </p>
