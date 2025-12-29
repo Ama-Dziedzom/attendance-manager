@@ -12,24 +12,64 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { employeeStorage, attendanceStorage } from "@/lib/storage"
 import { User, Search, Filter } from "lucide-react"
+import { db } from "@/lib/supabase/db"
+
+interface Employee {
+  id: string
+  empId: string
+  name: string
+  email: string | null
+  department: string | null
+  departmentId: string
+  agency: string | null
+  agencyId: string
+  isActive: boolean
+  biometricRegistered: boolean
+}
 
 export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState("all")
   const [sortBy, setSortBy] = useState("name")
-  const [employees, setEmployees] = useState(employeeStorage.getAll())
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [departments, setDepartments] = useState<string[]>([])
 
-  const departments = ["Engineering", "HR", "Sales", "Marketing", "Finance"]
-
-  // Refresh employees data
+  // Load employees from Supabase
   useEffect(() => {
-    const loadEmployees = () => {
-      setEmployees(employeeStorage.getAll())
+    const loadEmployees = async () => {
+      try {
+        const [employeesData, depts] = await Promise.all([
+          db.employees.getAll(),
+          db.departments.getAll(),
+        ])
+
+        // Map to Employee interface
+        const mappedEmployees: Employee[] = employeesData.map((emp: any) => ({
+          id: emp.id,
+          empId: emp.emp_id || "N/A",
+          name: emp.name,
+          email: emp.email,
+          department: emp.department?.name || null,
+          departmentId: emp.department_id,
+          agency: emp.agency?.name || null,
+          agencyId: emp.agency_id,
+          isActive: emp.is_active,
+          biometricRegistered: !!emp.biometric_credential,
+        }))
+
+        setEmployees(mappedEmployees)
+
+        // Set unique departments
+        const uniqueDepts = Array.from(new Set(depts.map((d: any) => d.name))) as string[]
+        setDepartments(uniqueDepts)
+      } catch (error) {
+        console.error("Error loading employees:", error)
+      }
     }
+
     loadEmployees()
-    const interval = setInterval(loadEmployees, 5000)
+    const interval = setInterval(loadEmployees, 30000)
     return () => clearInterval(interval)
   }, [])
 
@@ -47,7 +87,7 @@ export default function EmployeesPage() {
     if (sortBy === "name") {
       filtered.sort((a, b) => a.name.localeCompare(b.name))
     } else if (sortBy === "department") {
-      filtered.sort((a, b) => a.department.localeCompare(b.department))
+      filtered.sort((a, b) => (a.department || "").localeCompare(b.department || ""))
     }
 
     return filtered
@@ -105,15 +145,6 @@ export default function EmployeesPage() {
       {/* Employees Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredEmployees.map((employee) => {
-          const employeeAttendance = attendanceStorage.getByEmployeeId(employee.empId)
-          const attendanceRate =
-            employeeAttendance.length > 0
-              ? (
-                (employeeAttendance.filter((r) => r.status === "On Time").length / employeeAttendance.length) *
-                100
-              ).toFixed(0)
-              : 0
-
           return (
             <Link key={employee.id} href={`/dashboard/employees/${employee.empId}`}>
               <Card className="bg-card border-border hover:border-primary cursor-pointer transition-all h-full hover:shadow-md">
@@ -140,15 +171,14 @@ export default function EmployeesPage() {
                     </div>
 
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2">Attendance Rate</p>
+                      <p className="text-xs text-muted-foreground mb-2">Biometric Status</p>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-secondary rounded-full h-2">
-                          <div
-                            className="h-2 rounded-full bg-primary"
-                            style={{ width: `${attendanceRate}%` }}
-                          ></div>
+                        <div className={`px-2 py-1 rounded-full text-xs font-semibold ${employee.biometricRegistered
+                            ? "bg-green-100 text-green-700"
+                            : "bg-yellow-100 text-yellow-700"
+                          }`}>
+                          {employee.biometricRegistered ? "Registered" : "Not Registered"}
                         </div>
-                        <span className="text-sm font-semibold text-primary">{attendanceRate}%</span>
                       </div>
                     </div>
                   </div>

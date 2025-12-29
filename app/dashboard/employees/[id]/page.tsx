@@ -2,19 +2,73 @@
 
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { employeeStorage, attendanceStorage } from "@/lib/storage"
+import { db } from "@/lib/supabase/db"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Building, Mail, Clock, CalendarDays, QrCode } from "lucide-react"
+import { ArrowLeft, Building, Mail, Clock, CalendarDays, Fingerprint } from "lucide-react"
+
+interface EmployeeData {
+  id: string
+  emp_id: string
+  name: string
+  email: string | null
+  department: { name: string } | null
+  agency: { name: string } | null
+  biometric_credential: any[]
+  created_at: string
+}
+
+interface AttendanceRecord {
+  date: string
+  clock_in_time: string
+  clock_out_time: string | null
+  total_hours: number
+  status: string
+}
 
 export default function EmployeeDetailPage() {
   const params = useParams()
   const employeeId = params.id as string
 
-  const employee = employeeStorage.getByEmpId(employeeId)
-  const employeeAttendance = attendanceStorage.getByEmployeeId(employeeId)
+  const [employee, setEmployee] = useState<EmployeeData | null>(null)
+  const [employeeAttendance, setEmployeeAttendance] = useState<AttendanceRecord[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadEmployeeData() {
+      try {
+        setLoading(true)
+        // Fetch employee by emp_id
+        const empData = await db.employees.getByEmpId(employeeId)
+        setEmployee(empData as any)
+
+        // Fetch attendance records
+        if (empData?.id) {
+          const attendance = await db.attendance.getEmployeeRecords(empData.id, 30)
+          setEmployeeAttendance(attendance as any)
+        }
+      } catch (error) {
+        console.error("Error loading employee data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadEmployeeData()
+  }, [employeeId])
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Loading employee details...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!employee) {
     return (
@@ -29,34 +83,30 @@ export default function EmployeeDetailPage() {
     )
   }
 
-  const onTimeCount = employeeAttendance.filter((r) => r.status === "On Time").length
-  const lateCount = employeeAttendance.filter((r) => r.status === "Late").length
-  const earlyDepartureCount = employeeAttendance.filter((r) => r.status === "Early Departure").length
+  const onTimeCount = employeeAttendance.filter((r) => r.status === "on_time").length
+  const lateCount = employeeAttendance.filter((r) => r.status === "late").length
+  const earlyDepartureCount = employeeAttendance.filter((r) => r.status === "early_departure").length
   const attendanceRate =
     employeeAttendance.length > 0 ? ((onTimeCount / employeeAttendance.length) * 100).toFixed(1) : 0
 
-  const recentAttendance = employeeAttendance.slice(-5).reverse()
+  const recentAttendance = employeeAttendance.slice(0, 5)
+  const hasBiometric = employee.biometric_credential && employee.biometric_credential.length > 0
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  const getStatusColorClass = (status: string) => {
     switch (status) {
-      case "On Time":
-        return "default" // usually primary color or green if styled
-      case "Late":
-        return "destructive"
-      case "Early Departure":
-        return "secondary"
-      default:
-        return "outline"
+      case "on_time": return "bg-green-100 text-green-700 hover:bg-green-100/80 border-green-200"
+      case "late": return "bg-yellow-100 text-yellow-700 hover:bg-yellow-100/80 border-yellow-200"
+      case "early_departure": return "bg-blue-100 text-blue-700 hover:bg-blue-100/80 border-blue-200"
+      default: return ""
     }
   }
 
-  // Custom coloring for specific statuses if needed beyond defaults
-  const getStatusColorClass = (status: string) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
-      case "On Time": return "bg-green-100 text-green-700 hover:bg-green-100/80 border-green-200"
-      case "Late": return "bg-yellow-100 text-yellow-700 hover:bg-yellow-100/80 border-yellow-200"
-      case "Early Departure": return "bg-blue-100 text-blue-700 hover:bg-blue-100/80 border-blue-200"
-      default: return ""
+      case "on_time": return "On Time"
+      case "late": return "Late"
+      case "early_departure": return "Early Departure"
+      default: return status
     }
   }
 
@@ -72,7 +122,7 @@ export default function EmployeeDetailPage() {
         </Link>
         <h1 className="text-3xl font-bold text-foreground">{employee.name}</h1>
         <p className="text-muted-foreground mt-1 flex items-center gap-2">
-          <span className="font-mono bg-muted px-2 py-0.5 rounded text-sm">{employee.empId}</span>
+          <span className="font-mono bg-muted px-2 py-0.5 rounded text-sm">{employee.emp_id}</span>
         </p>
       </div>
 
@@ -83,7 +133,7 @@ export default function EmployeeDetailPage() {
             <p className="text-muted-foreground text-sm flex items-center gap-2">
               <Building className="h-4 w-4" /> Department
             </p>
-            <p className="text-xl font-bold text-foreground mt-2">{employee.department}</p>
+            <p className="text-xl font-bold text-foreground mt-2">{employee.department?.name || "N/A"}</p>
           </CardContent>
         </Card>
         <Card>
@@ -91,7 +141,7 @@ export default function EmployeeDetailPage() {
             <p className="text-muted-foreground text-sm flex items-center gap-2">
               <Mail className="h-4 w-4" /> Email
             </p>
-            <p className="text-sm font-medium text-foreground mt-2 truncate" title={employee.email}>{employee.email}</p>
+            <p className="text-sm font-medium text-foreground mt-2 truncate" title={employee.email || ""}>{employee.email || "N/A"}</p>
           </CardContent>
         </Card>
         <Card>
@@ -138,27 +188,43 @@ export default function EmployeeDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Devices */}
+        {/* Biometric Status */}
         <Card className="h-full">
           <CardHeader>
-            <CardTitle>Credential Status</CardTitle>
+            <CardTitle>Biometric Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-primary/10 rounded-full">
-                <QrCode className="h-6 w-6 text-primary" />
+            {hasBiometric ? (
+              <>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-green-100 rounded-full">
+                    <Fingerprint className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Fingerprint Registered</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(employee.biometric_credential[0].created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-sm bg-muted/50 p-4 rounded-lg border border-border">
+                  <span className="text-muted-foreground">Device:</span>
+                  <span className="ml-2 font-medium">
+                    {employee.biometric_credential[0].device_type || "Unknown"}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-100 rounded-full">
+                  <Fingerprint className="h-6 w-6 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="font-medium">No Biometric Registered</p>
+                  <p className="text-sm text-muted-foreground">Fingerprint not enrolled</p>
+                </div>
               </div>
-              <div>
-                <p className="font-medium">QR Code Generated</p>
-                <p className="text-sm text-muted-foreground">{new Date(employee.timestamp).toLocaleDateString()}</p>
-              </div>
-            </div>
-            <div className="text-sm bg-muted/50 p-4 rounded-lg border border-border">
-              <span className="text-muted-foreground">Hash:</span>
-              <code className="ml-2 bg-background px-1 py-0.5 rounded border border-border text-xs break-all">
-                {employee.hash || "N/A"}
-              </code>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -223,25 +289,25 @@ export default function EmployeeDetailPage() {
             <TableBody>
               {recentAttendance.map((record, idx) => (
                 <TableRow key={idx}>
-                  <TableCell>{new Date(record.clockInTime).toLocaleDateString()}</TableCell>
+                  <TableCell>{new Date(record.date).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    {new Date(record.clockInTime).toLocaleTimeString([], {
+                    {record.clock_in_time ? new Date(record.clock_in_time).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
-                    })}
+                    }) : "-"}
                   </TableCell>
                   <TableCell>
-                    {record.clockOutTime
-                      ? new Date(record.clockOutTime).toLocaleTimeString([], {
+                    {record.clock_out_time
+                      ? new Date(record.clock_out_time).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })
                       : "-"}
                   </TableCell>
-                  <TableCell>{record.totalHours.toFixed(2)}h</TableCell>
+                  <TableCell>{record.total_hours ? record.total_hours.toFixed(2) : "0.00"}h</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={getStatusColorClass(record.status)}>
-                      {record.status}
+                      {getStatusLabel(record.status)}
                     </Badge>
                   </TableCell>
                 </TableRow>

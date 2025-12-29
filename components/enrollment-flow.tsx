@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * Employee Enrollment Flow
  * Orchestrates the complete employee registration process:
@@ -106,9 +108,18 @@ export function EnrollmentFlow() {
             setRegisteredEmployee(employeeForDisplay)
             toast.success("Fingerprint enrolled successfully")
             setStep("display")
-        } catch (error) {
-            console.error("Error saving employee:", error)
-            toast.error("Failed to save employee data")
+        } catch (error: any) {
+            // Log detailed error information for debugging
+            console.error("Error saving employee:")
+            console.error("  Message:", error?.message)
+            console.error("  Code:", error?.code)
+            console.error("  Details:", error?.details)
+            console.error("  Hint:", error?.hint)
+            console.error("  Full error:", JSON.stringify(error, null, 2))
+
+            // Show user-friendly error message
+            const errorMessage = error?.message || "Failed to save employee data"
+            toast.error(errorMessage)
         }
     }
 

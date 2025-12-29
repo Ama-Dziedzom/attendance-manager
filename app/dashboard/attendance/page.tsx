@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Calendar } from "@/components/ui/calendar"
-import { attendanceStorage, type AttendanceRecord } from "@/lib/storage"
+import { db } from "@/lib/supabase/db"
 import { CalendarIcon } from "lucide-react"
 import {
   Table,
@@ -18,10 +18,22 @@ import {
 type SortKey = "name" | "clockInTime" | "status" | "totalHours"
 type SortOrder = "asc" | "desc"
 
+interface AttendanceRecord {
+  id: string
+  employeeId: string
+  name: string
+  department: string
+  date: string
+  clockInTime: string
+  clockOutTime: string | null
+  totalHours: number
+  status: string
+}
+
 export default function AttendancePage() {
-  const [dateRange, setDateRange] = useState<{ start: Date | undefined; end: Date | undefined }>({ 
-    start: new Date(), 
-    end: new Date() 
+  const [dateRange, setDateRange] = useState<{ start: Date | undefined; end: Date | undefined }>({
+    start: new Date(),
+    end: new Date()
   })
   const [showStartCalendar, setShowStartCalendar] = useState(false)
   const [showEndCalendar, setShowEndCalendar] = useState(false)
@@ -31,18 +43,76 @@ export default function AttendancePage() {
   const [sortKey, setSortKey] = useState<SortKey>("clockInTime")
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([])
+  const [departments, setDepartments] = useState<string[]>([])
 
-  const departments = ["Engineering", "HR", "Sales", "Marketing", "Finance"]
-
-  // Load attendance data from storage
+  // Load attendance data from Supabase
   useEffect(() => {
-    const loadData = () => {
-      const allRecords = attendanceStorage.getAll()
-      setAttendanceData(allRecords)
+    const loadData = async () => {
+      try {
+        // Get date range for fetching records (last 30 days)
+        const endDate = new Date()
+        const startDate = new Date()
+        startDate.setDate(startDate.getDate() - 30)
+
+        const startDateStr = startDate.toISOString().split('T')[0]
+        const endDateStr = endDate.toISOString().split('T')[0]
+
+        const [records, depts, employees] = await Promise.all([
+          db.attendance.getRecords(startDateStr, endDateStr),
+          db.departments.getAll(),
+          db.employees.getAll(),
+        ])
+
+        // Map database records to AttendanceRecord format
+        const mappedRecords: AttendanceRecord[] = records.map((record: any) => {
+          const employee = employees.find((e: any) => e.id === record.employee_id)
+          const dept = depts.find((d: any) => d.id === employee?.department_id)
+
+          // Calculate total hours
+          let totalHours = 0
+          if (record.clock_in_time && record.clock_out_time) {
+            const clockIn = new Date(record.clock_in_time)
+            const clockOut = new Date(record.clock_out_time)
+            totalHours = (clockOut.getTime() - clockIn.getTime()) / (1000 * 60 * 60)
+          }
+
+          // Determine status
+          let status = "On Time"
+          if (record.clock_in_time) {
+            const clockInTime = new Date(record.clock_in_time)
+            const clockInHour = clockInTime.getHours()
+            const clockInMinute = clockInTime.getMinutes()
+            if (clockInHour > 9 || (clockInHour === 9 && clockInMinute > 0)) {
+              status = "Late"
+            }
+          }
+
+          return {
+            id: record.id,
+            employeeId: employee?.emp_id || "N/A",
+            name: employee?.name || "Unknown",
+            department: dept?.name || "Unknown",
+            date: record.date,
+            clockInTime: record.clock_in_time || "",
+            clockOutTime: record.clock_out_time || null,
+            totalHours,
+            status,
+          }
+        })
+
+        setAttendanceData(mappedRecords)
+
+        // Set unique departments
+        const uniqueDepts = Array.from(new Set(depts.map((d: any) => d.name))) as string[]
+        setDepartments(uniqueDepts)
+      } catch (error) {
+        console.error("Error loading attendance data:", error)
+      }
     }
+
     loadData()
-    // Refresh data every 5 seconds
-    const interval = setInterval(loadData, 5000)
+    // Refresh data every 30 seconds
+    const interval = setInterval(loadData, 30000)
     return () => clearInterval(interval)
   }, [])
 
@@ -201,8 +271,8 @@ export default function AttendancePage() {
           </div>
         </CardContent>
       </Card>
-{/* Table */}
-<Card className="bg-white border-blue-100">
+      {/* Table */}
+      <Card className="bg-white border-blue-100">
         <CardHeader>
           <CardTitle className="text-gray-600">Attendance Records ({filteredData.length})</CardTitle>
         </CardHeader>
@@ -250,9 +320,9 @@ export default function AttendancePage() {
                     <TableCell className="text-gray-700 py-4">
                       {record.clockOutTime
                         ? new Date(record.clockOutTime).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
                         : "-"}
                     </TableCell>
                     <TableCell className="text-gray-700 py-4">{record.totalHours.toFixed(2)}h</TableCell>
