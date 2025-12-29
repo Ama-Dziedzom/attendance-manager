@@ -44,7 +44,6 @@ const navigationItems = [
     { href: "/dashboard/attendance", label: "Attendance", icon: FileText },
     { href: "/dashboard/reports", label: "Reports", icon: FileChartLine },
     { href: "/dashboard/employees", label: "Employees", icon: UsersRound },
-    { href: "/dashboard/devices", label: "Devices", icon: Smartphone },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 

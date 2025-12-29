@@ -4,14 +4,13 @@ import { useRouter, usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { FileChartLine, FileText, Icon, LayoutDashboardIcon, Settings, Smartphone, UsersRound } from "lucide-react"
+import { FileChartLine, FileText, LayoutDashboardIcon, Settings, UsersRound } from "lucide-react"
 
 const navigationItems = [
   { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboardIcon className="w-4 h-4 inline mr-2" /> },
   { href: "/dashboard/attendance", label: "Attendance", icon: <FileText className="w-4 h-4 inline mr-2"/> },
   { href: "/dashboard/reports", label: "Reports", icon: <FileChartLine className="w-4 h-4 inline mr-2"/> },
   { href: "/dashboard/employees", label: "Employees", icon: <UsersRound className="w-4 h-4 inline mr-2"/> },
-  { href: "/dashboard/devices", label: "Devices", icon: <Smartphone className="w-4 h-4 inline mr-2"/> },
   { href: "/dashboard/settings", label: "Settings", icon: <Settings className="w-4 h-4 inline mr-2"/> },
 ]
 
