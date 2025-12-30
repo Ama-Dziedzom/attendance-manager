@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { useState, useMemo, useCallback, useEffect } from "react"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,13 +22,20 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/lib/supabase/client"
-import { Loader2, UserPlus, Mail, Shield, Trash2, Search, UserCheck, ShieldCheck } from "lucide-react"
+import { Loader2, UserPlus, Shield, Trash2, UserCheck, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
-import { capitalize } from "@/lib/utils"
 
-import { Database } from "@/lib/database.types"
+// Reusable components
+import { SearchInput } from "@/components/ui/search-input"
+import { DataTable, type ColumnDef } from "@/components/ui/data-table"
+
+// Utilities
+import { USER_ROLES, formatDate, getInitials } from "@/lib/utils"
+import { isValidEmail, sanitizeName, sanitizeString } from "@/lib/security"
+import type { Database } from "@/lib/database.types"
 
 type Profile = Database['public']['Tables']['profiles']['Row']
+type UserRole = 'it_admin' | 'hr_manager'
 
 export default function UserManagement() {
     const [profiles, setProfiles] = useState<Profile[]>([])
@@ -41,9 +48,9 @@ export default function UserManagement() {
     // Form state
     const [email, setEmail] = useState("")
     const [fullName, setFullName] = useState("")
-    const [role, setRole] = useState<'it_admin' | 'hr_manager'>('hr_manager')
+    const [role, setRole] = useState<UserRole>('hr_manager')
 
-    const fetchProfiles = async () => {
+    const fetchProfiles = useCallback(async () => {
         const { data: { user } } = await supabase.auth.getUser()
         setCurrentUser(user)
 
@@ -58,15 +65,28 @@ export default function UserManagement() {
             setProfiles(data || [])
         }
         setIsLoading(false)
-    }
+    }, [])
 
     useEffect(() => {
         fetchProfiles()
-    }, [])
+    }, [fetchProfiles])
 
     const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!email || !fullName) return
+
+        // Validate inputs
+        const sanitizedName = sanitizeName(fullName)
+        const sanitizedEmail = sanitizeString(email).toLowerCase()
+
+        if (!sanitizedName || sanitizedName.length < 2) {
+            toast.error("Please enter a valid name")
+            return
+        }
+
+        if (!isValidEmail(sanitizedEmail)) {
+            toast.error("Please enter a valid email address")
+            return
+        }
 
         setIsInviting(true)
         try {
@@ -80,7 +100,11 @@ export default function UserManagement() {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session?.access_token}`,
                     },
-                    body: JSON.stringify({ email, fullName, role }),
+                    body: JSON.stringify({
+                        email: sanitizedEmail,
+                        fullName: sanitizedName,
+                        role
+                    }),
                 }
             )
 
@@ -90,7 +114,7 @@ export default function UserManagement() {
                 throw new Error(result.error || "Failed to send invitation")
             }
 
-            toast.success(`Invitation sent to ${email}`)
+            toast.success(`Invitation sent to ${sanitizedEmail}`)
             setIsDialogOpen(false)
             fetchProfiles()
 
@@ -112,6 +136,75 @@ export default function UserManagement() {
         )
     }, [profiles, searchTerm])
 
+    // Role badge component
+    const RoleBadge = ({ role }: { role: string }) => {
+        const config = USER_ROLES[role as keyof typeof USER_ROLES]
+        const Icon = role === 'it_admin' ? Shield : UserCheck
+
+        return (
+            <div className={`flex items-center gap-2 ${config?.color || 'text-gray-600'}`}>
+                <Icon className="h-3.5 w-3.5" />
+                <span className="text-xs font-medium uppercase tracking-wider">
+                    {config?.label || role}
+                </span>
+            </div>
+        )
+    }
+
+    // Table columns
+    const columns: ColumnDef<Profile>[] = [
+        {
+            key: "user",
+            header: "User",
+            render: (row) => (
+                <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-medium border border-slate-200">
+                        {getInitials(row.full_name)}
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-foreground">{row.full_name}</span>
+                        <span className="text-xs text-muted-foreground">{row.email}</span>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: "role",
+            header: "Role",
+            render: (row) => <RoleBadge role={row.role} />,
+        },
+        {
+            key: "status",
+            header: "Status",
+            render: () => (
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] uppercase tracking-widest font-bold">
+                    Active
+                </Badge>
+            ),
+        },
+        {
+            key: "joined",
+            header: "Joined",
+            className: "text-slate-500",
+            render: (row) => formatDate(row.created_at, "MMM d, yyyy"),
+        },
+        {
+            key: "actions",
+            header: "Actions",
+            align: "right",
+            render: (row) => (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-slate-400 hover:text-red-500"
+                    disabled={row.id === currentUser?.id}
+                >
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            ),
+        },
+    ]
+
     if (isLoading) {
         return (
             <div className="flex h-[400px] items-center justify-center">
@@ -123,15 +216,12 @@ export default function UserManagement() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between gap-4">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search users..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-9 bg-background border-input h-10"
-                    />
-                </div>
+                <SearchInput
+                    inputId="user-search"
+                    placeholder="Search users..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
@@ -155,6 +245,7 @@ export default function UserManagement() {
                                     placeholder="John Doe"
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
+                                    maxLength={100}
                                     required
                                 />
                             </div>
@@ -166,15 +257,13 @@ export default function UserManagement() {
                                     placeholder="john@company.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
+                                    maxLength={254}
                                     required
                                 />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="role">Assign Role</Label>
-                                <Select
-                                    value={role}
-                                    onValueChange={(v: any) => setRole(v)}
-                                >
+                                <Select value={role} onValueChange={(v: UserRole) => setRole(v)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a role" />
                                     </SelectTrigger>
@@ -215,79 +304,12 @@ export default function UserManagement() {
                 </Dialog>
             </div>
 
-            <Card className="bg-card border-border shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="border-b border-border">
-                            <tr className="bg-muted/50">
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">User</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Role</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Joined</th>
-                                <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                            {filteredProfiles.map((profile) => (
-                                <tr key={profile.id} className="hover:bg-muted/30 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-medium border border-slate-200">
-                                                {profile.full_name?.charAt(0).toUpperCase() || 'U'}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-semibold text-foreground">{profile.full_name}</span>
-                                                <span className="text-xs text-muted-foreground">{profile.email}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {profile.role === 'it_admin' ? (
-                                            <div className="flex items-center gap-2 text-blue-600">
-                                                <Shield className="h-3.5 w-3.5" />
-                                                <span className="text-xs font-medium uppercase tracking-wider">IT Admin</span>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2 text-emerald-600">
-                                                <UserCheck className="h-3.5 w-3.5" />
-                                                <span className="text-xs font-medium uppercase tracking-wider">HR Manager</span>
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] uppercase tracking-widest font-bold">
-                                            Active
-                                        </Badge>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-slate-500">
-                                        {profile.created_at ? new Date(profile.created_at).toLocaleDateString(undefined, {
-                                            month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric'
-                                        }) : 'N/A'}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-slate-400 hover:text-red-500"
-                                            disabled={profile.id === currentUser?.id}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </Card>
-
-            {filteredProfiles.length === 0 && (
-                <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl">
-                    <p className="text-slate-400">No users found.</p>
-                </div>
-            )}
+            <DataTable
+                data={filteredProfiles}
+                columns={columns}
+                emptyMessage="No users found."
+                className="shadow-sm"
+            />
         </div>
     )
 }

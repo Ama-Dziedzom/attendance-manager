@@ -1,0 +1,60 @@
+"use client"
+
+import { Badge } from "@/components/ui/badge"
+import { ATTENDANCE_STATUS, type AttendanceStatusKey, cn } from "@/lib/utils"
+
+interface StatusBadgeProps {
+    status: string
+    className?: string
+    variant?: 'default' | 'outline' | 'pill'
+}
+
+/**
+ * Unified status badge component for attendance status display
+ * Replaces 6+ duplicate getStatusBadge implementations across the codebase
+ */
+export function StatusBadge({ status, className, variant = 'default' }: StatusBadgeProps) {
+    const config = ATTENDANCE_STATUS[status as AttendanceStatusKey] || {
+        label: status,
+        color: 'bg-gray-500',
+        badgeClass: 'bg-gray-50 text-gray-700 border-gray-200',
+    }
+
+    if (variant === 'outline') {
+        return (
+            <Badge
+                variant="outline"
+                className={cn(
+                    "rounded-md font-bold px-2.5 py-0.5 border-none",
+                    config.badgeClass,
+                    className
+                )}
+            >
+                {config.label}
+            </Badge>
+        )
+    }
+
+    if (variant === 'pill') {
+        return (
+            <span
+                className={cn(
+                    "px-2.5 py-0.5 rounded-full text-xs font-semibold",
+                    config.badgeClass,
+                    className
+                )}
+            >
+                {config.label}
+            </span>
+        )
+    }
+
+    return (
+        <Badge
+            variant="default"
+            className={cn(config.color, className)}
+        >
+            {config.label}
+        </Badge>
+    )
+}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AttendanceFeed } from "@/components/attendance-feed"
 import { db } from "@/lib/supabase/db"
@@ -11,118 +11,117 @@ import {
   CalendarIcon,
   Users,
   UserCheck,
-  UserX,
   Clock,
   TrendingUp,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown
 } from "lucide-react"
 import { format } from "date-fns"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
+
+// Reusable components
+import { MetricsGrid } from "@/components/ui/metric-card"
+import { DataTable, useTableSort, type ColumnDef, type SortOrder } from "@/components/ui/data-table"
+import { StatusBadge } from "@/components/ui/status-badge"
+
+// Utilities
+import { formatTimeLocale, formatHours, REFRESH_INTERVALS } from "@/lib/utils"
 import { type AttendanceRecord, mapDbAttendanceToAttendance } from "@/lib/types"
 
 type SortKey = "name" | "clockInTime" | "status" | "totalHours"
-type SortOrder = "asc" | "desc"
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0])
-  const [sortKey, setSortKey] = useState<SortKey>("clockInTime")
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
   const [totalEmployees, setTotalEmployees] = useState(0)
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // Update date string when selectedDate changes
-  useEffect(() => {
-    const dateString = selectedDate.toISOString().split("T")[0]
-    setDate(dateString)
-  }, [selectedDate])
+  const { sortKey, sortOrder, toggleSort } = useTableSort<SortKey>("clockInTime", "desc")
+
+  const date = useMemo(() => selectedDate.toISOString().split("T")[0], [selectedDate])
 
   // Load attendance data from Supabase
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true)
-        const [records, activeEmployees] = await Promise.all([
-          db.attendance.getRecords(date, date),
-          db.employees.getAll(false) // Only active
-        ])
+  const loadData = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const [records, activeEmployees] = await Promise.all([
+        db.attendance.getRecords(date, date),
+        db.employees.getAll(false),
+      ])
 
-        // Merge active employees with their attendance records
-        const activeIds = new Set(activeEmployees.map(e => e.id))
+      const activeIds = new Set(activeEmployees.map(e => e.id))
 
-        const mappedActive = activeEmployees.map(emp => {
-          const record = records.find(r => r.employee_id === emp.id)
-          if (record) {
-            return mapDbAttendanceToAttendance(record)
-          } else {
-            // Create a pseudo 'absent' record
-            return {
-              id: `absent-${emp.id}`,
-              employeeId: emp.id,
-              employeeName: emp.name,
-              empId: emp.emp_id || '',
-              department: emp.department?.name || null,
-              agency: emp.agency?.name || null,
-              date: date,
-              clockInTime: "",
-              clockOutTime: null,
-              totalHours: 0,
-              status: 'absent' as const,
-              verificationMethod: 'none',
-              locationName: null,
-              shiftName: null,
-              shiftStartTime: null,
-              shiftEndTime: null
-            }
-          }
-        })
+      const mappedActive = activeEmployees.map(emp => {
+        const record = records.find(r => r.employee_id === emp.id)
+        if (record) {
+          return mapDbAttendanceToAttendance(record)
+        }
+        // Create absent record for employees without attendance
+        return {
+          id: `absent-${emp.id}`,
+          employeeId: emp.id,
+          employeeName: emp.name,
+          empId: emp.emp_id || '',
+          department: emp.department?.name || null,
+          agency: emp.agency?.name || null,
+          date,
+          clockInTime: "",
+          clockOutTime: null,
+          totalHours: 0,
+          status: 'absent' as const,
+          verificationMethod: 'none',
+          locationName: null,
+          shiftName: null,
+          shiftStartTime: null,
+          shiftEndTime: null,
+        }
+      })
 
-        // Also add any records for employees NOT in the active list (e.g. inactive ones who have data)
-        const extraRecords = records
-          .filter(r => !activeIds.has(r.employee_id))
-          .map(mapDbAttendanceToAttendance)
+      const extraRecords = records
+        .filter(r => !activeIds.has(r.employee_id))
+        .map(mapDbAttendanceToAttendance)
 
-        setAttendanceData([...mappedActive, ...extraRecords])
-        setTotalEmployees(activeEmployees.length)
-      } catch (error) {
-        console.error("Error loading attendance:", error)
-      } finally {
-        setIsLoading(false)
-      }
+      setAttendanceData([...mappedActive, ...extraRecords])
+      setTotalEmployees(activeEmployees.length)
+    } catch (error) {
+      console.error("Error loading attendance:", error)
+    } finally {
+      setIsLoading(false)
     }
-
-    loadData()
-    const interval = setInterval(loadData, 30000)
-    return () => clearInterval(interval)
   }, [date])
 
+  useEffect(() => {
+    loadData()
+    const interval = setInterval(loadData, REFRESH_INTERVALS.DASHBOARD)
+    return () => clearInterval(interval)
+  }, [loadData])
+
+  // Sort and filter data
   const todayData = useMemo(() => {
-    const filtered = [...attendanceData]
+    const sorted = [...attendanceData]
 
-    filtered.sort((a, b) => {
-      let aVal: any
-      let bVal: any
+    sorted.sort((a, b) => {
+      let aVal: any, bVal: any
 
-      if (sortKey === "name") {
-        aVal = a.employeeName || ''
-        bVal = b.employeeName || ''
-      } else if (sortKey === "clockInTime") {
-        // Sort absent to the bottom
-        if (!a.clockInTime && !b.clockInTime) return 0
-        if (!a.clockInTime) return 1
-        if (!b.clockInTime) return -1
-        aVal = new Date(a.clockInTime).getTime()
-        bVal = new Date(b.clockInTime).getTime()
-      } else if (sortKey === "totalHours") {
-        aVal = a.totalHours || 0
-        bVal = b.totalHours || 0
-      } else if (sortKey === "status") {
-        aVal = a.status
-        bVal = b.status
+      switch (sortKey) {
+        case "name":
+          aVal = a.employeeName || ''
+          bVal = b.employeeName || ''
+          break
+        case "clockInTime":
+          if (!a.clockInTime && !b.clockInTime) return 0
+          if (!a.clockInTime) return 1
+          if (!b.clockInTime) return -1
+          aVal = new Date(a.clockInTime).getTime()
+          bVal = new Date(b.clockInTime).getTime()
+          break
+        case "totalHours":
+          aVal = a.totalHours || 0
+          bVal = b.totalHours || 0
+          break
+        case "status":
+          aVal = a.status
+          bVal = b.status
+          break
+        default:
+          return 0
       }
 
       if (aVal < bVal) return sortOrder === "asc" ? -1 : 1
@@ -130,7 +129,7 @@ export default function DashboardPage() {
       return 0
     })
 
-    return filtered
+    return sorted
   }, [attendanceData, sortKey, sortOrder])
 
   // Calculate metrics
@@ -139,7 +138,7 @@ export default function DashboardPage() {
     const present = todayData.filter(r => r.status !== "absent").length
     const onTime = todayData.filter(r => r.status === "on_time").length
     const late = todayData.filter(r => r.status === "late").length
-    const attendanceCount = todayData.filter(r => r.status !== "absent").length
+    const attendanceCount = present
     const avgHours = attendanceCount > 0
       ? todayData.reduce((sum, r) => sum + (r.totalHours || 0), 0) / attendanceCount
       : 0
@@ -147,36 +146,83 @@ export default function DashboardPage() {
     return { total, present, onTime, late, avgHours }
   }, [todayData, totalEmployees])
 
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-    } else {
-      setSortKey(key)
-      setSortOrder("desc")
-    }
-  }
+  // Metric cards configuration
+  const metricCards = [
+    {
+      title: "Total Employees",
+      value: metrics.total,
+      subtitle: "Tracked today",
+      icon: Users,
+    },
+    {
+      title: "Present",
+      value: metrics.present,
+      subtitle: `${metrics.total > 0 ? ((metrics.present / metrics.total) * 100).toFixed(1) : 0}% rate`,
+      icon: UserCheck,
+    },
+    {
+      title: "On Time",
+      value: metrics.onTime,
+      subtitle: `${metrics.late} late arrivals`,
+      icon: Clock,
+    },
+    {
+      title: "Avg Hours",
+      value: `${metrics.avgHours.toFixed(1)}h`,
+      subtitle: "Per employee today",
+      icon: TrendingUp,
+    },
+  ]
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "on_time":
-        return <Badge variant="default" className="bg-green-500">On Time</Badge>
-      case "late":
-        return <Badge variant="default" className="bg-yellow-500">Late</Badge>
-      case "early_departure":
-        return <Badge variant="default" className="bg-blue-500">Early</Badge>
-      case "half_day":
-        return <Badge variant="default" className="bg-purple-500">Half Day</Badge>
-      case "absent":
-        return <Badge variant="destructive">Absent</Badge>
-      default:
-        return <Badge variant="secondary">{status}</Badge>
-    }
-  }
-
-  const getSortIcon = (key: SortKey) => {
-    if (sortKey !== key) return <ArrowUpDown className="ml-2 h-4 w-4" />
-    return sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-  }
+  // Table columns configuration
+  const columns: ColumnDef<AttendanceRecord>[] = [
+    {
+      key: "name",
+      header: "Employee",
+      sortable: true,
+      className: "font-medium text-foreground",
+      render: (row) => row.employeeName,
+    },
+    {
+      key: "empId",
+      header: "ID",
+      className: "text-foreground",
+      render: (row) => row.empId,
+    },
+    {
+      key: "department",
+      header: "Department",
+      className: "text-muted-foreground",
+      render: (row) => row.department || '-',
+    },
+    {
+      key: "clockInTime",
+      header: "Clock In",
+      sortable: true,
+      className: "text-muted-foreground",
+      render: (row) => formatTimeLocale(row.clockInTime || undefined),
+    },
+    {
+      key: "clockOutTime",
+      header: "Clock Out",
+      className: "text-muted-foreground",
+      render: (row) => formatTimeLocale(row.clockOutTime || undefined),
+    },
+    {
+      key: "totalHours",
+      header: "Hours",
+      sortable: true,
+      className: "text-muted-foreground",
+      render: (row) => formatHours(row.totalHours, 2),
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      align: "right",
+      render: (row) => <StatusBadge status={row.status} />,
+    },
+  ]
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
@@ -191,10 +237,7 @@ export default function DashboardPage() {
 
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-[240px] justify-start text-left font-normal"
-            >
+            <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
               <CalendarIcon className="mr-2 h-4 w-4" />
               {format(selectedDate, "PPP")}
             </Button>
@@ -211,35 +254,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Total Employees", icon: Users },
-          { label: "Present", icon: UserCheck },
-          { label: "On Time", icon: Clock },
-          { label: "Avg Hours", icon: TrendingUp },
-        ].map((item, i) => (
-          <Card key={i}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{item.label}</CardTitle>
-              <item.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">
-                    {i === 0 ? metrics.total : i === 1 ? metrics.present : i === 2 ? metrics.onTime : `${metrics.avgHours.toFixed(1)}h`}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {i === 0 ? "Tracked today" : i === 1 ? `${metrics.total > 0 ? ((metrics.present / metrics.total) * 100).toFixed(1) : 0}% rate` : i === 2 ? `${metrics.late} late arrivals` : "Per employee today"}
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <MetricsGrid metrics={metricCards} isLoading={isLoading} />
 
       {/* Real-time Feed */}
       <AttendanceFeed date={date} />
@@ -252,85 +267,16 @@ export default function DashboardPage() {
             View and manage attendance for {format(selectedDate, "MMMM dd, yyyy")}
           </CardDescription>
         </CardHeader>
-        <div className="overflow-x-auto mt-6">
-          <table className="w-full">
-            <thead className="border-b border-border">
-              <tr className="bg-muted/50">
-                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  <button
-                    onClick={() => toggleSort("name")}
-                    className="flex items-center hover:text-foreground transition-colors uppercase"
-                  >
-                    Employee
-                    {getSortIcon("name")}
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Department</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  <button
-                    onClick={() => toggleSort("clockInTime")}
-                    className="flex items-center hover:text-foreground transition-colors uppercase"
-                  >
-                    Clock In
-                    {getSortIcon("clockInTime")}
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clock Out</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  <button
-                    onClick={() => toggleSort("totalHours")}
-                    className="flex items-center hover:text-foreground transition-colors uppercase"
-                  >
-                    Hours
-                    {getSortIcon("totalHours")}
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  <button
-                    onClick={() => toggleSort("status")}
-                    className="flex items-center ml-auto hover:text-foreground transition-colors uppercase"
-                  >
-                    Status
-                    {getSortIcon("status")}
-                  </button>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {todayData.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground italic">
-                    No attendance records for this date
-                  </td>
-                </tr>
-              ) : (
-                todayData.map((record, idx) => (
-                  <tr key={idx} className="hover:bg-muted/50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-foreground">{record.employeeName}</td>
-                    <td className="px-6 py-4 text-sm text-foreground">{record.empId}</td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">{record.department || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {record.clockInTime ? new Date(record.clockInTime).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }) : "-"}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {record.clockOutTime
-                        ? new Date(record.clockOutTime).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                        : "-"}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">{(record.totalHours || 0).toFixed(2)}h</td>
-                    <td className="px-6 py-4 text-right">{getStatusBadge(record.status)}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="mt-6">
+          <DataTable
+            data={todayData}
+            columns={columns}
+            sortKey={sortKey}
+            sortOrder={sortOrder}
+            onSort={(key) => toggleSort(key as SortKey)}
+            emptyMessage="No attendance records for this date"
+            className="border-0 shadow-none"
+          />
         </div>
       </Card>
     </div>

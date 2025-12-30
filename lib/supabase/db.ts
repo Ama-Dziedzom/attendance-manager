@@ -1,19 +1,23 @@
 /**
  * Supabase Data Layer
- * Replaces localStorage with Supabase database operations
+ * Centralized database operations with type safety
  */
 
 import { supabase } from './client'
 import { Database } from '../database.types'
 
-// Type aliases for easier usage
-type Employee = Database['public']['Tables']['employees']['Row']
+// Import types from centralized types file
+import type {
+    DbEmployee,
+    DbBiometricCredential,
+    DbAttendanceRecord,
+    DbDepartment,
+    DbAgency,
+} from '../types'
+
+// Local type aliases for insert operations
 type NewEmployee = Database['public']['Tables']['employees']['Insert']
-type BiometricCredential = Database['public']['Tables']['biometric_credentials']['Row']
 type NewBiometricCredential = Database['public']['Tables']['biometric_credentials']['Insert']
-type AttendanceRecord = Database['public']['Tables']['attendance_records']['Row']
-type Department = Database['public']['Tables']['departments']['Row']
-type Agency = Database['public']['Tables']['agencies']['Row']
 
 // =====================================================================================
 // EMPLOYEES

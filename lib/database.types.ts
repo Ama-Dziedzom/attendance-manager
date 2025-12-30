@@ -411,7 +411,29 @@ export type Database = {
             }
         }
         Functions: {
-            [_ in never]: never
+            clock_in_employee: {
+                Args: {
+                    p_emp_id: string
+                    p_verification_method?: string
+                }
+                Returns: Json
+            }
+            clock_out_employee: {
+                Args: {
+                    p_emp_id: string
+                }
+                Returns: Json
+            }
+            get_employee_status_today: {
+                Args: {
+                    p_emp_id: string
+                }
+                Returns: Json
+            }
+            refresh_attendance_summaries: {
+                Args: Record<string, never>
+                Returns: void
+            }
         }
         Enums: {
             app_role: "it_admin" | "hr_manager"
