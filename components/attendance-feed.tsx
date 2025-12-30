@@ -29,7 +29,7 @@ export function AttendanceFeed({ date }: AttendanceFeedProps) {
         const sorted = records
           .map(mapDbAttendanceToAttendance)
           .sort((a, b) => new Date(b.clockInTime).getTime() - new Date(a.clockInTime).getTime())
-          .slice(0, 10)
+          .slice(0, 5)
 
         setAttendanceData(sorted)
       } catch (error) {
