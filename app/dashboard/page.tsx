@@ -30,6 +30,7 @@ export default function DashboardPage() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0])
   const [sortKey, setSortKey] = useState<SortKey>("clockInTime")
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
+  const [totalEmployees, setTotalEmployees] = useState(0)
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -44,9 +45,48 @@ export default function DashboardPage() {
     const loadData = async () => {
       try {
         setIsLoading(true)
-        const data = await db.attendance.getRecords(date, date)
-        const mapped = data.map(mapDbAttendanceToAttendance)
-        setAttendanceData(mapped)
+        const [records, activeEmployees] = await Promise.all([
+          db.attendance.getRecords(date, date),
+          db.employees.getAll(false) // Only active
+        ])
+
+        // Merge active employees with their attendance records
+        const activeIds = new Set(activeEmployees.map(e => e.id))
+
+        const mappedActive = activeEmployees.map(emp => {
+          const record = records.find(r => r.employee_id === emp.id)
+          if (record) {
+            return mapDbAttendanceToAttendance(record)
+          } else {
+            // Create a pseudo 'absent' record
+            return {
+              id: `absent-${emp.id}`,
+              employeeId: emp.id,
+              employeeName: emp.name,
+              empId: emp.emp_id || '',
+              department: emp.department?.name || null,
+              agency: emp.agency?.name || null,
+              date: date,
+              clockInTime: "",
+              clockOutTime: null,
+              totalHours: 0,
+              status: 'absent' as const,
+              verificationMethod: 'none',
+              locationName: null,
+              shiftName: null,
+              shiftStartTime: null,
+              shiftEndTime: null
+            }
+          }
+        })
+
+        // Also add any records for employees NOT in the active list (e.g. inactive ones who have data)
+        const extraRecords = records
+          .filter(r => !activeIds.has(r.employee_id))
+          .map(mapDbAttendanceToAttendance)
+
+        setAttendanceData([...mappedActive, ...extraRecords])
+        setTotalEmployees(activeEmployees.length)
       } catch (error) {
         console.error("Error loading attendance:", error)
       } finally {
@@ -55,8 +95,6 @@ export default function DashboardPage() {
     }
 
     loadData()
-
-    // Refresh every 30 seconds
     const interval = setInterval(loadData, 30000)
     return () => clearInterval(interval)
   }, [date])
@@ -72,6 +110,10 @@ export default function DashboardPage() {
         aVal = a.employeeName || ''
         bVal = b.employeeName || ''
       } else if (sortKey === "clockInTime") {
+        // Sort absent to the bottom
+        if (!a.clockInTime && !b.clockInTime) return 0
+        if (!a.clockInTime) return 1
+        if (!b.clockInTime) return -1
         aVal = new Date(a.clockInTime).getTime()
         bVal = new Date(b.clockInTime).getTime()
       } else if (sortKey === "totalHours") {
@@ -92,16 +134,17 @@ export default function DashboardPage() {
 
   // Calculate metrics
   const metrics = useMemo(() => {
-    const total = todayData.length
-    const present = todayData.filter(r => r.clockInTime).length
+    const total = totalEmployees
+    const present = todayData.filter(r => r.status !== "absent").length
     const onTime = todayData.filter(r => r.status === "on_time").length
     const late = todayData.filter(r => r.status === "late").length
-    const avgHours = total > 0
-      ? todayData.reduce((sum, r) => sum + (r.totalHours || 0), 0) / total
+    const attendanceCount = todayData.filter(r => r.status !== "absent").length
+    const avgHours = attendanceCount > 0
+      ? todayData.reduce((sum, r) => sum + (r.totalHours || 0), 0) / attendanceCount
       : 0
 
     return { total, present, onTime, late, avgHours }
-  }, [todayData])
+  }, [todayData, totalEmployees])
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -291,10 +334,10 @@ export default function DashboardPage() {
                     <td className="px-6 py-4 text-sm text-foreground">{record.empId}</td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">{record.department || '-'}</td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {new Date(record.clockInTime).toLocaleTimeString([], {
+                      {record.clockInTime ? new Date(record.clockInTime).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
-                      })}
+                      }) : "-"}
                     </td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">
                       {record.clockOutTime

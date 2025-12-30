@@ -1,66 +1,157 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { CartesianGrid, Line, LineChart, XAxis, Label, PolarRadiusAxis, RadialBar, RadialBarChart, PolarAngleAxis, PolarGrid, Radar, RadarChart } from "recharts"
+import { useState, useMemo, useEffect } from "react"
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, Label, PolarRadiusAxis, RadialBar, RadialBarChart, PolarAngleAxis, PolarGrid, Radar, RadarChart } from "recharts"
+import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfWeek, endOfWeek, isSameDay } from "date-fns"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
-import { Users, UserCheck, Clock, TrendingUp } from "lucide-react"
+import { Users, UserCheck, Clock, TrendingUp, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+import { db } from "@/lib/supabase/db"
 
 type Timeframe = "week" | "month" | "year"
 
 export default function ReportsPage() {
   const [timeframe, setTimeframe] = useState<Timeframe>("week")
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const [reportData, setReportData] = useState<any[]>([])
+  const [metrics, setMetrics] = useState({
+    avgAttendance: 0,
+    totalEmployees: 0,
+    lateArrivals: 0,
+    absentCount: 0
+  })
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Data varies by timeframe
-  const getTimeframeData = () => {
-    if (timeframe === "week") {
-      return [
-        { label: "Mon", onTime: 48, late: 12, absent: 10 },
-        { label: "Tue", onTime: 50, late: 10, absent: 10 },
-        { label: "Wed", onTime: 52, late: 8, absent: 10 },
-        { label: "Thu", onTime: 49, late: 11, absent: 10 },
-        { label: "Fri", onTime: 55, late: 5, absent: 10 },
-        { label: "Sat", onTime: 30, late: 2, absent: 38 },
-        { label: "Sun", onTime: 25, late: 1, absent: 44 },
-      ]
-    } else if (timeframe === "month") {
-      return [
-        { label: "Week 1", onTime: 240, late: 45, absent: 15 },
-        { label: "Week 2", onTime: 245, late: 38, absent: 17 },
-        { label: "Week 3", onTime: 250, late: 35, absent: 15 },
-        { label: "Week 4", onTime: 255, late: 30, absent: 15 },
-        { label: "Week 5", onTime: 100, late: 15, absent: 5 },
-      ]
-    } else {
-      return [
-        { label: "Jan", onTime: 980, late: 140, absent: 60 },
-        { label: "Feb", onTime: 1020, late: 120, absent: 55 },
-        { label: "Mar", onTime: 1050, late: 110, absent: 50 },
-        { label: "Apr", onTime: 1080, late: 100, absent: 45 },
-        { label: "May", onTime: 1100, late: 90, absent: 40 },
-        { label: "Jun", onTime: 1120, late: 85, absent: 35 },
-        { label: "Jul", onTime: 1140, late: 80, absent: 30 },
-        { label: "Aug", onTime: 1160, late: 75, absent: 28 },
-        { label: "Sep", onTime: 1180, late: 70, absent: 25 },
-        { label: "Oct", onTime: 1200, late: 65, absent: 22 },
-        { label: "Nov", onTime: 1150, late: 72, absent: 26 },
-        { label: "Dec", onTime: 1100, late: 85, absent: 30 },
-      ]
+  const loadReportData = async () => {
+    try {
+      setIsLoading(true)
+      let start: Date, end: Date
+
+      if (timeframe === "week") {
+        start = startOfWeek(currentDate)
+        end = endOfWeek(currentDate)
+      } else if (timeframe === "month") {
+        start = addDays(currentDate, -15) // Range for chart consistency
+        end = addDays(currentDate, 15)
+        // Adjust to month boundaries
+        start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+        end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+      } else {
+        start = new Date(currentDate.getFullYear(), 0, 1)
+        end = new Date(currentDate.getFullYear(), 11, 31)
+      }
+
+      const startDateStr = format(start, "yyyy-MM-dd")
+      const endDateStr = format(end, "yyyy-MM-dd")
+
+      const [summaryData, employees] = await Promise.all([
+        db.dashboard.getSummaryRange(startDateStr, endDateStr),
+        db.employees.getAll()
+      ])
+
+      const totalEmpCount = employees.length
+
+      // Create a map for quick lookup
+      const summaryMap = new Map(summaryData.map(s => [s.date, s]))
+
+      // Generate all dates in the range to ensure a continuous chart
+      const chartData: any[] = []
+      let curr = start
+      while (curr <= end) {
+        const dateKey = format(curr, "yyyy-MM-dd")
+        const summary = summaryMap.get(dateKey)
+
+        chartData.push({
+          label: format(curr, timeframe === "year" ? "MMM" : timeframe === "month" ? "d" : "EEE"),
+          onTime: summary?.on_time_count || 0,
+          late: summary?.late_count || 0,
+          absent: summary?.absent_count ?? totalEmpCount,
+          date: dateKey
+        })
+
+        if (timeframe === "year") {
+          curr = addMonths(curr, 1)
+        } else {
+          curr = addDays(curr, 1)
+        }
+      }
+
+      setReportData(chartData)
+
+      // Calculate aggregated metrics
+      const totalOnTime = summaryData.reduce((acc: number, curr: any) => acc + (curr.on_time_count || 0), 0)
+      const totalLate = summaryData.reduce((acc: number, curr: any) => acc + (curr.late_count || 0), 0)
+      const totalAbsent = summaryData.reduce((acc: number, curr: any) => acc + (curr.absent_count || 0), 0)
+
+      const avgRate = summaryData.length > 0
+        ? summaryData.reduce((acc: number, curr: any) => acc + (curr.attendance_rate || 0), 0) / summaryData.length
+        : 0
+
+      setMetrics({
+        avgAttendance: Number(avgRate.toFixed(1)),
+        totalEmployees: totalEmpCount,
+        lateArrivals: totalLate,
+        absentCount: totalAbsent
+      })
+
+    } catch (error) {
+      console.error("Error loading report data:", error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const timeframeData = getTimeframeData()
+  useEffect(() => {
+    loadReportData()
+  }, [timeframe, currentDate])
+
+  const navigate = (direction: "prev" | "next") => {
+    if (timeframe === "week") {
+      setCurrentDate(prev => direction === "prev" ? subDays(prev, 7) : addDays(prev, 7))
+    } else if (timeframe === "month") {
+      setCurrentDate(prev => direction === "prev" ? subMonths(prev, 1) : addMonths(prev, 1))
+    } else {
+      setCurrentDate(prev => direction === "prev" ? subYears(prev, 1) : addYears(prev, 1))
+    }
+  }
+
+  const goToToday = () => setCurrentDate(new Date())
+
+  const periodLabel = useMemo(() => {
+    if (timeframe === "week") {
+      const start = startOfWeek(currentDate)
+      const end = endOfWeek(currentDate)
+      return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`
+    } else if (timeframe === "month") {
+      return format(currentDate, "MMMM yyyy")
+    } else {
+      return format(currentDate, "yyyy")
+    }
+  }, [currentDate, timeframe])
 
   // Status distribution
-  const statusDistribution = [
-    { name: "On Time", value: 75, color: "bg-green-500" },
-    { name: "Late", value: 15, color: "bg-yellow-500" },
-    { name: "Early Dep.", value: 8, color: "bg-blue-500" },
-    { name: "Absent", value: 2, color: "bg-red-500" },
-  ]
+  const statusDistribution = useMemo(() => {
+    const total = metrics.totalEmployees * reportData.length || 1
+    const onTimeVal = reportData.reduce((acc, curr) => acc + curr.onTime, 0)
+    const lateVal = reportData.reduce((acc, curr) => acc + curr.late, 0)
+    const absentVal = reportData.reduce((acc, curr) => acc + curr.absent, 0)
 
-  // Department-wise attendance percentage
+    return [
+      { name: "On Time", value: Math.round((onTimeVal / total) * 100), color: "bg-green-500" },
+      { name: "Late", value: Math.round((lateVal / total) * 100), color: "bg-yellow-500" },
+      { name: "Early Dep.", value: 0, color: "bg-blue-500" },
+      { name: "Absent", value: Math.round((absentVal / total) * 100), color: "bg-red-500" },
+    ]
+  }, [reportData, metrics])
+
+  // Department-wise attendance percentage (Mock for now as we don't have dept summary yet, but could be added)
   const departmentAttendance = [
     { dept: "Engineering", percentage: 95 },
     { dept: "Sales", percentage: 92 },
@@ -69,28 +160,86 @@ export default function ReportsPage() {
     { dept: "Finance", percentage: 96 },
   ]
 
-  const totalEmployees = 70
-  const averageAttendance = (((totalEmployees - 2) / totalEmployees) * 100).toFixed(1)
+  const totalEmployees = metrics.totalEmployees
+  const averageAttendance = metrics.avgAttendance
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       {/* Header */}
-      <div className="flex items-center justify-between space-y-2">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Reports & Analytics</h2>
-          <p className="text-muted-foreground">
-            {timeframe === "week" && "Weekly attendance trends and insights"}
-            {timeframe === "month" && "Monthly attendance trends and insights"}
-            {timeframe === "year" && "Yearly attendance trends and insights"}
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-muted-foreground">
+              {timeframe === "week" && "Weekly trends for "}
+              {timeframe === "month" && "Monthly trends for "}
+              {timeframe === "year" && "Yearly trends for "}
+              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="link"
+                    className="h-auto p-0 font-medium text-foreground underline-offset-4 hover:underline"
+                  >
+                    {periodLabel}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={currentDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setCurrentDate(date)
+                        setIsCalendarOpen(false)
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </p>
+          </div>
         </div>
-        <Tabs value={timeframe} onValueChange={(value) => setTimeframe(value as Timeframe)}>
-          <TabsList>
-            <TabsTrigger value="week">Week</TabsTrigger>
-            <TabsTrigger value="month">Month</TabsTrigger>
-            <TabsTrigger value="year">Year</TabsTrigger>
-          </TabsList>
-        </Tabs>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center border rounded-md p-1 bg-muted/40">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => navigate("prev")}
+              className="h-8 w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={goToToday}
+              className={cn(
+                "h-8 px-2 text-xs font-semibold",
+                isSameDay(currentDate, new Date()) && "bg-background shadow-xs hover:bg-background"
+              )}
+            >
+              Today
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => navigate("next")}
+              className="h-8 w-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Tabs value={timeframe} onValueChange={(value) => setTimeframe(value as Timeframe)}>
+            <TabsList>
+              <TabsTrigger value="week">Week</TabsTrigger>
+              <TabsTrigger value="month">Month</TabsTrigger>
+              <TabsTrigger value="year">Year</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {/* Metrics Cards */}
@@ -151,7 +300,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Attendance Breakdown - Line Chart */}
-      <AttendanceLineChart timeframe={timeframe} timeframeData={timeframeData} />
+      <AttendanceLineChart dataframe={timeframe} timeframeData={reportData} periodLabel={periodLabel} />
 
       <div className="grid gap-4 md:grid-cols-2">
         {/* Status Distribution - Radial */}
@@ -180,7 +329,7 @@ export default function ReportsPage() {
                   color: "hsl(0, 84%, 60%)",
                 },
               }}
-              className="mx-auto aspect-square h-[350px] w-full"
+              className="mx-auto aspect-square h-[250px] w-full"
             >
               <RadialBarChart
                 data={[
@@ -193,8 +342,10 @@ export default function ReportsPage() {
                   },
                 ]}
                 endAngle={180}
+                cx="50%"
+                cy="70%"
                 innerRadius={110}
-                outerRadius={180}
+                outerRadius={160}
               >
                 <ChartTooltip
                   cursor={false}
@@ -288,19 +439,21 @@ export default function ReportsPage() {
                   color: "hsl(221, 83%, 53%)",
                 },
               }}
-              className="mx-auto aspect-square h-[350px]"
+              className="mx-auto aspect-square h-[250px]"
             >
               <RadarChart
                 data={departmentAttendance.map((item) => ({
                   department: item.dept,
                   attendance: item.percentage,
                 }))}
+                margin={{ top: 10, bottom: 10, left: 30, right: 30 }}
+                outerRadius={80}
               >
                 <ChartTooltip
                   cursor={false}
                   content={<ChartTooltipContent indicator="line" />}
                 />
-                <PolarAngleAxis dataKey="department" />
+                <PolarAngleAxis dataKey="department" tick={{ fontSize: 11 }} />
                 <PolarGrid />
                 <Radar
                   dataKey="attendance"
@@ -335,11 +488,12 @@ const chartConfig = {
 } satisfies ChartConfig
 
 type AttendanceLineChartProps = {
-  timeframe: Timeframe
+  dataframe: Timeframe
   timeframeData: Array<{ label: string; onTime: number; late: number; absent: number }>
+  periodLabel: string
 }
 
-function AttendanceLineChart({ timeframe, timeframeData }: AttendanceLineChartProps) {
+function AttendanceLineChart({ dataframe: timeframe, timeframeData, periodLabel }: AttendanceLineChartProps) {
   const [activeChart, setActiveChart] = useState<keyof typeof chartConfig>("total")
 
   // Calculate totals for each metric
@@ -361,8 +515,8 @@ function AttendanceLineChart({ timeframe, timeframeData }: AttendanceLineChartPr
   }))
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col items-stretch p-0 sm:flex-row">
+    <Card className="flex flex-col gap-0 p-0 overflow-hidden">
+      <CardHeader className="flex flex-col items-stretch border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
           <CardTitle>
             {timeframe === "week" && "Weekly Attendance Breakdown"}
@@ -370,9 +524,7 @@ function AttendanceLineChart({ timeframe, timeframeData }: AttendanceLineChartPr
             {timeframe === "year" && "Yearly Attendance Breakdown"}
           </CardTitle>
           <CardDescription>
-            {timeframe === "week" && "Daily attendance summary for the current week"}
-            {timeframe === "month" && "Weekly attendance summary for the current month"}
-            {timeframe === "year" && "Monthly attendance summary for the current year"}
+            Trend analysis for <span className="font-medium text-foreground">{periodLabel}</span>
           </CardDescription>
         </div>
         <div className="flex">
@@ -381,10 +533,10 @@ function AttendanceLineChart({ timeframe, timeframeData }: AttendanceLineChartPr
               <button
                 key={key}
                 data-active={activeChart === key}
-                className="relative flex flex-1 flex-col justify-center gap-1 border-b border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-b-0 sm:border-l sm:border-t-0 sm:px-8 sm:py-6"
+                className="relative flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6"
                 onClick={() => setActiveChart(key)}
               >
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {chartConfig[key].label}
                 </span>
                 <span className="text-lg font-bold leading-none sm:text-3xl">
@@ -413,13 +565,14 @@ function AttendanceLineChart({ timeframe, timeframeData }: AttendanceLineChartPr
               tickMargin={8}
               interval={0}
             />
+            <YAxis hide padding={{ top: 30 }} />
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
             <Line
               dataKey="onTime"
               type="monotone"
               stroke={chartConfig.onTime.color}
               strokeWidth={2}
-              dot={false}
+              dot={true}
               strokeOpacity={activeChart === "onTime" ? 1 : 0.5}
             />
             <Line
@@ -427,7 +580,7 @@ function AttendanceLineChart({ timeframe, timeframeData }: AttendanceLineChartPr
               type="monotone"
               stroke={chartConfig.late.color}
               strokeWidth={2}
-              dot={false}
+              dot={true}
               strokeOpacity={activeChart === "late" ? 1 : 0.5}
             />
             <Line
@@ -435,7 +588,7 @@ function AttendanceLineChart({ timeframe, timeframeData }: AttendanceLineChartPr
               type="monotone"
               stroke={chartConfig.total.color}
               strokeWidth={2}
-              dot={false}
+              dot={true}
               strokeOpacity={activeChart === "total" ? 1 : 0.5}
             />
           </LineChart>

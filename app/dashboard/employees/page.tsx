@@ -33,6 +33,7 @@ export default function EmployeesPage() {
   const [agencyFilter, setAgencyFilter] = useState("all")
   const [sortBy, setSortBy] = useState("name")
   const [viewMode, setViewMode] = useState<"table" | "grid">("table")
+  const [statusFilter, setStatusFilter] = useState<"active" | "all">("active")
   const [employees, setEmployees] = useState<Employee[]>([])
   const [departments, setDepartments] = useState<string[]>([])
   const [agencies, setAgencies] = useState<string[]>([])
@@ -52,7 +53,7 @@ export default function EmployeesPage() {
   const loadEmployees = async () => {
     try {
       const [employeesData, depts, agcs] = await Promise.all([
-        db.employees.getAll(),
+        db.employees.getAll(statusFilter === "all"),
         db.departments.getAll(),
         db.agencies.getAll().catch((err) => {
           console.warn("Error loading agencies, using empty array:", err)
@@ -82,7 +83,7 @@ export default function EmployeesPage() {
     loadEmployees()
     const interval = setInterval(loadEmployees, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [statusFilter])
 
   const filteredEmployees = useMemo(() => {
     const filtered = employees.filter((emp) => {
@@ -160,6 +161,16 @@ export default function EmployeesPage() {
                   {agency}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+            <SelectTrigger className="w-[150px] h-10">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active Only</SelectItem>
+              <SelectItem value="all">All Employees</SelectItem>
             </SelectContent>
           </Select>
 

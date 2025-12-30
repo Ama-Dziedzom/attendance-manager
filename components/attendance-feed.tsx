@@ -45,21 +45,8 @@ export function AttendanceFeed({ date }: AttendanceFeedProps) {
     // Subscribe to real-time updates
     subscription = db.attendance.subscribeToUpdates((payload) => {
       console.log("📡 Real-time attendance update:", payload)
-
-      if (payload.eventType === 'INSERT') {
-        // Add new record to the top
-        setAttendanceData((prev) => {
-          const newData = [mapDbAttendanceToAttendance(payload.new), ...prev].slice(0, 10)
-          return newData
-        })
-      } else if (payload.eventType === 'UPDATE') {
-        // Update existing record
-        setAttendanceData((prev) =>
-          prev.map((record) =>
-            record.id === payload.new.id ? mapDbAttendanceToAttendance(payload.new) : record
-          )
-        )
-      }
+      // Re-fetch to get joined employee data, as real-time payload only has the raw record
+      loadData()
     })
 
     return () => {

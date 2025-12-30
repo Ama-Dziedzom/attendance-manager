@@ -23,8 +23,8 @@ export const employeeService = {
     /**
      * Get all active employees
      */
-    async getAll() {
-        const { data, error } = await supabase
+    async getAll(includeInactive: boolean = false) {
+        let query = supabase
             .from('employees')
             .select(`
         *,
@@ -32,8 +32,12 @@ export const employeeService = {
         agency:agencies(id, name),
         biometric_credential:biometric_credentials(*)
       `)
-            .eq('is_active', true)
-            .order('name')
+
+        if (!includeInactive) {
+            query = query.eq('is_active', true)
+        }
+
+        const { data, error } = await query.order('name')
 
         if (error) throw error
         return data || []
@@ -52,7 +56,6 @@ export const employeeService = {
         biometric_credential:biometric_credentials(*)
       `)
             .eq('emp_id', empId)
-            .eq('is_active', true)
             .single()
 
         if (error) {
@@ -415,6 +418,21 @@ export const dashboardService = {
             throw error
         }
         return data
+    },
+
+    /**
+     * Get summary data for a date range
+     */
+    async getSummaryRange(startDate: string, endDate: string) {
+        const { data, error } = await supabase
+            .from('mv_daily_attendance_summary')
+            .select('*')
+            .gte('date', startDate)
+            .lte('date', endDate)
+            .order('date', { ascending: true })
+
+        if (error) throw error
+        return data || []
     },
 
     /**

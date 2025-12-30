@@ -132,7 +132,7 @@ export default function EmployeeDetailPage() {
     return (
       <div className="min-h-screen bg-muted/30 pb-20">
         {/* Search/Breadcrumb Header Skeleton */}
-        <div className="bg-background px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-8 py-4 flex items-center justify-between sticky top-0 z-10 border-b border-border/40">
           <div className="flex items-center gap-4">
             <Skeleton className="h-9 w-32" />
             <Skeleton className="h-5 w-32" />
@@ -223,7 +223,7 @@ export default function EmployeeDetailPage() {
   return (
     <div className="min-h-screen bg-muted/30 pb-20">
       {/* Search/Breadcrumb Header */}
-      <div className="bg-background px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+      <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-8 py-4 flex items-center justify-between sticky top-0 z-10 border-b border-border/40">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/employees">
             <Button variant="ghost" size="sm" className="gap-2">

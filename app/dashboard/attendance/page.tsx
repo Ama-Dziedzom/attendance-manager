@@ -22,17 +22,7 @@ import { cn } from "@/lib/utils"
 type SortKey = "name" | "clockInTime" | "status" | "totalHours"
 type SortOrder = "asc" | "desc"
 
-interface AttendanceRecord {
-  id: string
-  employeeId: string
-  name: string
-  department: string
-  date: string
-  clockInTime: string
-  clockOutTime: string | null
-  totalHours: number
-  status: string
-}
+import { type AttendanceRecord, mapDbAttendanceToAttendance } from "@/lib/types"
 
 export default function AttendancePage() {
   const [dateRange, setDateRange] = useState<{ start: Date | undefined; end: Date | undefined }>({
@@ -59,89 +49,62 @@ export default function AttendancePage() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [])
 
+  const [isLoading, setIsLoading] = useState(true)
+
   // Load attendance data from Supabase
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Get date range for fetching records (last 30 days)
-        const endDate = new Date()
-        const startDate = new Date()
-        startDate.setDate(startDate.getDate() - 30)
+        setIsLoading(true)
 
-        const startDateStr = startDate.toISOString().split('T')[0]
-        const endDateStr = endDate.toISOString().split('T')[0]
+        let startDateStr: string
+        let endDateStr: string | undefined
 
-        const [records, depts, employees] = await Promise.all([
+        if (dateRange.start && dateRange.end) {
+          startDateStr = format(dateRange.start, "yyyy-MM-dd")
+          endDateStr = format(dateRange.end, "yyyy-MM-dd")
+        } else {
+          // Default to last 30 days if no range is fully selected
+          const endDate = new Date()
+          const startDate = new Date()
+          startDate.setDate(startDate.getDate() - 30)
+
+          startDateStr = format(startDate, "yyyy-MM-dd")
+          endDateStr = format(endDate, "yyyy-MM-dd")
+        }
+
+        const [records, depts] = await Promise.all([
           db.attendance.getRecords(startDateStr, endDateStr),
           db.departments.getAll(),
-          db.employees.getAll(),
         ])
 
-        // Map database records to AttendanceRecord format
-        const mappedRecords: AttendanceRecord[] = records.map((record: any) => {
-          const employee = employees.find((e: any) => e.id === record.employee_id)
-          const dept = depts.find((d: any) => d.id === employee?.department_id)
-
-          // Calculate total hours
-          let totalHours = 0
-          if (record.clock_in_time && record.clock_out_time) {
-            const clockIn = new Date(record.clock_in_time)
-            const clockOut = new Date(record.clock_out_time)
-            totalHours = (clockOut.getTime() - clockIn.getTime()) / (1000 * 60 * 60)
-          }
-
-          // Determine status
-          let status = "On Time"
-          if (record.clock_in_time) {
-            const clockInTime = new Date(record.clock_in_time)
-            const clockInHour = clockInTime.getHours()
-            const clockInMinute = clockInTime.getMinutes()
-            if (clockInHour > 9 || (clockInHour === 9 && clockInMinute > 0)) {
-              status = "Late"
-            }
-          }
-
-          return {
-            id: record.id,
-            employeeId: employee?.emp_id || "N/A",
-            name: employee?.name || "Unknown",
-            department: dept?.name || "Unknown",
-            date: record.date,
-            clockInTime: record.clock_in_time || "",
-            clockOutTime: record.clock_out_time || null,
-            totalHours,
-            status,
-          }
-        })
-
+        const mappedRecords: AttendanceRecord[] = records.map(mapDbAttendanceToAttendance)
         setAttendanceData(mappedRecords)
 
-        // Set unique departments
         const uniqueDepts = Array.from(new Set(depts.map((d: any) => d.name))) as string[]
         setDepartments(uniqueDepts)
       } catch (error) {
         console.error("Error loading attendance data:", error)
+      } finally {
+        setIsLoading(false)
       }
     }
 
     loadData()
-    // Refresh data every 30 seconds
-    const interval = setInterval(loadData, 30000)
-    return () => clearInterval(interval)
-  }, [])
+  }, [dateRange.start, dateRange.end])
 
   const filteredData = useMemo(() => {
     const filtered = attendanceData.filter((record) => {
       const recordDate = record.date
-      const startDateStr = dateRange.start?.toISOString().split("T")[0] || ""
-      const endDateStr = dateRange.end?.toISOString().split("T")[0] || ""
+      const startDateStr = dateRange.start ? format(dateRange.start, "yyyy-MM-dd") : ""
+      const endDateStr = dateRange.end ? format(dateRange.end, "yyyy-MM-dd") : ""
       const inDateRange = (!startDateStr || recordDate >= startDateStr) && (!endDateStr || recordDate <= endDateStr)
 
       const inDepartment = department === "all" || record.department === department
 
       const matchesSearch =
-        record.name.toLowerCase().includes(searchName.toLowerCase()) ||
-        record.employeeId.toLowerCase().includes(searchName.toLowerCase())
+        (record.employeeName || "").toLowerCase().includes(searchName.toLowerCase()) ||
+        (record.empId || "").toLowerCase().includes(searchName.toLowerCase())
 
       const matchesStatus = statusFilter === "all" || record.status === statusFilter
 
@@ -150,12 +113,18 @@ export default function AttendancePage() {
 
     // Sort
     filtered.sort((a, b) => {
-      let aVal: any = a[sortKey]
-      let bVal: any = b[sortKey]
+      let aVal: any
+      let bVal: any
 
-      if (sortKey === "clockInTime") {
-        aVal = new Date(a.clockInTime).getTime()
-        bVal = new Date(b.clockInTime).getTime()
+      if (sortKey === "name") {
+        aVal = a.employeeName || ""
+        bVal = b.employeeName || ""
+      } else if (sortKey === "clockInTime") {
+        aVal = a.clockInTime ? new Date(a.clockInTime).getTime() : 0
+        bVal = b.clockInTime ? new Date(b.clockInTime).getTime() : 0
+      } else {
+        aVal = (a as any)[sortKey]
+        bVal = (b as any)[sortKey]
       }
 
       if (aVal < bVal) return sortOrder === "asc" ? -1 : 1
@@ -339,9 +308,9 @@ export default function AttendancePage() {
             <tbody className="divide-y divide-border">
               {filteredData.map((record, idx) => (
                 <tr key={idx} className="hover:bg-muted/50 transition-colors">
-                  <td className="px-6 py-4 text-sm font-medium text-foreground">{record.name}</td>
-                  <td className="px-6 py-4 text-sm text-foreground">{record.employeeId}</td>
-                  <td className="px-6 py-4 text-sm text-muted-foreground">{record.department}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-foreground">{record.employeeName}</td>
+                  <td className="px-6 py-4 text-sm text-foreground">{record.empId}</td>
+                  <td className="px-6 py-4 text-sm text-muted-foreground">{record.department || "-"}</td>
                   <td className="px-6 py-4 text-sm text-muted-foreground">
                     {new Date(record.clockInTime).toLocaleTimeString([], {
                       hour: "2-digit",
@@ -356,16 +325,18 @@ export default function AttendancePage() {
                       })
                       : "-"}
                   </td>
-                  <td className="px-6 py-4 text-sm text-muted-foreground">{record.totalHours.toFixed(2)}h</td>
-                  <td className="px-6 py-4 text-right whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(record.status)}`}
-                    >
-                      {record.status}
+                  <td className="px-6 py-4 text-sm text-muted-foreground">{(record.totalHours || 0).toFixed(2)}h</td>
+                  <td className="px-6 py-4 text-right">
+                    <span className={cn(
+                      "px-2.5 py-0.5 rounded-full text-xs font-semibold",
+                      getStatusBadgeColor(record.status === 'on_time' ? "On Time" : record.status === 'late' ? "Late" : record.status)
+                    )}>
+                      {record.status === 'on_time' ? 'On Time' : record.status === 'late' ? 'Late' : record.status}
                     </span>
                   </td>
                 </tr>
               ))}
+
               {filteredData.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground italic">
