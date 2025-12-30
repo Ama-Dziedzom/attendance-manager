@@ -181,8 +181,8 @@ export default function AttendancePage() {
             className="pl-9 pr-12 bg-background border-input focus:ring-1 focus:ring-primary h-10"
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-50 select-none pointer-events-none">
-            <Kbd className="bg-transparent border-none text-[10px]">⌘</Kbd>
-            <Kbd className="bg-transparent border-none text-[10px]">F</Kbd>
+            {/* <Kbd className="bg-transparent border-none text-[10px]">⌘</Kbd>
+            <Kbd className="bg-transparent border-none text-[10px]">F</Kbd> */}
           </div>
         </div>
 
