@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { type AttendanceRecord, mapDbAttendanceToAttendance } from "@/lib/types"
 
 type SortKey = "name" | "clockInTime" | "status" | "totalHours"
@@ -211,57 +212,33 @@ export default function DashboardPage() {
 
       {/* Metrics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.total}</div>
-            <p className="text-xs text-muted-foreground">
-              Tracked today
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Present</CardTitle>
-            <UserCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.present}</div>
-            <p className="text-xs text-muted-foreground">
-              {metrics.total > 0 ? ((metrics.present / metrics.total) * 100).toFixed(1) : 0}% attendance rate
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">On Time</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.onTime}</div>
-            <p className="text-xs text-muted-foreground">
-              {metrics.late} late arrivals
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Hours</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.avgHours.toFixed(1)}h</div>
-            <p className="text-xs text-muted-foreground">
-              Per employee today
-            </p>
-          </CardContent>
-        </Card>
+        {[
+          { label: "Total Employees", icon: Users },
+          { label: "Present", icon: UserCheck },
+          { label: "On Time", icon: Clock },
+          { label: "Avg Hours", icon: TrendingUp },
+        ].map((item, i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{item.label}</CardTitle>
+              <item.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">
+                    {i === 0 ? metrics.total : i === 1 ? metrics.present : i === 2 ? metrics.onTime : `${metrics.avgHours.toFixed(1)}h`}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {i === 0 ? "Tracked today" : i === 1 ? `${metrics.total > 0 ? ((metrics.present / metrics.total) * 100).toFixed(1) : 0}% rate` : i === 2 ? `${metrics.late} late arrivals` : "Per employee today"}
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Real-time Feed */}

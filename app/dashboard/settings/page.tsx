@@ -14,37 +14,16 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 // import { attendanceStorage } from "@/lib/storage" // TODO: Replace with Supabase
 import * as XLSX from 'xlsx'
-import { FileSpreadsheet, FileText, AlertTriangle, Save, Trash2, Clock, ShieldCheck, Mail, Calendar as CalendarIcon, Users } from "lucide-react"
-import UserManagement from "@/components/user-management"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { supabase } from "@/lib/supabase/client"
 import { Database } from "@/lib/database.types"
 import { useEffect } from "react"
-import { Loader2 } from "lucide-react"
-
-type Profile = Database['public']['Tables']['profiles']['Row']
+import { Skeleton } from "@/components/ui/skeleton"
+import { CalendarIcon, FileSpreadsheet, FileText, Save, AlertTriangle, Trash2, KeyRound, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 export default function SettingsPage() {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [isProfileLoading, setIsProfileLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-        setProfile(data)
-      }
-      setIsProfileLoading(false)
-    }
-    fetchProfile()
-  }, [])
-
   const [exportFormat, setExportFormat] = useState("excel")
   const [dateRange, setDateRange] = useState({
     start: "2025-11-01",
@@ -61,6 +40,12 @@ export default function SettingsPage() {
     clockOutReminder: 17,
     deviceWarning: 3,
   })
+
+  // Security state
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   // Export functions (same logic, just moved for cleaner component)
   const handleExport = () => {
@@ -177,30 +162,49 @@ export default function SettingsPage() {
     alert("PDF export functionality would be implemented with a library like jsPDF or pdfkit")
   }
 
-  if (isProfileLoading) {
-    return (
-      <div className="flex h-[600px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newPassword || !confirmPassword) return
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match")
+      return
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters")
+      return
+    }
+
+    setIsUpdatingPassword(true)
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      })
+
+      if (error) throw error
+
+      toast.success("Password updated successfully")
+      setNewPassword("")
+      setConfirmPassword("")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update password")
+    } finally {
+      setIsUpdatingPassword(false)
+    }
   }
 
   return (
     <div className="p-8 space-y-10">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-1">Configure dashboard preferences and manage user access</p>
+        <p className="text-muted-foreground mt-1">Configure dashboard preferences and system alerts</p>
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
         <TabsList className="bg-slate-100 p-1">
           <TabsTrigger value="general" className="data-[state=active]:bg-white">General Settings</TabsTrigger>
-          {profile?.role === 'it_admin' && (
-            <TabsTrigger value="users" className="data-[state=active]:bg-white flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              User Management
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="security" className="data-[state=active]:bg-white">Security</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-10">
@@ -454,11 +458,90 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        {profile?.role === 'it_admin' && (
-          <TabsContent value="users">
-            <UserManagement />
-          </TabsContent>
-        )}
+        <TabsContent value="security" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <KeyRound className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <CardTitle>Change Password</CardTitle>
+                  <CardDescription>Update your account password to stay secure</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleUpdatePassword} className="space-y-4 max-w-md">
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="newPassword"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="pr-10"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <Button type="submit" disabled={isUpdatingPassword} className="gap-2">
+                    {isUpdatingPassword ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="h-4 w-4" />
+                        Update Password
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card className="border-amber-200 bg-amber-50/30">
+            <CardContent className="pt-6">
+              <div className="flex gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-amber-900">Security Recommendation</p>
+                  <p className="text-xs text-amber-800/80 leading-relaxed">
+                    Always use a unique password that you don't use on other websites.
+                    A strong password includes uppercase letters, numbers, and symbols.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   )

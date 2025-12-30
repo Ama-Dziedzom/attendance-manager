@@ -12,6 +12,7 @@ import {
     Command,
 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
+import Link from "next/link"
 
 import {
     Sidebar,
@@ -51,18 +52,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             const { data: { user } } = await supabase.auth.getUser()
 
             if (user) {
-                const { data, error } = await supabase
+                const { data } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', user.id)
                     .single()
-
-                console.log('[Sidebar] Auth user ID:', user.id)
-                console.log('[Sidebar] Profile fetch result:', { data, error })
-
-                if (error) {
-                    console.error('[Sidebar] Profile fetch error:', error)
-                }
 
                 setProfile(data)
             }
@@ -101,7 +95,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <a href="#">
+                            <Link href="/dashboard">
                                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                                     <Command className="size-4" />
                                 </div>
@@ -109,7 +103,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                     <span className="truncate font-semibold text-primary">Attendance Hub</span>
                                     <span className="truncate text-xs text-muted-foreground">{profile?.role === "it_admin" ? "IT Admin" : "HR Manager"}</span>
                                 </div>
-                            </a>
+                            </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
@@ -122,10 +116,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             {navigationItems.map((item) => (
                                 <SidebarMenuItem key={item.href}>
                                     <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.label}>
-                                        <a href={item.href}>
+                                        <Link href={item.href}>
                                             <item.icon />
                                             <span>{item.label}</span>
-                                        </a>
+                                        </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             ))}

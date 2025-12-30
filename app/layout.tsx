@@ -30,6 +30,8 @@ export const metadata: Metadata = {
   },
 }
 
+import { Toaster } from "@/components/ui/sonner"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,6 +41,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased ${_geist.className}`} suppressHydrationWarning>
         {children}
+        <Toaster position="top-right" richColors />
         <Analytics />
       </body>
     </html>

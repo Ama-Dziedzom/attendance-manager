@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { db } from "@/lib/supabase/db"
 import { formatStatus, getStatusColor, type AttendanceRecord, mapDbAttendanceToAttendance } from "@/lib/types"
 import { useEffect, useState } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { RealtimeChannel } from "@supabase/supabase-js"
 
 interface AttendanceFeedProps {
@@ -77,11 +78,13 @@ export function AttendanceFeed({ date }: AttendanceFeedProps) {
     return (
       <Card className="bg-white border-blue-100">
         <CardHeader>
-          <CardTitle className="text-gray-600">Real-time Attendance Feed</CardTitle>
+          <Skeleton className="h-6 w-48" />
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-24 w-full rounded-lg" />
+            ))}
           </div>
         </CardContent>
       </Card>

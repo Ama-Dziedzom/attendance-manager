@@ -1,7 +1,8 @@
 "use client"
 
 import UserManagement from "@/components/user-management"
-import { ShieldAlert, Loader2 } from "lucide-react"
+import { ShieldAlert } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
@@ -39,8 +40,16 @@ export default function UsersPage() {
 
     if (isLoading) {
         return (
-            <div className="flex h-screen items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="p-8 space-y-10">
+                <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                        <Skeleton className="h-10 w-64" />
+                        <Skeleton className="h-4 w-96" />
+                    </div>
+                </div>
+                <div className="space-y-4">
+                    <Skeleton className="h-[400px] w-full rounded-xl" />
+                </div>
             </div>
         )
     }
@@ -51,7 +60,6 @@ export default function UsersPage() {
                 <div>
                     <h1 className="text-3xl font-bold text-foreground tracking-tight">User Management</h1>
                     <p className="text-muted-foreground mt-1 flex items-center gap-2">
-                        <ShieldAlert className="h-4 w-4 text-amber-500" />
                         Manage platform access and administrative roles
                     </p>
                 </div>
