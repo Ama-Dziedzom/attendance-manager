@@ -1,0 +1,63 @@
+"use client"
+
+import UserManagement from "@/components/user-management"
+import { ShieldAlert, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
+import { Database } from "@/lib/database.types"
+
+type Profile = Database['public']['Tables']['profiles']['Row']
+
+export default function UsersPage() {
+    const [profile, setProfile] = useState<Profile | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const router = useRouter()
+
+    useEffect(() => {
+        const checkRole = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single()
+
+                if (data?.role !== 'it_admin') {
+                    router.push('/dashboard')
+                    return
+                }
+                setProfile(data)
+            } else {
+                router.push('/login')
+            }
+            setIsLoading(false)
+        }
+        checkRole()
+    }, [router])
+
+    if (isLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
+    }
+
+    return (
+        <div className="p-8 space-y-10">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">User Management</h1>
+                    <p className="text-muted-foreground mt-1 flex items-center gap-2">
+                        <ShieldAlert className="h-4 w-4 text-amber-500" />
+                        Manage platform access and administrative roles
+                    </p>
+                </div>
+            </div>
+
+            <UserManagement />
+        </div>
+    )
+}

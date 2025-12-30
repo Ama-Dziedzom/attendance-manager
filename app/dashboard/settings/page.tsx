@@ -18,7 +18,33 @@ import { FileSpreadsheet, FileText, AlertTriangle, Save, Trash2, Clock, ShieldCh
 import UserManagement from "@/components/user-management"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+import { supabase } from "@/lib/supabase/client"
+import { Database } from "@/lib/database.types"
+import { useEffect } from "react"
+import { Loader2 } from "lucide-react"
+
+type Profile = Database['public']['Tables']['profiles']['Row']
+
 export default function SettingsPage() {
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [isProfileLoading, setIsProfileLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+        setProfile(data)
+      }
+      setIsProfileLoading(false)
+    }
+    fetchProfile()
+  }, [])
+
   const [exportFormat, setExportFormat] = useState("excel")
   const [dateRange, setDateRange] = useState({
     start: "2025-11-01",
@@ -151,6 +177,14 @@ export default function SettingsPage() {
     alert("PDF export functionality would be implemented with a library like jsPDF or pdfkit")
   }
 
+  if (isProfileLoading) {
+    return (
+      <div className="flex h-[600px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
   return (
     <div className="p-8 space-y-10">
       <div>
@@ -161,10 +195,12 @@ export default function SettingsPage() {
       <Tabs defaultValue="general" className="space-y-6">
         <TabsList className="bg-slate-100 p-1">
           <TabsTrigger value="general" className="data-[state=active]:bg-white">General Settings</TabsTrigger>
-          <TabsTrigger value="users" className="data-[state=active]:bg-white flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            User Management
-          </TabsTrigger>
+          {profile?.role === 'it_admin' && (
+            <TabsTrigger value="users" className="data-[state=active]:bg-white flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              User Management
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="general" className="space-y-10">
@@ -418,9 +454,11 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="users">
-          <UserManagement />
-        </TabsContent>
+        {profile?.role === 'it_admin' && (
+          <TabsContent value="users">
+            <UserManagement />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

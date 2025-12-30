@@ -1,121 +1,52 @@
-"use client"
-
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-
-type Role = "it-admin" | "hr-manager"
+import { Fingerprint } from "lucide-react"
+import { LoginForm } from "@/components/login-form"
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [role, setRole] = useState<Role | null>(null)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (role && email && password) {
-      // Store role in session storage for demo
-      sessionStorage.setItem("userRole", role)
-      sessionStorage.setItem("userEmail", email)
-      router.push("/dashboard")
-    }
-  }
-
-  if (!role) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-white mb-2">Attendance Hub</h1>
-            <p className="text-slate-400">Admin Dashboard</p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4">
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-all bg-slate-800 border-slate-700 hover:border-blue-500"
-              onClick={() => setRole("it-admin")}
-            >
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="text-4xl mb-3">🔧</div>
-                  <h3 className="font-semibold text-white mb-2">IT Admin</h3>
-                  <p className="text-sm text-slate-400">Manage devices & security</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-all bg-slate-800 border-slate-700 hover:border-blue-500"
-              onClick={() => setRole("hr-manager")}
-            >
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="text-4xl mb-3">👥</div>
-                  <h3 className="font-semibold text-white mb-2">HR Manager</h3>
-                  <p className="text-sm text-slate-400">View attendance reports</p>
-                </div>
-              </CardContent>
-            </Card>
+  return (
+    <div className="grid min-h-svh lg:grid-cols-2 bg-slate-50">
+      <div className="flex flex-col gap-4 p-6 md:p-10">
+        <div className="flex justify-center gap-2 md:justify-start">
+          <a href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-slate-900 transition-opacity hover:opacity-80">
+            <div className="bg-blue-600 text-white flex size-10 items-center justify-center rounded-xl shadow-lg shadow-blue-600/20">
+              <Fingerprint className="size-6" />
+            </div>
+            <span>Attendance Hub</span>
+          </a>
+        </div>
+        <div className="flex flex-1 items-center justify-center py-10">
+          <div className="w-full max-w-sm">
+            <LoginForm />
           </div>
         </div>
+        <div className="text-center md:text-left">
+          <p className="text-xs text-slate-400">
+            &copy; {new Date().getFullYear()} Attendance Hub. Secure Administrative Access.
+          </p>
+        </div>
       </div>
-    )
-  }
+      <div className="bg-slate-900 relative hidden lg:block overflow-hidden">
+        <img
+          src="/login-bg.png"
+          alt="Premium Office Security"
+          className="absolute inset-0 h-full w-full object-cover dark:brightness-50 opacity-90 transition-transform duration-1000 hover:scale-105"
+        />
+        {/* Gradients to blend image */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/20 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent"></div>
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-slate-800 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-white">Sign In as {role === "it-admin" ? "IT Admin" : "HR Manager"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <Label htmlFor="email" className="text-slate-300">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-slate-700 border-slate-600 text-white mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="password" className="text-slate-300">
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-slate-700 border-slate-600 text-white mt-1"
-              />
-            </div>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-              Sign In
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full text-slate-300 border-slate-600 hover:bg-slate-700 bg-transparent"
-              onClick={() => setRole(null)}
-            >
-              Back
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+        {/* Overlay Text */}
+        <div className="absolute bottom-12 left-12 right-12 z-10 space-y-4">
+          <div className="inline-block px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 backdrop-blur-md text-blue-100 text-xs font-semibold tracking-wider uppercase">
+            Enterprise Grade
+          </div>
+          <h2 className="text-4xl font-bold text-white leading-tight">
+            Advanced Attendance <br /> & Biometric Management
+          </h2>
+          <p className="text-slate-200 text-lg max-w-md">
+            Streamlining workplace entry with secure fingerprint integration and real-time reporting.
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

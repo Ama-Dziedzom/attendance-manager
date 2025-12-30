@@ -6,7 +6,6 @@ import {
     FileText,
     FileChartLine,
     UsersRound,
-    Smartphone,
     Settings,
     LogOut,
     UserCircle,
@@ -25,9 +24,6 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarMenuSub,
-    SidebarMenuSubButton,
-    SidebarMenuSubItem,
     SidebarRail,
 } from "@/components/ui/sidebar"
 import {
@@ -39,27 +35,65 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const navigationItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
-    { href: "/dashboard/attendance", label: "Attendance", icon: FileText },
-    { href: "/dashboard/reports", label: "Reports", icon: FileChartLine },
-    { href: "/dashboard/employees", label: "Employees", icon: UsersRound },
-    { href: "/dashboard/settings", label: "Settings", icon: Settings },
-]
+import { supabase } from "@/lib/supabase/client"
+import { Database } from "@/lib/database.types"
+
+type Profile = Database['public']['Tables']['profiles']['Row']
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname()
     const router = useRouter()
-    const [role, setRole] = React.useState<string | null>(null)
+    const [profile, setProfile] = React.useState<Profile | null>(null)
+    const [isLoading, setIsLoading] = React.useState(true)
 
     React.useEffect(() => {
-        setRole(sessionStorage.getItem("userRole"))
+        const fetchProfile = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+
+            if (user) {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single()
+
+                console.log('[Sidebar] Auth user ID:', user.id)
+                console.log('[Sidebar] Profile fetch result:', { data, error })
+
+                if (error) {
+                    console.error('[Sidebar] Profile fetch error:', error)
+                }
+
+                setProfile(data)
+            }
+            setIsLoading(false)
+        }
+
+        fetchProfile()
     }, [])
 
-    const handleLogout = () => {
-        sessionStorage.clear()
-        router.push("/")
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
+        router.push("/login")
+        router.refresh()
     }
+
+    const navigationItems = React.useMemo(() => {
+        const baseItems = [
+            { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
+            { href: "/dashboard/attendance", label: "Attendance", icon: FileText },
+            { href: "/dashboard/reports", label: "Reports", icon: FileChartLine },
+            { href: "/dashboard/employees", label: "Employees", icon: UsersRound },
+        ]
+
+        if (profile?.role === 'it_admin') {
+            baseItems.push({ href: "/dashboard/users", label: "Users", icon: UserCircle })
+        }
+
+        baseItems.push({ href: "/dashboard/settings", label: "Settings", icon: Settings })
+
+        return baseItems
+    }, [profile?.role])
 
     return (
         <Sidebar collapsible="icon" {...props} variant="sidebar">
@@ -73,7 +107,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-semibold text-primary">Attendance Hub</span>
-                                    <span className="truncate text-xs text-muted-foreground">{role === "it-admin" ? "IT Admin" : "HR Manager"}</span>
+                                    <span className="truncate text-xs text-muted-foreground">{profile?.role === "it_admin" ? "IT Admin" : "HR Manager"}</span>
                                 </div>
                             </a>
                         </SidebarMenuButton>
@@ -112,8 +146,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                         <UserCircle className="size-4" />
                                     </div>
                                     <div className="grid flex-1 text-left text-sm leading-tight">
-                                        <span className="truncate font-semibold">{role || "User"}</span>
-                                        <span className="truncate text-xs text-muted-foreground">{role === "it-admin" ? "admin@company.com" : "user@company.com"}</span>
+                                        <span className="truncate font-semibold">{profile?.full_name || "User"}</span>
+                                        <span className="truncate text-xs text-muted-foreground">{profile?.email || "user@company.com"}</span>
                                     </div>
                                     <LogOut className="ml-auto size-4" />
                                 </SidebarMenuButton>
@@ -130,8 +164,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                             <UserCircle className="size-4" />
                                         </div>
                                         <div className="grid flex-1 text-left text-sm leading-tight">
-                                            <span className="truncate font-semibold">{role || "User"}</span>
-                                            <span className="truncate text-xs">{role === "it-admin" ? "admin@company.com" : "user@company.com"}</span>
+                                            <span className="truncate font-semibold">{profile?.full_name || "User"}</span>
+                                            <span className="truncate text-xs">{profile?.email || "user@company.com"}</span>
                                         </div>
                                     </div>
                                 </DropdownMenuLabel>

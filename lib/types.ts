@@ -154,14 +154,20 @@ export interface LeaveRequest {
  * Convert database employee to frontend employee
  */
 export function mapDbEmployeeToEmployee(dbEmployee: any): Employee {
+    const department = Array.isArray(dbEmployee.department) ? dbEmployee.department[0] : dbEmployee.department
+    const agency = Array.isArray(dbEmployee.agency) ? dbEmployee.agency[0] : dbEmployee.agency
+    const biometric = Array.isArray(dbEmployee.biometric_credential)
+        ? dbEmployee.biometric_credential[0]
+        : dbEmployee.biometric_credential
+
     return {
         id: dbEmployee.id,
         empId: dbEmployee.emp_id,
         name: dbEmployee.name,
         email: dbEmployee.email,
-        department: dbEmployee.department?.name || null,
+        department: department?.name || null,
         departmentId: dbEmployee.department_id,
-        agency: dbEmployee.agency?.name || null,
+        agency: agency?.name || null,
         agencyId: dbEmployee.agency_id,
         jobTitle: dbEmployee.job_title || null,
         location: dbEmployee.location || null,
@@ -175,18 +181,10 @@ export function mapDbEmployeeToEmployee(dbEmployee: any): Employee {
         dateJoin: dbEmployee.date_join,
         isActive: dbEmployee.is_active ?? true,
         createdAt: dbEmployee.created_at,
-        biometricRegistered: Array.isArray(dbEmployee.biometric_credential)
-            ? dbEmployee.biometric_credential.length > 0
-            : !!dbEmployee.biometric_credential,
-        fingerprintId: Array.isArray(dbEmployee.biometric_credential)
-            ? dbEmployee.biometric_credential[0]?.fingerprint_id
-            : dbEmployee.biometric_credential?.fingerprint_id,
-        biometricDeviceType: Array.isArray(dbEmployee.biometric_credential)
-            ? dbEmployee.biometric_credential[0]?.device_type
-            : dbEmployee.biometric_credential?.device_type,
-        biometricRegisteredAt: Array.isArray(dbEmployee.biometric_credential)
-            ? dbEmployee.biometric_credential[0]?.registered_at
-            : dbEmployee.biometric_credential?.registered_at,
+        biometricRegistered: !!biometric,
+        fingerprintId: biometric?.fingerprint_id,
+        biometricDeviceType: biometric?.device_type,
+        biometricRegisteredAt: biometric?.registered_at,
     }
 }
 
@@ -194,23 +192,29 @@ export function mapDbEmployeeToEmployee(dbEmployee: any): Employee {
  * Convert database attendance record to frontend format
  */
 export function mapDbAttendanceToAttendance(dbRecord: any): AttendanceRecord {
+    const employee = Array.isArray(dbRecord.employee) ? dbRecord.employee[0] : dbRecord.employee
+    const department = Array.isArray(employee?.department) ? employee?.department[0] : employee?.department
+    const agency = Array.isArray(employee?.agency) ? employee?.agency[0] : employee?.agency
+    const location = Array.isArray(dbRecord.location) ? dbRecord.location[0] : dbRecord.location
+    const shift = Array.isArray(dbRecord.shift) ? dbRecord.shift[0] : dbRecord.shift
+
     return {
         id: dbRecord.id,
         employeeId: dbRecord.employee_id,
-        employeeName: dbRecord.employee?.name || 'Unknown',
-        empId: dbRecord.employee?.emp_id || '',
-        department: dbRecord.employee?.department?.name || null,
-        agency: dbRecord.employee?.agency?.name || null,
+        employeeName: employee?.name || 'Unknown',
+        empId: employee?.emp_id || '',
+        department: department?.name || null,
+        agency: agency?.name || null,
         date: dbRecord.date,
         clockInTime: dbRecord.clock_in_time,
         clockOutTime: dbRecord.clock_out_time,
         totalHours: dbRecord.total_hours,
         status: dbRecord.status,
         verificationMethod: dbRecord.verification_method,
-        locationName: dbRecord.location?.name || null,
-        shiftName: dbRecord.shift?.name || null,
-        shiftStartTime: dbRecord.shift?.start_time || null,
-        shiftEndTime: dbRecord.shift?.end_time || null,
+        locationName: location?.name || null,
+        shiftName: shift?.name || null,
+        shiftStartTime: shift?.start_time || null,
+        shiftEndTime: shift?.end_time || null,
     }
 }
 

@@ -21,19 +21,36 @@ export function AttendanceFeed({ date }: AttendanceFeedProps) {
       try {
         setIsLoading(true)
         // Get today's attendance if no date provided
-        const records = date
+        const records = (date && date.trim() !== "")
           ? await db.attendance.getRecords(date, date)
           : await db.attendance.getToday()
 
-        // Map and Sort by clock in time (most recent first) and take top 10
+        if (!Array.isArray(records)) {
+          console.warn("Expected array from getRecords, got:", records)
+          setAttendanceData([])
+          return
+        }
+
+        // Map and Sort by clock in time (most recent first) and take top 5
         const sorted = records
           .map(mapDbAttendanceToAttendance)
-          .sort((a, b) => new Date(b.clockInTime).getTime() - new Date(a.clockInTime).getTime())
+          .filter(r => r.clockInTime) // Only show real clock-ins
+          .sort((a, b) => {
+            const timeA = a.clockInTime ? new Date(a.clockInTime).getTime() : 0
+            const timeB = b.clockInTime ? new Date(b.clockInTime).getTime() : 0
+            return timeB - timeA
+          })
           .slice(0, 5)
 
         setAttendanceData(sorted)
-      } catch (error) {
-        console.error("Error loading attendance:", error)
+      } catch (error: any) {
+        console.error("Error loading attendance:", {
+          message: error?.message || error,
+          details: error?.details,
+          hint: error?.hint,
+          code: error?.code,
+          error
+        })
       } finally {
         setIsLoading(false)
       }
