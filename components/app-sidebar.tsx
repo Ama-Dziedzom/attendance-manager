@@ -10,6 +10,7 @@ import {
     LogOut,
     UserCircle,
     Command,
+    MoreVertical,
 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
@@ -26,6 +27,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarRail,
+    useSidebar,
 } from "@/components/ui/sidebar"
 import {
     DropdownMenu,
@@ -35,35 +37,49 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { supabase } from "@/lib/supabase/client"
 import { Database } from "@/lib/database.types"
+import { cn } from "@/lib/utils"
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname()
     const router = useRouter()
+    const { state } = useSidebar()
+    const isCollapsed = state === "collapsed"
     const [profile, setProfile] = React.useState<Profile | null>(null)
+    const [employeeCount, setEmployeeCount] = React.useState<number | null>(null)
     const [isLoading, setIsLoading] = React.useState(true)
 
     React.useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchData = async () => {
+            setIsLoading(true)
             const { data: { user } } = await supabase.auth.getUser()
 
             if (user) {
-                const { data } = await supabase
+                // Fetch profile
+                const { data: profileData } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', user.id)
                     .single()
 
-                setProfile(data)
+                setProfile(profileData)
+
+                // Fetch employee count
+                const { count } = await supabase
+                    .from('employees')
+                    .select('*', { count: 'exact', head: true })
+
+                setEmployeeCount(count || 0)
             }
             setIsLoading(false)
         }
 
-        fetchProfile()
+        fetchData()
     }, [])
 
     const handleLogout = async () => {
@@ -72,101 +88,186 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         router.refresh()
     }
 
-    const navigationItems = React.useMemo(() => {
-        const baseItems = [
-            { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
-            { href: "/dashboard/attendance", label: "Attendance", icon: FileText },
-            { href: "/dashboard/reports", label: "Reports", icon: FileChartLine },
-            { href: "/dashboard/employees", label: "Employees", icon: UsersRound },
+    const navigationGroups = React.useMemo(() => {
+        return [
+            {
+                label: "Dashboard",
+                items: [
+                    { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+                ]
+            },
+            {
+                label: "Tracking",
+                items: [
+                    { href: "/dashboard/attendance", label: "Attendance", icon: FileText },
+                    { href: "/dashboard/reports", label: "Reports", icon: FileChartLine },
+                ]
+            },
+            {
+                label: "Management",
+                items: [
+                    {
+                        href: "/dashboard/employees",
+                        label: "Employees",
+                        icon: UsersRound,
+                        badge: employeeCount?.toString()
+                    },
+                    ...(profile?.role === 'it_admin' ? [{ href: "/dashboard/users", label: "Users", icon: UserCircle }] : []),
+                ]
+            }
         ]
-
-        if (profile?.role === 'it_admin') {
-            baseItems.push({ href: "/dashboard/users", label: "Users", icon: UserCircle })
-        }
-
-        baseItems.push({ href: "/dashboard/settings", label: "Settings", icon: Settings })
-
-        return baseItems
-    }, [profile?.role])
+    }, [profile?.role, employeeCount])
 
     return (
-        <Sidebar collapsible="icon" {...props} variant="sidebar">
-            <SidebarHeader>
+        <Sidebar collapsible="icon" {...props} variant="sidebar" className="border-r bg-sidebar">
+            <SidebarHeader className="p-0">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href="/dashboard">
-                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                                    <Command className="size-4" />
+                        <div className={cn(
+                            "flex items-center gap-3 px-5 py-6",
+                            isCollapsed && "px-0 justify-center"
+                        )}>
+                            <div className={cn(
+                                "flex items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0",
+                                isCollapsed ? "size-7" : "size-8"
+                            )}>
+                                <Command className={cn(isCollapsed ? "size-4" : "size-5")} />
+                            </div>
+                            {!isCollapsed && (
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="text-sm font-semibold tracking-tight text-foreground leading-tight">
+                                        Attendance Hub
+                                    </span>
+                                    <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground mt-1 flex items-center gap-1.5">
+                                        {profile?.role === "it_admin" ? "IT Administrator" : "HR Manager"}
+                                    </span>
                                 </div>
-                                <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-semibold text-primary">Attendance Hub</span>
-                                    <span className="truncate text-xs text-muted-foreground">{profile?.role === "it_admin" ? "IT Admin" : "HR Manager"}</span>
-                                </div>
-                            </Link>
-                        </SidebarMenuButton>
+                            )}
+                        </div>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
-            <SidebarContent>
-                <SidebarGroup>
-                    <SidebarGroupLabel>Platform</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            {navigationItems.map((item) => (
-                                <SidebarMenuItem key={item.href}>
-                                    <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.label}>
-                                        <Link href={item.href}>
-                                            <item.icon />
-                                            <span>{item.label}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
+
+            <SidebarContent className="px-2 gap-0 overflow-x-hidden">
+                {navigationGroups.map((group) => (
+                    <SidebarGroup key={group.label} className={cn("py-2", isCollapsed && "px-0")}>
+                        {!isCollapsed && (
+                            <SidebarGroupLabel className="px-3 text-[11px] font-medium text-muted-foreground/60 mb-1">
+                                {group.label}
+                            </SidebarGroupLabel>
+                        )}
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                {group.items.map((item) => {
+                                    const isActive = pathname === item.href
+                                    return (
+                                        <SidebarMenuItem key={item.href}>
+                                            <SidebarMenuButton
+                                                asChild
+                                                isActive={isActive}
+                                                tooltip={item.label}
+                                                className={cn(
+                                                    "h-9",
+                                                    isCollapsed ? "px-0 justify-center" : "px-3",
+                                                    !isActive && "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                                )}
+                                            >
+                                                <Link href={item.href} className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
+                                                    <item.icon className="size-4 shrink-0" />
+                                                    {!isCollapsed && (
+                                                        <>
+                                                            <span className="text-sm">{item.label}</span>
+                                                            {item.badge && (
+                                                                <span className="ml-auto inline-flex h-5 items-center justify-center rounded-full px-1.5 text-[10px] font-medium bg-white/20 border border-white/20">
+                                                                    {item.badge}
+                                                                </span>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    )
+                                })}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+                ))}
             </SidebarContent>
-            <SidebarFooter>
+
+            <SidebarFooter className="p-2 mt-auto border-t">
                 <SidebarMenu>
+                    <SidebarMenuItem className="mb-1">
+                        <SidebarMenuButton
+                            asChild
+                            isActive={pathname === "/dashboard/settings"}
+                            tooltip="Settings"
+                            className={cn(
+                                "h-9",
+                                isCollapsed ? "px-0 justify-center" : "px-3",
+                                pathname !== "/dashboard/settings" && "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                            )}
+                        >
+                            <Link href="/dashboard/settings" className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
+                                <Settings className="size-4 shrink-0" />
+                                {!isCollapsed && <span className="text-sm">Settings</span>}
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+
                     <SidebarMenuItem>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <SidebarMenuButton
                                     size="lg"
-                                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                                    className={cn(
+                                        "h-12 w-full transition-colors rounded-md",
+                                        isCollapsed ? "px-0 justify-center" : "px-2 hover:bg-muted/50"
+                                    )}
                                 >
-                                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                                        <UserCircle className="size-4" />
+                                    <div className={cn("flex items-center w-full", isCollapsed ? "justify-center" : "gap-2.5")}>
+                                        <div className={cn(
+                                            "flex items-center justify-center rounded-full border border-border bg-muted shrink-0",
+                                            isCollapsed ? "size-7" : "size-8"
+                                        )}>
+                                            <UserCircle className={cn("text-muted-foreground", isCollapsed ? "size-4" : "size-5")} />
+                                        </div>
+                                        {!isCollapsed && (
+                                            <div className="flex flex-col text-left overflow-hidden">
+                                                <span className="text-sm font-semibold text-foreground truncate leading-tight">
+                                                    {profile?.full_name || "User Account"}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground truncate -mt-0.5">
+                                                    {profile?.email || "user@company.com"}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {!isCollapsed && (
+                                            <MoreVertical className="ml-auto size-3.5 text-muted-foreground/50 shrink-0" />
+                                        )}
                                     </div>
-                                    <div className="grid flex-1 text-left text-sm leading-tight">
-                                        <span className="truncate font-semibold">{profile?.full_name || "User"}</span>
-                                        <span className="truncate text-xs text-muted-foreground">{profile?.email || "user@company.com"}</span>
-                                    </div>
-                                    <LogOut className="ml-auto size-4" />
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
-                                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                                side="bottom"
-                                align="end"
-                                sideOffset={4}
+                                className="w-[--radix-dropdown-menu-trigger-width] min-w-[200px] shadow-lg"
+                                side={isCollapsed ? "right" : "bottom"}
+                                align={isCollapsed ? "start" : "end"}
+                                sideOffset={8}
                             >
-                                <DropdownMenuLabel className="p-0 font-normal">
-                                    <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                                            <UserCircle className="size-4" />
-                                        </div>
-                                        <div className="grid flex-1 text-left text-sm leading-tight">
-                                            <span className="truncate font-semibold">{profile?.full_name || "User"}</span>
-                                            <span className="truncate text-xs">{profile?.email || "user@company.com"}</span>
-                                        </div>
-                                    </div>
+                                <DropdownMenuLabel className="font-normal text-xs text-muted-foreground px-2 py-1.5">
+                                    Account
                                 </DropdownMenuLabel>
+                                <DropdownMenuItem className="cursor-pointer space-x-2">
+                                    <UserCircle className="size-4 text-muted-foreground" />
+                                    <span>Profile</span>
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={handleLogout}>
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    Log out
+                                <DropdownMenuItem
+                                    onClick={handleLogout}
+                                    className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10 space-x-2"
+                                >
+                                    <LogOut className="size-4" />
+                                    <span>Log out</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -177,3 +278,4 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </Sidebar>
     )
 }
+
