@@ -14,7 +14,9 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 // import { attendanceStorage } from "@/lib/storage" // TODO: Replace with Supabase
 import * as XLSX from 'xlsx'
-import { FileSpreadsheet, FileText, AlertTriangle, Save, Trash2, Clock, ShieldCheck, Mail, Calendar as CalendarIcon } from "lucide-react"
+import { FileSpreadsheet, FileText, AlertTriangle, Save, Trash2, Clock, ShieldCheck, Mail, Calendar as CalendarIcon, Users } from "lucide-react"
+import UserManagement from "@/components/user-management"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function SettingsPage() {
   const [exportFormat, setExportFormat] = useState("excel")
@@ -153,257 +155,273 @@ export default function SettingsPage() {
     <div className="p-8 space-y-10">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-1">Configure dashboard preferences and export data</p>
+        <p className="text-muted-foreground mt-1">Configure dashboard preferences and manage user access</p>
       </div>
 
-      {/* Export Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Export Attendance Data</CardTitle>
-          <CardDescription>Download attendance records in your preferred format</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label>Date Range</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">From</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !dateRange.start && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateRange.start ? format(new Date(dateRange.start + 'T00:00:00'), "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={dateRange.start ? new Date(dateRange.start + 'T00:00:00') : undefined}
-                        onSelect={(date) => date && setDateRange({ ...dateRange, start: format(date, "yyyy-MM-dd") })}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="bg-slate-100 p-1">
+          <TabsTrigger value="general" className="data-[state=active]:bg-white">General Settings</TabsTrigger>
+          <TabsTrigger value="users" className="data-[state=active]:bg-white flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            User Management
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general" className="space-y-10">
+          {/* Export Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Export Attendance Data</CardTitle>
+              <CardDescription>Download attendance records in your preferred format</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Date Range</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">From</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !dateRange.start && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {dateRange.start ? format(new Date(dateRange.start + 'T00:00:00'), "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={dateRange.start ? new Date(dateRange.start + 'T00:00:00') : undefined}
+                            onSelect={(date) => date && setDateRange({ ...dateRange, start: format(date, "yyyy-MM-dd") })}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">To</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !dateRange.end && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {dateRange.end ? format(new Date(dateRange.end + 'T00:00:00'), "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={dateRange.end ? new Date(dateRange.end + 'T00:00:00') : undefined}
+                            onSelect={(date) => date && setDateRange({ ...dateRange, end: format(date, "yyyy-MM-dd") })}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">To</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !dateRange.end && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateRange.end ? format(new Date(dateRange.end + 'T00:00:00'), "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={dateRange.end ? new Date(dateRange.end + 'T00:00:00') : undefined}
-                        onSelect={(date) => date && setDateRange({ ...dateRange, end: format(date, "yyyy-MM-dd") })}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+
+                <div className="space-y-3">
+                  <Label>Export Format</Label>
+                  <RadioGroup value={exportFormat} onValueChange={setExportFormat} className="flex gap-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="excel" id="excel" />
+                      <Label htmlFor="excel" className="flex items-center gap-2 cursor-pointer font-normal">
+                        <FileSpreadsheet className="h-4 w-4 text-green-600" /> Excel (.xlsx)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="csv" id="csv" />
+                      <Label htmlFor="csv" className="flex items-center gap-2 cursor-pointer font-normal">
+                        <FileText className="h-4 w-4 text-blue-600" /> CSV
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="pdf" id="pdf" />
+                      <Label htmlFor="pdf" className="flex items-center gap-2 cursor-pointer font-normal">
+                        <FileText className="h-4 w-4 text-red-600" /> PDF
+                      </Label>
+                    </div>
+                  </RadioGroup>
+
+                  <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground border border-border">
+                    {exportFormat === "excel" && "Includes multiple sheets, formatted columns, and statistical summary."}
+                    {exportFormat === "csv" && "Raw data only, best for importing into other systems."}
+                    {exportFormat === "pdf" && "Print-ready report with visual charts and summaries."}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-3">
-              <Label>Export Format</Label>
-              <RadioGroup value={exportFormat} onValueChange={setExportFormat} className="flex gap-4">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="excel" id="excel" />
-                  <Label htmlFor="excel" className="flex items-center gap-2 cursor-pointer font-normal">
-                    <FileSpreadsheet className="h-4 w-4 text-green-600" /> Excel (.xlsx)
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="csv" id="csv" />
-                  <Label htmlFor="csv" className="flex items-center gap-2 cursor-pointer font-normal">
-                    <FileText className="h-4 w-4 text-blue-600" /> CSV
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="pdf" id="pdf" />
-                  <Label htmlFor="pdf" className="flex items-center gap-2 cursor-pointer font-normal">
-                    <FileText className="h-4 w-4 text-red-600" /> PDF
-                  </Label>
-                </div>
-              </RadioGroup>
+              <Button onClick={handleExport} className="w-full sm:w-auto min-w-[200px]">
+                {exportFormat === "excel" ? "Export to Excel" : exportFormat === "csv" ? "Export to CSV" : "Export to PDF"}
+              </Button>
+            </CardContent>
+          </Card>
 
-              <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground border border-border">
-                {exportFormat === "excel" && "Includes multiple sheets, formatted columns, and statistical summary."}
-                {exportFormat === "csv" && "Raw data only, best for importing into other systems."}
-                {exportFormat === "pdf" && "Print-ready report with visual charts and summaries."}
+          {/* Notification Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Notification Settings</CardTitle>
+              <CardDescription>Manage your alert preferences</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between space-x-2">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Late Arrivals Alert</Label>
+                  <p className="text-sm text-muted-foreground">Notify when employees clock in after 9:00 AM</p>
+                </div>
+                <Switch
+                  checked={notifications.lateArrivals}
+                  onCheckedChange={(checked) => setNotifications({ ...notifications, lateArrivals: checked })}
+                />
               </div>
-            </div>
-          </div>
+              <div className="flex items-center justify-between space-x-2">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Unauthorized Device Alert</Label>
+                  <p className="text-sm text-muted-foreground">Alert on suspicious device login attempts</p>
+                </div>
+                <Switch
+                  checked={notifications.unauthorizedDevices}
+                  onCheckedChange={(checked) => setNotifications({ ...notifications, unauthorizedDevices: checked })}
+                />
+              </div>
+              <div className="flex items-center justify-between space-x-2">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Daily Summary Report</Label>
+                  <p className="text-sm text-muted-foreground">Receive daily attendance summary at 6:00 PM</p>
+                </div>
+                <Switch
+                  checked={notifications.dailyReport}
+                  onCheckedChange={(checked) => setNotifications({ ...notifications, dailyReport: checked })}
+                />
+              </div>
+              <div className="flex items-center justify-between space-x-2">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Weekly Report</Label>
+                  <p className="text-sm text-muted-foreground">Receive weekly attendance trends on Friday</p>
+                </div>
+                <Switch
+                  checked={notifications.weeklyReport}
+                  onCheckedChange={(checked) => setNotifications({ ...notifications, weeklyReport: checked })}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-          <Button onClick={handleExport} className="w-full sm:w-auto min-w-[200px]">
-            {exportFormat === "excel" ? "Export to Excel" : exportFormat === "csv" ? "Export to CSV" : "Export to PDF"}
-          </Button>
-        </CardContent>
-      </Card>
+          {/* Alert Thresholds */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Alert Thresholds</CardTitle>
+              <CardDescription>Customize trigger points for automated alerts</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <Label>Late Arrival Threshold</Label>
+                  <span className="text-sm font-medium bg-muted px-2 py-1 rounded">{alertThresholds.lateThreshold}:00 AM</span>
+                </div>
+                <Slider
+                  min={8}
+                  max={12}
+                  step={1}
+                  value={[alertThresholds.lateThreshold]}
+                  onValueChange={(val) => setAlertThresholds({ ...alertThresholds, lateThreshold: val[0] })}
+                />
+                <p className="text-xs text-muted-foreground">Employees clocking in after this hour are marked as late.</p>
+              </div>
 
-      {/* Notification Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Notification Settings</CardTitle>
-          <CardDescription>Manage your alert preferences</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between space-x-2">
-            <div className="space-y-0.5">
-              <Label className="text-base">Late Arrivals Alert</Label>
-              <p className="text-sm text-muted-foreground">Notify when employees clock in after 9:00 AM</p>
-            </div>
-            <Switch
-              checked={notifications.lateArrivals}
-              onCheckedChange={(checked) => setNotifications({ ...notifications, lateArrivals: checked })}
-            />
-          </div>
-          <div className="flex items-center justify-between space-x-2">
-            <div className="space-y-0.5">
-              <Label className="text-base">Unauthorized Device Alert</Label>
-              <p className="text-sm text-muted-foreground">Alert on suspicious device login attempts</p>
-            </div>
-            <Switch
-              checked={notifications.unauthorizedDevices}
-              onCheckedChange={(checked) => setNotifications({ ...notifications, unauthorizedDevices: checked })}
-            />
-          </div>
-          <div className="flex items-center justify-between space-x-2">
-            <div className="space-y-0.5">
-              <Label className="text-base">Daily Summary Report</Label>
-              <p className="text-sm text-muted-foreground">Receive daily attendance summary at 6:00 PM</p>
-            </div>
-            <Switch
-              checked={notifications.dailyReport}
-              onCheckedChange={(checked) => setNotifications({ ...notifications, dailyReport: checked })}
-            />
-          </div>
-          <div className="flex items-center justify-between space-x-2">
-            <div className="space-y-0.5">
-              <Label className="text-base">Weekly Report</Label>
-              <p className="text-sm text-muted-foreground">Receive weekly attendance trends on Friday</p>
-            </div>
-            <Switch
-              checked={notifications.weeklyReport}
-              onCheckedChange={(checked) => setNotifications({ ...notifications, weeklyReport: checked })}
-            />
-          </div>
-        </CardContent>
-      </Card>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <Label>Clock Out Reminder</Label>
+                  <span className="text-sm font-medium bg-muted px-2 py-1 rounded">{alertThresholds.clockOutReminder}:00</span>
+                </div>
+                <Slider
+                  min={16}
+                  max={20}
+                  step={1}
+                  value={[alertThresholds.clockOutReminder]}
+                  onValueChange={(val) => setAlertThresholds({ ...alertThresholds, clockOutReminder: val[0] })}
+                />
+                <p className="text-xs text-muted-foreground">Send reminder if not clocked out by this hour (24h format).</p>
+              </div>
 
-      {/* Alert Thresholds */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Alert Thresholds</CardTitle>
-          <CardDescription>Customize trigger points for automated alerts</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <Label>Late Arrival Threshold</Label>
-              <span className="text-sm font-medium bg-muted px-2 py-1 rounded">{alertThresholds.lateThreshold}:00 AM</span>
-            </div>
-            <Slider
-              min={8}
-              max={12}
-              step={1}
-              value={[alertThresholds.lateThreshold]}
-              onValueChange={(val) => setAlertThresholds({ ...alertThresholds, lateThreshold: val[0] })}
-            />
-            <p className="text-xs text-muted-foreground">Employees clocking in after this hour are marked as late.</p>
-          </div>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <Label>Device Registration Warning</Label>
+                  <span className="text-sm font-medium bg-muted px-2 py-1 rounded">{alertThresholds.deviceWarning} devices</span>
+                </div>
+                <Slider
+                  min={1}
+                  max={5}
+                  step={1}
+                  value={[alertThresholds.deviceWarning]}
+                  onValueChange={(val) => setAlertThresholds({ ...alertThresholds, deviceWarning: val[0] })}
+                />
+                <p className="text-xs text-muted-foreground">Flag account if registered devices exceed this number.</p>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <Label>Clock Out Reminder</Label>
-              <span className="text-sm font-medium bg-muted px-2 py-1 rounded">{alertThresholds.clockOutReminder}:00</span>
-            </div>
-            <Slider
-              min={16}
-              max={20}
-              step={1}
-              value={[alertThresholds.clockOutReminder]}
-              onValueChange={(val) => setAlertThresholds({ ...alertThresholds, clockOutReminder: val[0] })}
-            />
-            <p className="text-xs text-muted-foreground">Send reminder if not clocked out by this hour (24h format).</p>
-          </div>
+          {/* System Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>System Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Business Start Hour</Label>
+                  <Input type="time" defaultValue="09:00" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Business End Hour</Label>
+                  <Input type="time" defaultValue="18:00" />
+                </div>
+              </div>
+              <div className="pt-4 flex justify-end">
+                <Button>
+                  <Save className="h-4 w-4 mr-2" /> Save Changes
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <Label>Device Registration Warning</Label>
-              <span className="text-sm font-medium bg-muted px-2 py-1 rounded">{alertThresholds.deviceWarning} devices</span>
-            </div>
-            <Slider
-              min={1}
-              max={5}
-              step={1}
-              value={[alertThresholds.deviceWarning]}
-              onValueChange={(val) => setAlertThresholds({ ...alertThresholds, deviceWarning: val[0] })}
-            />
-            <p className="text-xs text-muted-foreground">Flag account if registered devices exceed this number.</p>
-          </div>
-        </CardContent>
-      </Card>
+          {/* Data Management */}
+          <Card className="border-destructive/50">
+            <CardHeader>
+              <CardTitle className="text-destructive flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" /> Danger Zone
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="font-medium text-destructive">Clear All Attendance Data</p>
+                  <p className="text-sm text-muted-foreground">This action cannot be undone. All records will be permanently deleted.</p>
+                </div>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete All
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* System Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>System Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label>Business Start Hour</Label>
-              <Input type="time" defaultValue="09:00" />
-            </div>
-            <div className="space-y-2">
-              <Label>Business End Hour</Label>
-              <Input type="time" defaultValue="18:00" />
-            </div>
-          </div>
-          <div className="pt-4 flex justify-end">
-            <Button>
-              <Save className="h-4 w-4 mr-2" /> Save Changes
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Data Management */}
-      <Card className="border-destructive/50">
-        <CardHeader>
-          <CardTitle className="text-destructive flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" /> Danger Zone
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="font-medium text-destructive">Clear All Attendance Data</p>
-              <p className="text-sm text-muted-foreground">This action cannot be undone. All records will be permanently deleted.</p>
-            </div>
-            <Button variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 mr-2" /> Delete All
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="users">
+          <UserManagement />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

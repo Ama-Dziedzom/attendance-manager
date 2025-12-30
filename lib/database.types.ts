@@ -93,90 +93,67 @@ export type Database = {
             }
             audit_logs: {
                 Row: {
-                    credential_id: string | null
-                    employee_id: string | null
-                    entity_id: string | null
-                    error_message: string | null
-                    event_type: string
+                    action: string
+                    created_at: string | null
+                    details: Json | null
                     id: string
-                    ip_address: string | null
-                    metadata: Json | null
-                    success: boolean | null
-                    timestamp: string | null
-                    user_agent: string | null
+                    table_name: string
+                    user_id: string | null
                 }
                 Insert: {
-                    credential_id?: string | null
-                    employee_id?: string | null
-                    entity_id?: string | null
-                    error_message?: string | null
-                    event_type: string
+                    action: string
+                    created_at?: string | null
+                    details?: Json | null
                     id?: string
-                    ip_address?: string | null
-                    metadata?: Json | null
-                    success?: boolean | null
-                    timestamp?: string | null
-                    user_agent?: string | null
+                    table_name: string
+                    user_id?: string | null
                 }
                 Update: {
-                    credential_id?: string | null
-                    employee_id?: string | null
-                    entity_id?: string | null
-                    error_message?: string | null
-                    event_type?: string
+                    action?: string
+                    created_at?: string | null
+                    details?: Json | null
                     id?: string
-                    ip_address?: string | null
-                    metadata?: Json | null
-                    success?: boolean | null
-                    timestamp?: string | null
-                    user_agent?: string | null
+                    table_name?: string
+                    user_id?: string | null
                 }
-                Relationships: [
-                    {
-                        foreignKeyName: "audit_logs_employee_id_fkey"
-                        columns: ["employee_id"]
-                        isOneToOne: false
-                        referencedRelation: "employees"
-                        referencedColumns: ["id"]
-                    },
-                ]
+                Relationships: []
             }
             biometric_credentials: {
                 Row: {
                     counter: number | null
-                    created_at: string | null
                     credential_id: string
                     device_type: string | null
-                    employee_id: string | null
+                    employee_id: string
                     fingerprint_id: string | null
                     id: string
                     is_active: boolean | null
                     last_used_at: string | null
                     public_key: string
+                    registered_at: string | null
                 }
                 Insert: {
                     counter?: number | null
-                    created_at?: string | null
                     credential_id: string
                     device_type?: string | null
-                    employee_id?: string | null
+                    employee_id: string
                     fingerprint_id?: string | null
                     id?: string
                     is_active?: boolean | null
                     last_used_at?: string | null
                     public_key: string
+                    registered_at?: string | null
                 }
                 Update: {
                     counter?: number | null
-                    created_at?: string | null
                     credential_id?: string
                     device_type?: string | null
-                    employee_id?: string | null
+                    employee_id?: string
                     fingerprint_id?: string | null
                     id?: string
                     is_active?: boolean | null
                     last_used_at?: string | null
                     public_key?: string
+                    registered_at?: string | null
                 }
                 Relationships: [
                     {
@@ -191,34 +168,25 @@ export type Database = {
             departments: {
                 Row: {
                     created_at: string | null
-                    date_join: string | null
                     description: string | null
-                    employment_type: string | null
                     id: string
                     is_active: boolean | null
-                    job_title: string | null
                     name: string
                     updated_at: string | null
                 }
                 Insert: {
                     created_at?: string | null
-                    date_join?: string | null
                     description?: string | null
-                    employment_type?: string | null
                     id?: string
                     is_active?: boolean | null
-                    job_title?: string | null
                     name: string
                     updated_at?: string | null
                 }
                 Update: {
                     created_at?: string | null
-                    date_join?: string | null
                     description?: string | null
-                    employment_type?: string | null
                     id?: string
                     is_active?: boolean | null
-                    job_title?: string | null
                     name?: string
                     updated_at?: string | null
                 }
@@ -234,7 +202,7 @@ export type Database = {
                     education: string | null
                     email: string | null
                     emergency_contact: string | null
-                    emp_id: string | null
+                    emp_id: string
                     employment_type: string | null
                     gender: string | null
                     id: string
@@ -253,7 +221,7 @@ export type Database = {
                     education?: string | null
                     email?: string | null
                     emergency_contact?: string | null
-                    emp_id?: string | null
+                    emp_id: string
                     employment_type?: string | null
                     gender?: string | null
                     id?: string
@@ -272,7 +240,7 @@ export type Database = {
                     education?: string | null
                     email?: string | null
                     emergency_contact?: string | null
-                    emp_id?: string | null
+                    emp_id?: string
                     employment_type?: string | null
                     gender?: string | null
                     id?: string
@@ -383,68 +351,70 @@ export type Database = {
                 }
                 Relationships: []
             }
+            profiles: {
+                Row: {
+                    id: string
+                    email: string
+                    full_name: string | null
+                    role: Database['public']['Enums']['app_role']
+                    created_at: string | null
+                    updated_at: string | null
+                }
+                Insert: {
+                    id: string
+                    email: string
+                    full_name?: string | null
+                    role?: Database['public']['Enums']['app_role']
+                    created_at?: string | null
+                    updated_at?: string | null
+                }
+                Update: {
+                    id?: string
+                    email?: string
+                    full_name?: string | null
+                    role?: Database['public']['Enums']['app_role']
+                    created_at?: string | null
+                    updated_at?: string | null
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "profiles_id_fkey"
+                        columns: ["id"]
+                        isOneToOne: true
+                        referencedRelation: "users"
+                        referencedColumns: ["id"]
+                    }
+                ]
+            }
         }
         Views: {
             mv_daily_attendance_summary: {
                 Row: {
                     absent_count: number | null
-                    attendance_rate: number | null
-                    date: string | null
+                    attendance_date: string | null
                     late_count: number | null
                     on_time_count: number | null
+                    present_count: number | null
                     total_employees: number | null
                 }
                 Relationships: []
             }
             mv_monthly_attendance_summary: {
                 Row: {
-                    absent_days: number | null
-                    attendance_rate: number | null
-                    employee_id: string | null
-                    late_days: number | null
-                    month: string | null
-                    name: string | null
-                    on_time_days: number | null
-                    total_days: number | null
+                    absent_count: number | null
+                    avg_hours: number | null
+                    month_date: string | null
+                    present_count: number | null
+                    total_employees: number | null
                 }
-                Relationships: [
-                    {
-                        foreignKeyName: "attendance_records_employee_id_fkey"
-                        columns: ["employee_id"]
-                        isOneToOne: false
-                        referencedRelation: "employees"
-                        referencedColumns: ["id"]
-                    },
-                ]
+                Relationships: []
             }
         }
         Functions: {
-            clock_in_employee: {
-                Args: {
-                    p_emp_id: string
-                    p_verification_method: string
-                }
-                Returns: Json
-            }
-            clock_out_employee: {
-                Args: {
-                    p_emp_id: string
-                }
-                Returns: Json
-            }
-            get_employee_status_today: {
-                Args: {
-                    p_emp_id: string
-                }
-                Returns: Json
-            }
-            refresh_attendance_summaries: {
-                Args: Record<PropertyKey, never>
-                Returns: undefined
-            }
+            [_ in never]: never
         }
         Enums: {
-            [_ in never]: never
+            app_role: "it_admin" | "hr_manager"
         }
         CompositeTypes: {
             [_ in never]: never
@@ -452,41 +422,103 @@ export type Database = {
     }
 }
 
-type PublicSchema = Database["public"]
+type PublicSchema = Database[Extract<keyof Database, "public">]
+
+type DatabaseSchema = Extract<keyof Database, "public">
 
 export type Tables<
     PublicTableNameOrOptions extends
     | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
-> = (PublicSchema["Tables"] & PublicSchema["Views"])[PublicTableNameOrOptions] extends {
-    Row: infer R
-}
+    | { schema: DatabaseSchema },
+    TableName extends PublicTableNameOrOptions extends { schema: DatabaseSchema }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: DatabaseSchema }
+    ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+            Row: infer R
+        }
     ? R
+    : never
+    : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+            Row: infer R
+        }
+    ? R
+    : never
     : never
 
 export type TablesInsert<
     PublicTableNameOrOptions extends
     | keyof PublicSchema["Tables"]
-> = PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-    Insert: infer I
-}
+    | { schema: DatabaseSchema },
+    TableName extends PublicTableNameOrOptions extends { schema: DatabaseSchema }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: DatabaseSchema }
+    ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+        Insert: infer I
+    }
     ? I
+    : never
+    : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Insert: infer I
+    }
+    ? I
+    : never
     : never
 
 export type TablesUpdate<
     PublicTableNameOrOptions extends
     | keyof PublicSchema["Tables"]
-> = PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-    Update: infer U
-}
+    | { schema: DatabaseSchema },
+    TableName extends PublicTableNameOrOptions extends { schema: DatabaseSchema }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: DatabaseSchema }
+    ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+        Update: infer U
+    }
     ? U
+    : never
+    : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Update: infer U
+    }
+    ? U
+    : never
     : never
 
 export type Enums<
     PublicEnumNameOrOptions extends
     | keyof PublicSchema["Enums"]
-> = PublicSchema["Enums"][PublicEnumNameOrOptions]
+    | { schema: DatabaseSchema },
+    EnumName extends PublicEnumNameOrOptions extends { schema: DatabaseSchema }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = PublicEnumNameOrOptions extends { schema: DatabaseSchema }
+    ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+    : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : never
 
 export type CompositeTypes<
     PublicCompositeTypeNameOrOptions extends
     | keyof PublicSchema["CompositeTypes"]
-> = PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    | { schema: DatabaseSchema },
+    CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+        schema: DatabaseSchema
+    }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: DatabaseSchema }
+    ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+    : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+
