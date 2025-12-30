@@ -150,7 +150,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8 max-w-5xl mx-auto">
+    <div className="p-8 space-y-10">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Settings</h1>
         <p className="text-muted-foreground mt-1">Configure dashboard preferences and export data</p>

@@ -1,19 +1,23 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { db } from "@/lib/supabase/db"
-import { CalendarIcon } from "lucide-react"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { CalendarIcon, Search, Download, Filter, RotateCw, Command, Upload, ChevronDown } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { Kbd } from "@/components/ui/kbd"
+import { cn } from "@/lib/utils"
 
 type SortKey = "name" | "clockInTime" | "status" | "totalHours"
 type SortOrder = "asc" | "desc"
@@ -35,8 +39,6 @@ export default function AttendancePage() {
     start: new Date(),
     end: new Date()
   })
-  const [showStartCalendar, setShowStartCalendar] = useState(false)
-  const [showEndCalendar, setShowEndCalendar] = useState(false)
   const [department, setDepartment] = useState("all")
   const [searchName, setSearchName] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -44,6 +46,18 @@ export default function AttendancePage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([])
   const [departments, setDepartments] = useState<string[]>([])
+
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+        e.preventDefault()
+        document.getElementById("attendance-search")?.focus()
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
 
   // Load attendance data from Supabase
   useEffect(() => {
@@ -175,170 +189,193 @@ export default function AttendancePage() {
   }
 
   return (
-    <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Attendance Report</h1>
-        <p className="text-slate-400 mt-1">View and filter employee attendance</p>
+    <div className="p-8 space-y-10">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Attendance Report</h1>
+          <p className="text-muted-foreground mt-1">View and filter employee attendance records</p>
+        </div>
+        <Button className="gap-2">
+          <Upload className="h-4 w-4" />
+          Export
+        </Button>
       </div>
 
-      {/* Filters */}
-      <Card className="bg-white border-blue-100">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="relative">
-              <label className="text-sm text-slate-600 block mb-2">From Date</label>
-              <button
-                onClick={() => setShowStartCalendar(!showStartCalendar)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded text-slate-900 text-sm flex items-center justify-between hover:bg-slate-50"
-              >
-                <span>{dateRange.start?.toLocaleDateString() || "Select date"}</span>
-                <CalendarIcon className="h-4 w-4 text-slate-500" />
-              </button>
-              {showStartCalendar && (
-                <div className="absolute z-10 mt-2 bg-white border border-slate-200 rounded-lg shadow-lg">
-                  <Calendar
-                    mode="single"
-                    selected={dateRange.start}
-                    onSelect={(date) => {
-                      setDateRange({ ...dateRange, start: date })
-                      setShowStartCalendar(false)
-                    }}
-                    initialFocus
-                  />
-                </div>
-              )}
-            </div>
-            <div className="relative">
-              <label className="text-sm text-slate-600 block mb-2">To Date</label>
-              <button
-                onClick={() => setShowEndCalendar(!showEndCalendar)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded text-slate-900 text-sm flex items-center justify-between hover:bg-slate-50"
-              >
-                <span>{dateRange.end?.toLocaleDateString() || "Select date"}</span>
-                <CalendarIcon className="h-4 w-4 text-slate-500" />
-              </button>
-              {showEndCalendar && (
-                <div className="absolute z-10 mt-2 bg-white border border-slate-200 rounded-lg shadow-lg">
-                  <Calendar
-                    mode="single"
-                    selected={dateRange.end}
-                    onSelect={(date) => {
-                      setDateRange({ ...dateRange, end: date })
-                      setShowEndCalendar(false)
-                    }}
-                    initialFocus
-                  />
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="text-sm text-slate-600 block mb-2">Department</label>
-              <select
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded text-slate-900 text-sm"
-              >
-                <option value="all">All Departments</option>
-                {departments.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm text-slate-600 block mb-2">Status</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded text-slate-900 text-sm"
-              >
-                <option value="all">All Status</option>
-                <option value="On Time">On Time</option>
-                <option value="Late">Late</option>
-                <option value="Early Departure">Early Departure</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm text-slate-600 block mb-2">Search</label>
-              <Input
-                placeholder="Name or ID"
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-                className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-500"
-              />
-            </div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            id="attendance-search"
+            placeholder="Search"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            className="pl-9 pr-12 bg-background border-input focus:ring-1 focus:ring-primary h-10"
+          />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-50 select-none pointer-events-none">
+            <Kbd className="bg-transparent border-none text-[10px]">⌘</Kbd>
+            <Kbd className="bg-transparent border-none text-[10px]">F</Kbd>
           </div>
-        </CardContent>
-      </Card>
-      {/* Table */}
-      <Card className="bg-white border-blue-100">
-        <CardHeader>
-          <CardTitle className="text-gray-600">Attendance Records ({filteredData.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-blue-50 hover:bg-blue-50">
-                  <TableHead
-                    className="text-gray-700 font-semibold cursor-pointer hover:bg-blue-100 transition-colors"
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap lg:flex-nowrap justify-end">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[160px] h-10 justify-start text-left font-normal flex-shrink-0",
+                  !dateRange.start && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
+                <span className="truncate">
+                  {dateRange.start ? format(dateRange.start, "PP") : "From Date"}
+                </span>
+                <ChevronDown className="ml-auto h-4 w-4 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={dateRange.start}
+                onSelect={(date) => setDateRange({ ...dateRange, start: date })}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[160px] h-10 justify-start text-left font-normal flex-shrink-0",
+                  !dateRange.end && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
+                <span className="truncate">
+                  {dateRange.end ? format(dateRange.end, "PP") : "To Date"}
+                </span>
+                <ChevronDown className="ml-auto h-4 w-4 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={dateRange.end}
+                onSelect={(date) => setDateRange({ ...dateRange, end: date })}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
+          <div className="flex-shrink-0">
+            <Select value={department} onValueChange={setDepartment}>
+              <SelectTrigger className="w-[160px] h-10">
+                <SelectValue placeholder="All Departments" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Departments</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept} value={dept}>
+                    {dept}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex-shrink-0">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px] h-10">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="On Time">On Time</SelectItem>
+                <SelectItem value="Late">Late</SelectItem>
+                <SelectItem value="Early Departure">Early Departure</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+      <Card className="bg-card border-border">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="border-b border-border">
+              <tr className="bg-muted/50">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <button
                     onClick={() => toggleSort("name")}
+                    className="flex items-center hover:text-foreground transition-colors uppercase"
                   >
                     Employee {sortKey === "name" && (sortOrder === "asc" ? "↑" : "↓")}
-                  </TableHead>
-                  <TableHead className="text-gray-700 font-semibold">ID</TableHead>
-                  <TableHead className="text-gray-700 font-semibold">Department</TableHead>
-                  <TableHead
-                    className="text-gray-700 font-semibold cursor-pointer hover:bg-blue-100 transition-colors"
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Department</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <button
                     onClick={() => toggleSort("clockInTime")}
+                    className="flex items-center hover:text-foreground transition-colors uppercase"
                   >
                     Clock In {sortKey === "clockInTime" && (sortOrder === "asc" ? "↑" : "↓")}
-                  </TableHead>
-                  <TableHead className="text-gray-700 font-semibold">Clock Out</TableHead>
-                  <TableHead className="text-gray-700 font-semibold">Hours</TableHead>
-                  <TableHead
-                    className="text-gray-700 font-semibold cursor-pointer hover:bg-blue-100 transition-colors"
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clock Out</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hours</th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <button
                     onClick={() => toggleSort("status")}
+                    className="flex items-center ml-auto hover:text-foreground transition-colors uppercase"
                   >
                     Status {sortKey === "status" && (sortOrder === "asc" ? "↑" : "↓")}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredData.map((record, idx) => (
-                  <TableRow key={idx} className="hover:bg-blue-50 h-16">
-                    <TableCell className="font-medium text-gray-700 py-4">{record.name}</TableCell>
-                    <TableCell className="text-gray-700 py-4">{record.employeeId}</TableCell>
-                    <TableCell className="text-gray-700 py-4">{record.department}</TableCell>
-                    <TableCell className="text-gray-700 py-4">
-                      {new Date(record.clockInTime).toLocaleTimeString([], {
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {filteredData.map((record, idx) => (
+                <tr key={idx} className="hover:bg-muted/50 transition-colors">
+                  <td className="px-6 py-4 text-sm font-medium text-foreground">{record.name}</td>
+                  <td className="px-6 py-4 text-sm text-foreground">{record.employeeId}</td>
+                  <td className="px-6 py-4 text-sm text-muted-foreground">{record.department}</td>
+                  <td className="px-6 py-4 text-sm text-muted-foreground">
+                    {new Date(record.clockInTime).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-muted-foreground">
+                    {record.clockOutTime
+                      ? new Date(record.clockOutTime).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
-                      })}
-                    </TableCell>
-                    <TableCell className="text-gray-700 py-4">
-                      {record.clockOutTime
-                        ? new Date(record.clockOutTime).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                        : "-"}
-                    </TableCell>
-                    <TableCell className="text-gray-700 py-4">{record.totalHours.toFixed(2)}h</TableCell>
-                    <TableCell className="py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(record.status)}`}
-                      >
-                        {record.status}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
+                      })
+                      : "-"}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-muted-foreground">{record.totalHours.toFixed(2)}h</td>
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(record.status)}`}
+                    >
+                      {record.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {filteredData.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground italic">
+                    No attendance records matching your criteria
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   )

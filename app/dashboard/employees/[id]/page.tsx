@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { db } from "@/lib/supabase/db"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+
 import {
   ArrowLeft,
   Building,
@@ -50,7 +50,7 @@ import {
   Tooltip as RechartsTooltip
 } from 'recharts'
 import { capitalize, cn } from "@/lib/utils"
-import { type Employee, type AttendanceRecord, mapDbEmployeeToEmployee } from "@/lib/types"
+import { type Employee, type AttendanceRecord, mapDbEmployeeToEmployee, mapDbAttendanceToAttendance } from "@/lib/types"
 
 
 const ATTENDANCE_METRICS = [
@@ -73,14 +73,24 @@ export default function EmployeeDetailPage() {
   async function loadEmployeeData() {
     try {
       setLoading(true)
+      console.log("Fetching employee data for:", employeeId)
       const empData = await db.employees.getByEmpId(employeeId)
+      console.log("Raw empData result:", empData)
       if (empData) {
         setEmployee(mapDbEmployeeToEmployee(empData))
-        const attendance = await db.attendance.getEmployeeRecords(empData.id, 30)
-        setEmployeeAttendance(attendance as any)
+        const attendanceData = await db.attendance.getEmployeeRecords(empData.id, 30)
+        console.log("Attendance records found:", attendanceData.length)
+        const mappedAttendance = attendanceData.map((r: any) => mapDbAttendanceToAttendance(r))
+        setEmployeeAttendance(mappedAttendance)
       }
     } catch (error: any) {
-      console.error("Error loading employee data:", error)
+      console.error("Error loading employee data:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        error
+      })
     } finally {
       setLoading(false)
     }
@@ -122,14 +132,12 @@ export default function EmployeeDetailPage() {
     return (
       <div className="min-h-screen bg-muted/30 pb-20">
         {/* Search/Breadcrumb Header Skeleton */}
-        <div className="bg-background border-b px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <div className="bg-background px-8 py-4 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-4">
             <Skeleton className="h-9 w-32" />
-            <Separator orientation="vertical" className="h-4" />
             <Skeleton className="h-5 w-32" />
           </div>
           <div className="flex items-center gap-2">
-            <Skeleton className="h-9 w-32" />
             <Skeleton className="h-9 w-32" />
           </div>
         </div>
@@ -215,7 +223,7 @@ export default function EmployeeDetailPage() {
   return (
     <div className="min-h-screen bg-muted/30 pb-20">
       {/* Search/Breadcrumb Header */}
-      <div className="bg-background border-b px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+      <div className="bg-background px-8 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/employees">
             <Button variant="ghost" size="sm" className="gap-2">
@@ -223,14 +231,9 @@ export default function EmployeeDetailPage() {
               Back to Directory
             </Button>
           </Link>
-          <Separator orientation="vertical" className="h-4" />
           <p className="text-sm font-medium text-muted-foreground">Employee Details</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Download className="h-4 w-4" />
-            Export Report
-          </Button>
           <Button size="sm" className="gap-2">
             <Settings className="h-4 w-4" />
             Edit Profile
@@ -503,61 +506,63 @@ export default function EmployeeDetailPage() {
                         <Button variant="ghost" size="sm" className="font-bold text-primary">Export Logs</Button>
                       </div>
                     </CardHeader>
-                    <Table>
-                      <TableHeader className="bg-slate-50/50">
-                        <TableRow>
-                          <TableHead className="font-bold text-[11px] uppercase tracking-wider">Date</TableHead>
-                          <TableHead className="font-bold text-[11px] uppercase tracking-wider">Clock In</TableHead>
-                          <TableHead className="font-bold text-[11px] uppercase tracking-wider">Clock Out</TableHead>
-                          <TableHead className="font-bold text-[11px] uppercase tracking-wider">Work Hours</TableHead>
-                          <TableHead className="font-bold text-[11px] uppercase tracking-wider text-right">Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {employeeAttendance.slice(0, 10).map((record, i) => (
-                          <TableRow key={i} className="hover:bg-slate-50/50">
-                            <TableCell className="font-medium text-slate-700">{new Date(record.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</TableCell>
-                            <TableCell className="font-medium">
-                              {record.clockInTime ? (
-                                <div className="flex items-center gap-2">
-                                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                  {new Date(record.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="border-b border-border">
+                          <tr className="bg-muted/50">
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clock In</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clock Out</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Work Hours</th>
+                            <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {employeeAttendance.slice(0, 10).map((record, i) => (
+                            <tr key={i} className="hover:bg-muted/50 transition-colors">
+                              <td className="px-6 py-4 text-sm font-medium text-slate-700">{new Date(record.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                              <td className="px-6 py-4 text-sm font-medium">
+                                {record.clockInTime ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                    {new Date(record.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </div>
+                                ) : "--:--"}
+                              </td>
+                              <td className="px-6 py-4 text-sm font-medium text-slate-500">
+                                {record.clockOutTime ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                                    {new Date(record.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </div>
+                                ) : "--:--"}
+                              </td>
+                              <td className="px-6 py-4 text-sm font-medium">{record.totalHours?.toFixed(1) || "0.0"}h</td>
+                              <td className="px-6 py-4 text-right">
+                                <Badge variant="outline" className={`rounded-md font-bold px-2.5 py-0.5 border-none ${record.status === 'on_time' ? 'bg-emerald-50 text-emerald-700' :
+                                  record.status === 'late' ? 'bg-orange-50 text-orange-700' :
+                                    'bg-blue-50 text-blue-700'
+                                  }`}>
+                                  {record.status === 'on_time' ? 'On Time' :
+                                    record.status === 'late' ? 'Late' :
+                                      'Punctual'}
+                                </Badge>
+                              </td>
+                            </tr>
+                          ))}
+                          {employeeAttendance.length === 0 && (
+                            <tr>
+                              <td colSpan={5} className="px-6 py-24 text-center">
+                                <div className="flex flex-col items-center justify-center text-muted-foreground">
+                                  <History className="h-10 w-10 mb-4 opacity-20" />
+                                  <p>No biometric attendance logs recorded.</p>
                                 </div>
-                              ) : "--:--"}
-                            </TableCell>
-                            <TableCell className="font-medium text-slate-500">
-                              {record.clockOutTime ? (
-                                <div className="flex items-center gap-2">
-                                  <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                                  {new Date(record.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </div>
-                              ) : "--:--"}
-                            </TableCell>
-                            <TableCell className="font-medium">{record.totalHours?.toFixed(1) || "0.0"}h</TableCell>
-                            <TableCell className="text-right">
-                              <Badge variant="outline" className={`rounded-md font-bold px-2.5 py-0.5 border-none ${record.status === 'on_time' ? 'bg-emerald-50 text-emerald-700' :
-                                record.status === 'late' ? 'bg-orange-50 text-orange-700' :
-                                  'bg-blue-50 text-blue-700'
-                                }`}>
-                                {record.status === 'on_time' ? 'On Time' :
-                                  record.status === 'late' ? 'Late' :
-                                    'Punctual'}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                        {employeeAttendance.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={5} className="h-48 text-center">
-                              <div className="flex flex-col items-center justify-center text-muted-foreground">
-                                <History className="h-10 w-10 mb-4 opacity-20" />
-                                <p>No biometric attendance logs recorded.</p>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </Card>
                 </div>
               </div>

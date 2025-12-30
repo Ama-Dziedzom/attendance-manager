@@ -1,38 +1,56 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart, LineChart } from "@/components/charts"
+import { useState, useMemo } from "react"
+import { CartesianGrid, Line, LineChart, XAxis, Label, PolarRadiusAxis, RadialBar, RadialBarChart, PolarAngleAxis, PolarGrid, Radar, RadarChart } from "recharts"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+import { Users, UserCheck, Clock, TrendingUp } from "lucide-react"
 
+type Timeframe = "week" | "month" | "year"
 
 export default function ReportsPage() {
-  const [timeframe, setTimeframe] = useState("weekly")
+  const [timeframe, setTimeframe] = useState<Timeframe>("week")
 
-  // Weekly attendance data
-  const weeklyData = [
-    { day: "Mon", onTime: 48, late: 12, absent: 10 },
-    { day: "Tue", onTime: 50, late: 10, absent: 10 },
-    { day: "Wed", onTime: 52, late: 8, absent: 10 },
-    { day: "Thu", onTime: 49, late: 11, absent: 10 },
-    { day: "Fri", onTime: 55, late: 5, absent: 10 },
-  ]
+  // Data varies by timeframe
+  const getTimeframeData = () => {
+    if (timeframe === "week") {
+      return [
+        { label: "Mon", onTime: 48, late: 12, absent: 10 },
+        { label: "Tue", onTime: 50, late: 10, absent: 10 },
+        { label: "Wed", onTime: 52, late: 8, absent: 10 },
+        { label: "Thu", onTime: 49, late: 11, absent: 10 },
+        { label: "Fri", onTime: 55, late: 5, absent: 10 },
+        { label: "Sat", onTime: 30, late: 2, absent: 38 },
+        { label: "Sun", onTime: 25, late: 1, absent: 44 },
+      ]
+    } else if (timeframe === "month") {
+      return [
+        { label: "Week 1", onTime: 240, late: 45, absent: 15 },
+        { label: "Week 2", onTime: 245, late: 38, absent: 17 },
+        { label: "Week 3", onTime: 250, late: 35, absent: 15 },
+        { label: "Week 4", onTime: 255, late: 30, absent: 15 },
+        { label: "Week 5", onTime: 100, late: 15, absent: 5 },
+      ]
+    } else {
+      return [
+        { label: "Jan", onTime: 980, late: 140, absent: 60 },
+        { label: "Feb", onTime: 1020, late: 120, absent: 55 },
+        { label: "Mar", onTime: 1050, late: 110, absent: 50 },
+        { label: "Apr", onTime: 1080, late: 100, absent: 45 },
+        { label: "May", onTime: 1100, late: 90, absent: 40 },
+        { label: "Jun", onTime: 1120, late: 85, absent: 35 },
+        { label: "Jul", onTime: 1140, late: 80, absent: 30 },
+        { label: "Aug", onTime: 1160, late: 75, absent: 28 },
+        { label: "Sep", onTime: 1180, late: 70, absent: 25 },
+        { label: "Oct", onTime: 1200, late: 65, absent: 22 },
+        { label: "Nov", onTime: 1150, late: 72, absent: 26 },
+        { label: "Dec", onTime: 1100, late: 85, absent: 30 },
+      ]
+    }
+  }
 
-  // Department breakdown
-  const departmentData = [
-    { name: "Engineering", value: 22 },
-    { name: "Sales", value: 18 },
-    { name: "HR", value: 8 },
-    { name: "Marketing", value: 15 },
-    { name: "Finance", value: 12 },
-  ]
-
-  // Late arrivals trend
-  const lateArrivalsData = [
-    { week: "Week 1", count: 8 },
-    { week: "Week 2", count: 12 },
-    { week: "Week 3", count: 10 },
-    { week: "Week 4", count: 7 },
-  ]
+  const timeframeData = getTimeframeData()
 
   // Status distribution
   const statusDistribution = [
@@ -55,129 +73,374 @@ export default function ReportsPage() {
   const averageAttendance = (((totalEmployees - 2) / totalEmployees) * 100).toFixed(1)
 
   return (
-    <div className="p-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
-        <p className="text-gray-600 mt-1">Attendance trends and insights</p>
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      {/* Header */}
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Reports & Analytics</h2>
+          <p className="text-muted-foreground">
+            {timeframe === "week" && "Weekly attendance trends and insights"}
+            {timeframe === "month" && "Monthly attendance trends and insights"}
+            {timeframe === "year" && "Yearly attendance trends and insights"}
+          </p>
+        </div>
+        <Tabs value={timeframe} onValueChange={(value) => setTimeframe(value as Timeframe)}>
+          <TabsList>
+            <TabsTrigger value="week">Week</TabsTrigger>
+            <TabsTrigger value="month">Month</TabsTrigger>
+            <TabsTrigger value="year">Year</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-white border-blue-100">
-          <CardContent className="p-6">
-            <p className="text-gray-600 text-sm">Avg Attendance Rate</p>
-            <p className="text-3xl font-bold text-green-400 mt-2">{averageAttendance}%</p>
+      {/* Metrics Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg Attendance</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{averageAttendance}%</div>
+            <p className="text-xs text-muted-foreground">
+              {timeframe === "week" && "Weekly average"}
+              {timeframe === "month" && "Monthly average"}
+              {timeframe === "year" && "Yearly average"}
+            </p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-blue-100">
-          <CardContent className="p-6">
-            <p className="text-gray-600 text-sm">Total Employees</p>
-            <p className="text-3xl font-bold text-blue-400 mt-2">{totalEmployees}</p>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalEmployees}</div>
+            <p className="text-xs text-muted-foreground">
+              Across all departments
+            </p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-blue-100">
-          <CardContent className="p-6">
-            <p className="text-gray-600 text-sm">This Week Late</p>
-            <p className="text-3xl font-bold text-yellow-400 mt-2">7</p>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">This {timeframe === "week" ? "Week" : timeframe === "month" ? "Month" : "Year"} Late</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">7</div>
+            <p className="text-xs text-muted-foreground">
+              Down from last {timeframe}
+            </p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-blue-100">
-          <CardContent className="p-6">
-            <p className="text-gray-600 text-sm">This Week Absent</p>
-            <p className="text-3xl font-bold text-red-400 mt-2">2</p>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">This {timeframe === "week" ? "Week" : timeframe === "month" ? "Month" : "Year"} Absent</CardTitle>
+            <UserCheck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">2</div>
+            <p className="text-xs text-muted-foreground">
+              {((2 / totalEmployees) * 100).toFixed(1)}% absence rate
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Weekly Trend */}
-        <Card className="bg-white border-blue-100">
-          <CardHeader>
-            <CardTitle className="text-gray-900">Weekly Attendance Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <LineChart
-              data={weeklyData}
-              lines={[
-                { key: "onTime", color: "#22c55e", name: "On Time" },
-                { key: "late", color: "#eab308", name: "Late" },
-              ]}
-            />
-          </CardContent>
-        </Card>
+      {/* Attendance Breakdown - Line Chart */}
+      <AttendanceLineChart timeframe={timeframe} timeframeData={timeframeData} />
 
-        {/* Department Distribution */}
-        <Card className="bg-white border-blue-100">
-          <CardHeader>
-            <CardTitle className="text-gray-900">Attendance by Department</CardTitle>
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Status Distribution - Radial */}
+        <Card className="flex flex-col">
+          <CardHeader className="items-center pb-0">
+            <CardTitle>Status Distribution</CardTitle>
+            <CardDescription>Overall attendance status breakdown</CardDescription>
           </CardHeader>
-          <CardContent>
-            <BarChart data={departmentData} />
+          <CardContent className="flex flex-1 items-center pb-0 pt-8">
+            <ChartContainer
+              config={{
+                onTime: {
+                  label: "On Time",
+                  color: "hsl(142, 76%, 36%)",
+                },
+                late: {
+                  label: "Late",
+                  color: "hsl(48, 96%, 53%)",
+                },
+                earlyDep: {
+                  label: "Early Dep.",
+                  color: "hsl(221, 83%, 53%)",
+                },
+                absent: {
+                  label: "Absent",
+                  color: "hsl(0, 84%, 60%)",
+                },
+              }}
+              className="mx-auto aspect-square h-[350px] w-full"
+            >
+              <RadialBarChart
+                data={[
+                  {
+                    status: "attendance",
+                    onTime: statusDistribution[0].value,
+                    late: statusDistribution[1].value,
+                    earlyDep: statusDistribution[2].value,
+                    absent: statusDistribution[3].value,
+                  },
+                ]}
+                endAngle={180}
+                innerRadius={110}
+                outerRadius={180}
+              >
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel />}
+                />
+                <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+                  <Label
+                    content={({ viewBox }) => {
+                      if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                        return (
+                          <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
+                            <tspan
+                              x={viewBox.cx}
+                              y={(viewBox.cy || 0) - 16}
+                              className="fill-foreground text-2xl font-bold"
+                            >
+                              {averageAttendance}%
+                            </tspan>
+                            <tspan
+                              x={viewBox.cx}
+                              y={(viewBox.cy || 0) + 4}
+                              className="fill-muted-foreground"
+                            >
+                              Attendance
+                            </tspan>
+                          </text>
+                        )
+                      }
+                    }}
+                  />
+                </PolarRadiusAxis>
+                <RadialBar
+                  dataKey="onTime"
+                  stackId="a"
+                  cornerRadius={5}
+                  fill="hsl(142, 76%, 36%)"
+                  className="stroke-transparent stroke-2"
+                />
+                <RadialBar
+                  dataKey="late"
+                  stackId="a"
+                  cornerRadius={5}
+                  fill="hsl(48, 96%, 53%)"
+                  className="stroke-transparent stroke-2"
+                />
+                <RadialBar
+                  dataKey="earlyDep"
+                  stackId="a"
+                  cornerRadius={5}
+                  fill="hsl(221, 83%, 53%)"
+                  className="stroke-transparent stroke-2"
+                />
+                <RadialBar
+                  dataKey="absent"
+                  stackId="a"
+                  cornerRadius={5}
+                  fill="hsl(0, 84%, 60%)"
+                  className="stroke-transparent stroke-2"
+                />
+              </RadialBarChart>
+            </ChartContainer>
           </CardContent>
-        </Card>
-      </div>
-
-      {/* Additional Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Late Arrivals Trend */}
-        <Card className="bg-white border-blue-100">
-          <CardHeader>
-            <CardTitle className="text-gray-900">Late Arrivals Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <LineChart data={lateArrivalsData} lines={[{ key: "count", color: "#f59e0b", name: "Late Arrivals" }]} />
-          </CardContent>
-        </Card>
-
-        {/* Status Distribution */}
-        <Card className="bg-white border-blue-100">
-          <CardHeader>
-            <CardTitle className="text-gray-900">Status Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {statusDistribution.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 flex-1">
-                    <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                    <span className="text-gray-600">{item.name}</span>
-                  </div>
-                  <span className="text-gray-600 font-semibold">{item.value}%</span>
-                  <div className="w-32 bg-blue-200 rounded-full h-2 ml-4">
-                    <div className={`h-2 rounded-full ${item.color}`} style={{ width: `${item.value}%` }}></div>
+          <CardContent className="pt-4">
+            <div className="flex justify-center gap-4 text-sm flex-wrap">
+              {statusDistribution.map((item) => (
+                <div key={item.name} className="flex items-center gap-2">
+                  <div
+                    className={`w-3 h-3 rounded-full ${item.color} shadow-sm`}
+                  ></div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium">{item.name}</span>
+                    <span className="text-muted-foreground">({item.value}%)</span>
                   </div>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Department Attendance Percentage */}
-      <Card className="bg-white border-blue-100">
-        <CardHeader>
-          <CardTitle className="text-gray-900">Department Attendance Percentage</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {departmentAttendance.map((item, idx) => (
-              <div key={idx}>
-                <div className="flex justify-between mb-2">
-                  <span className="text-gray-600">{item.dept}</span>
-                  <span className="text-gray-600 font-semibold">{item.percentage}%</span>
-                </div>
-                <div className="w-full bg-blue-100 rounded-full h-3">
-                  <div
-                    className="h-3 rounded-full bg-gradient-to-r from-blue-900 to-blue-500"
-                    style={{ width: `${item.percentage}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+        {/* Department Attendance - Radar */}
+        <Card className="flex flex-col">
+          <CardHeader className="items-center pb-4">
+            <CardTitle>Department Attendance</CardTitle>
+            <CardDescription>Attendance rate by department</CardDescription>
+          </CardHeader>
+          <CardContent className="pb-0">
+            <ChartContainer
+              config={{
+                attendance: {
+                  label: "Attendance",
+                  color: "hsl(221, 83%, 53%)",
+                },
+              }}
+              className="mx-auto aspect-square h-[350px]"
+            >
+              <RadarChart
+                data={departmentAttendance.map((item) => ({
+                  department: item.dept,
+                  attendance: item.percentage,
+                }))}
+              >
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="line" />}
+                />
+                <PolarAngleAxis dataKey="department" />
+                <PolarGrid />
+                <Radar
+                  dataKey="attendance"
+                  fill="hsl(221, 83%, 53%)"
+                  fillOpacity={0.6}
+                  stroke="hsl(221, 83%, 53%)"
+                  strokeWidth={2}
+                />
+              </RadarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
     </div>
+  )
+}
+
+// Chart configuration
+const chartConfig = {
+  onTime: {
+    label: "On Time",
+    color: "hsl(142, 76%, 36%)",
+  },
+  late: {
+    label: "Late",
+    color: "hsl(48, 96%, 53%)",
+  },
+  total: {
+    label: "Total Attendance",
+    color: "hsl(221, 83%, 53%)",
+  },
+} satisfies ChartConfig
+
+type AttendanceLineChartProps = {
+  timeframe: Timeframe
+  timeframeData: Array<{ label: string; onTime: number; late: number; absent: number }>
+}
+
+function AttendanceLineChart({ timeframe, timeframeData }: AttendanceLineChartProps) {
+  const [activeChart, setActiveChart] = useState<keyof typeof chartConfig>("total")
+
+  // Calculate totals for each metric
+  const totals = useMemo(
+    () => ({
+      onTime: timeframeData.reduce((acc, curr) => acc + curr.onTime, 0),
+      late: timeframeData.reduce((acc, curr) => acc + curr.late, 0),
+      total: timeframeData.reduce((acc, curr) => acc + curr.onTime + curr.late, 0),
+    }),
+    [timeframeData]
+  )
+
+  // Transform data for the chart
+  const chartData = timeframeData.map((item) => ({
+    label: item.label,
+    onTime: item.onTime,
+    late: item.late,
+    total: item.onTime + item.late,
+  }))
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-col items-stretch p-0 sm:flex-row">
+        <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
+          <CardTitle>
+            {timeframe === "week" && "Weekly Attendance Breakdown"}
+            {timeframe === "month" && "Monthly Attendance Breakdown"}
+            {timeframe === "year" && "Yearly Attendance Breakdown"}
+          </CardTitle>
+          <CardDescription>
+            {timeframe === "week" && "Daily attendance summary for the current week"}
+            {timeframe === "month" && "Weekly attendance summary for the current month"}
+            {timeframe === "year" && "Monthly attendance summary for the current year"}
+          </CardDescription>
+        </div>
+        <div className="flex">
+          {(["onTime", "late", "total"] as const).map((key) => {
+            return (
+              <button
+                key={key}
+                data-active={activeChart === key}
+                className="relative flex flex-1 flex-col justify-center gap-1 border-b border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-b-0 sm:border-l sm:border-t-0 sm:px-8 sm:py-6"
+                onClick={() => setActiveChart(key)}
+              >
+                <span className="text-xs text-muted-foreground">
+                  {chartConfig[key].label}
+                </span>
+                <span className="text-lg font-bold leading-none sm:text-3xl">
+                  {totals[key].toLocaleString()}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </CardHeader>
+      <CardContent className="px-2 sm:p-6">
+        <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
+          <LineChart
+            accessibilityLayer
+            data={chartData}
+            margin={{
+              left: 12,
+              right: 12,
+            }}
+          >
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              interval={0}
+            />
+            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+            <Line
+              dataKey="onTime"
+              type="monotone"
+              stroke={chartConfig.onTime.color}
+              strokeWidth={2}
+              dot={false}
+              strokeOpacity={activeChart === "onTime" ? 1 : 0.5}
+            />
+            <Line
+              dataKey="late"
+              type="monotone"
+              stroke={chartConfig.late.color}
+              strokeWidth={2}
+              dot={false}
+              strokeOpacity={activeChart === "late" ? 1 : 0.5}
+            />
+            <Line
+              dataKey="total"
+              type="monotone"
+              stroke={chartConfig.total.color}
+              strokeWidth={2}
+              dot={false}
+              strokeOpacity={activeChart === "total" ? 1 : 0.5}
+            />
+          </LineChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
   )
 }

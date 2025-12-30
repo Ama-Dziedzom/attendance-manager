@@ -19,14 +19,6 @@ import {
   ArrowDown
 } from "lucide-react"
 import { format } from "date-fns"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { type AttendanceRecord, mapDbAttendanceToAttendance } from "@/lib/types"
 
@@ -233,99 +225,93 @@ export default function DashboardPage() {
       <AttendanceFeed date={date} />
 
       {/* Attendance Table */}
-      <Card className="bg-white border-blue-100 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-gray-600">Attendance Records</CardTitle>
-          <CardDescription>
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-0">
+          <CardTitle className="text-lg font-semibold text-foreground">Attendance Records</CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
             View and manage attendance for {format(selectedDate, "MMMM dd, yyyy")}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border border-blue-50">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-blue-50/50 hover:bg-blue-50/50">
-                  <TableHead className="text-gray-700 font-semibold">
-                    <Button
-                      variant="ghost"
-                      onClick={() => toggleSort("name")}
-                      className="h-8 w-full justify-start p-0 hover:bg-transparent"
-                    >
-                      Employee
-                      {getSortIcon("name")}
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-gray-700 font-semibold">ID</TableHead>
-                  <TableHead className="text-gray-700 font-semibold">Department</TableHead>
-                  <TableHead className="text-gray-700 font-semibold">
-                    <Button
-                      variant="ghost"
-                      onClick={() => toggleSort("clockInTime")}
-                      className="h-8 w-full justify-start p-0 hover:bg-transparent"
-                    >
-                      Clock In
-                      {getSortIcon("clockInTime")}
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-gray-700 font-semibold">Clock Out</TableHead>
-                  <TableHead className="text-gray-700 font-semibold">
-                    <Button
-                      variant="ghost"
-                      onClick={() => toggleSort("totalHours")}
-                      className="h-8 w-full justify-start p-0 hover:bg-transparent"
-                    >
-                      Hours
-                      {getSortIcon("totalHours")}
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-gray-700 font-semibold text-right">
-                    <Button
-                      variant="ghost"
-                      onClick={() => toggleSort("status")}
-                      className="h-8 w-full justify-end p-0 hover:bg-transparent"
-                    >
-                      Status
-                      {getSortIcon("status")}
-                    </Button>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {todayData.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-gray-700">
-                      No attendance records for this date
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  todayData.map((record, idx) => (
-                    <TableRow key={idx} className="hover:bg-blue-50/30 transition-colors h-16">
-                      <TableCell className="font-medium text-gray-700 py-4">{record.employeeName}</TableCell>
-                      <TableCell className="text-gray-700 py-4">{record.empId}</TableCell>
-                      <TableCell className="text-gray-700 py-4">{record.department || '-'}</TableCell>
-                      <TableCell className="text-gray-700 py-4">
-                        {new Date(record.clockInTime).toLocaleTimeString([], {
+        <div className="overflow-x-auto mt-6">
+          <table className="w-full">
+            <thead className="border-b border-border">
+              <tr className="bg-muted/50">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <button
+                    onClick={() => toggleSort("name")}
+                    className="flex items-center hover:text-foreground transition-colors uppercase"
+                  >
+                    Employee
+                    {getSortIcon("name")}
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Department</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <button
+                    onClick={() => toggleSort("clockInTime")}
+                    className="flex items-center hover:text-foreground transition-colors uppercase"
+                  >
+                    Clock In
+                    {getSortIcon("clockInTime")}
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clock Out</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <button
+                    onClick={() => toggleSort("totalHours")}
+                    className="flex items-center hover:text-foreground transition-colors uppercase"
+                  >
+                    Hours
+                    {getSortIcon("totalHours")}
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <button
+                    onClick={() => toggleSort("status")}
+                    className="flex items-center ml-auto hover:text-foreground transition-colors uppercase"
+                  >
+                    Status
+                    {getSortIcon("status")}
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {todayData.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground italic">
+                    No attendance records for this date
+                  </td>
+                </tr>
+              ) : (
+                todayData.map((record, idx) => (
+                  <tr key={idx} className="hover:bg-muted/50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-medium text-foreground">{record.employeeName}</td>
+                    <td className="px-6 py-4 text-sm text-foreground">{record.empId}</td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">{record.department || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">
+                      {new Date(record.clockInTime).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">
+                      {record.clockOutTime
+                        ? new Date(record.clockOutTime).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
-                        })}
-                      </TableCell>
-                      <TableCell className="text-gray-700 py-4">
-                        {record.clockOutTime
-                          ? new Date(record.clockOutTime).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-gray-700 py-4">{(record.totalHours || 0).toFixed(2)}h</TableCell>
-                      <TableCell className="py-4 text-right">{getStatusBadge(record.status)}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
+                        })
+                        : "-"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">{(record.totalHours || 0).toFixed(2)}h</td>
+                    <td className="px-6 py-4 text-right">{getStatusBadge(record.status)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   )

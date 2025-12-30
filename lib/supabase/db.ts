@@ -55,7 +55,10 @@ export const employeeService = {
             .eq('is_active', true)
             .single()
 
-        if (error) throw error
+        if (error) {
+            console.error(`Error in getByEmpId for ${empId}:`, error)
+            throw error
+        }
         return data
     },
 
@@ -307,7 +310,10 @@ export const attendanceService = {
     async getEmployeeRecords(employeeId: string, limit: number = 30) {
         const { data, error } = await supabase
             .from('attendance_records')
-            .select('*')
+            .select(`
+                *,
+                employee:employees(id, emp_id, name, department:departments(name), agency:agencies(name))
+            `)
             .eq('employee_id', employeeId)
             .order('date', { ascending: false })
             .limit(limit)
