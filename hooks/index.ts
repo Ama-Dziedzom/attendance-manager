@@ -150,3 +150,10 @@ export function useTableSort<T extends string>(initialKey?: T, initialOrder: Sor
 
     return { sortKey, sortOrder, toggleSort }
 }
+
+// ============================================================================
+// Re-export useSessionTimeout - Session timeout with auto-logout
+// ============================================================================
+
+export { useSessionTimeout } from './use-session-timeout'
+
