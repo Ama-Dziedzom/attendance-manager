@@ -96,21 +96,24 @@ export function useKeyboardShortcut(config: ShortcutConfig | ShortcutConfig[]): 
 
     const handleKeyDown = useCallback((event: KeyboardEvent) => {
         for (const shortcut of shortcuts) {
+            if (!shortcut) continue
             const { key, modifiers = [], action, preventDefault = true } = shortcut
 
+            if (!event.key || typeof event.key !== 'string' || !key || typeof key !== 'string') continue
             if (event.key.toLowerCase() !== key.toLowerCase()) continue
 
-            const hasCtrlOrMeta = modifiers.includes('ctrl') || modifiers.includes('meta')
+            const safeModifiers = Array.isArray(modifiers) ? modifiers : []
+            const hasCtrlOrMeta = safeModifiers.includes('ctrl') || safeModifiers.includes('meta')
             if (hasCtrlOrMeta && !(event.ctrlKey || event.metaKey)) continue
 
-            const otherModifiers = modifiers.filter(m => m !== 'ctrl' && m !== 'meta')
+            const otherModifiers = safeModifiers.filter(m => m !== 'ctrl' && m !== 'meta')
             const modifierMap: Record<ModifierKey, boolean> = {
                 ctrl: event.ctrlKey, meta: event.metaKey, alt: event.altKey, shift: event.shiftKey,
             }
             if (!otherModifiers.every(mod => modifierMap[mod])) continue
 
             if (preventDefault) event.preventDefault()
-            action()
+            if (typeof action === 'function') action()
             break
         }
     }, [shortcuts])

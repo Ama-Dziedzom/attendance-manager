@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { User, Search, LayoutGrid, Table, Upload } from "lucide-react"
+import { User, Search, LayoutGrid, Table, Upload, UserPlus, Download } from "lucide-react"
 import { db } from "@/lib/supabase/db"
 import { Badge } from "@/components/ui/badge"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
@@ -20,6 +20,10 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { PageHeader } from "@/components/ui/page-header"
 import { SearchInput } from "@/components/ui/search-input"
 import { DataTable, type ColumnDef } from "@/components/ui/data-table"
+
+// Employee sheets
+import { AddEmployeeSheet } from "@/components/add-employee-sheet"
+import { BulkUploadSheet } from "@/components/bulk-upload-sheet"
 
 // Utilities
 import { cn, capitalize, BIOMETRIC_STATUS, REFRESH_INTERVALS } from "@/lib/utils"
@@ -35,6 +39,10 @@ export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [departments, setDepartments] = useState<string[]>([])
   const [agencies, setAgencies] = useState<string[]>([])
+
+  // Sheet states
+  const [addEmployeeOpen, setAddEmployeeOpen] = useState(false)
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
 
   const loadEmployees = useCallback(async () => {
     try {
@@ -156,11 +164,33 @@ export default function EmployeesPage() {
         title="Employee Directory"
         description="View and manage employee attendance records"
       >
-        <Button className="gap-2">
-          <Upload className="h-4 w-4" />
-          Export
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setAddEmployeeOpen(true)} className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            Add Employee
+          </Button>
+          <Button variant="secondary" onClick={() => setBulkUploadOpen(true)} className="gap-2">
+            <Upload className="h-4 w-4" />
+            Bulk Upload
+          </Button>
+          <Button variant="outline" className="gap-2">
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
+        </div>
       </PageHeader>
+
+      {/* Sheet components */}
+      <AddEmployeeSheet
+        open={addEmployeeOpen}
+        onOpenChange={setAddEmployeeOpen}
+        onSuccess={() => loadEmployees()}
+      />
+      <BulkUploadSheet
+        open={bulkUploadOpen}
+        onOpenChange={setBulkUploadOpen}
+        onSuccess={() => loadEmployees()}
+      />
 
       {/* Filters */}
       <div className="flex items-center justify-between gap-4">
