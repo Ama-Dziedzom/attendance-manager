@@ -23,6 +23,7 @@ import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
 import { db } from "@/lib/supabase/db"
+import { cn, STATUS_COLORS } from "@/lib/utils"
 import {
     UserPlus,
     ArrowLeft,
@@ -299,8 +300,8 @@ export function AddEmployeeSheet({ open, onOpenChange, onSuccess }: AddEmployeeS
                                             <Fingerprint className="w-4 h-4 text-primary mt-0.5" />
                                             <div>
                                                 <p className="text-muted-foreground">Biometric</p>
-                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                                <Badge variant="outline" className={cn("gap-1.5 px-2.5 py-0.5 font-bold shadow-xs transition-colors", STATUS_COLORS.success)}>
+                                                    <CheckCircle2 className="w-3 h-3" />
                                                     Registered
                                                 </Badge>
                                             </div>

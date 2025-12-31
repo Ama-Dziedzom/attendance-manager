@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { db } from "@/lib/supabase/db"
 import { mapDbEmployeeToEmployee, type Employee } from "@/lib/types"
 import { CheckCircle, XCircle, Loader2 } from "lucide-react"
-import { capitalize } from "@/lib/utils"
+import { capitalize, cn, STATUS_COLORS } from "@/lib/utils"
 
 interface EmployeeTableProps {
   onDownload?: (employee: Employee) => void
@@ -102,13 +102,13 @@ export function EmployeeTable({ onDownload, refreshTrigger }: EmployeeTableProps
                 </td>
                 <td className="px-6 py-4 text-center">
                   {emp.biometricRegistered ? (
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                      <CheckCircle className="w-3 h-3 mr-1" />
+                    <Badge variant="outline" className={cn("gap-1.5 px-2.5 py-0.5 font-bold shadow-xs transition-colors", STATUS_COLORS.success)}>
+                      <CheckCircle className="w-3 h-3" />
                       Registered
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-300">
-                      <XCircle className="w-3 h-3 mr-1" />
+                    <Badge variant="outline" className={cn("gap-1.5 px-2.5 py-0.5 font-bold shadow-xs transition-colors", STATUS_COLORS.neutral)}>
+                      <XCircle className="w-3 h-3" />
                       Not Registered
                     </Badge>
                   )}

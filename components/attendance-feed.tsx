@@ -2,7 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { db } from "@/lib/supabase/db"
-import { formatStatus, getStatusColor, type AttendanceRecord, mapDbAttendanceToAttendance } from "@/lib/types"
+import { type AttendanceRecord, mapDbAttendanceToAttendance } from "@/lib/types"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { useEffect, useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { RealtimeChannel } from "@supabase/supabase-js"
@@ -114,29 +115,27 @@ export function AttendanceFeed({ date }: AttendanceFeedProps) {
                 className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100 hover:border-blue-500 transition-colors"
               >
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-600">
+                  <p className="font-semibold text-gray-700">
                     {record.employeeName}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-muted-foreground">
                     ID: {record.empId}
                   </p>
                   {record.department && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {record.department}
                     </p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    Clocked in at {new Date(record.clockInTime).toLocaleTimeString()}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Clocked in at {new Date(record.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     {record.clockOutTime && (
                       <span className="ml-2">
-                        • Out at {new Date(record.clockOutTime).toLocaleTimeString()}
+                        • Out at {new Date(record.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     )}
                   </p>
                 </div>
-                <div className={`px-3 py-1 rounded-full border text-sm font-medium ${getStatusColor(record.status)}`}>
-                  {formatStatus(record.status)}
-                </div>
+                <StatusBadge status={record.status} variant="pill" />
               </div>
             ))}
           </div>

@@ -101,24 +101,24 @@ export function formatDateRange(start: Date, end: Date): string {
 // ============================================================================
 
 export const ATTENDANCE_STATUS = {
-  on_time: { label: 'On Time', color: 'bg-green-500', badgeClass: 'bg-green-50 text-green-700 border-green-200' },
-  late: { label: 'Late', color: 'bg-yellow-500', badgeClass: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-  early_departure: { label: 'Early Departure', color: 'bg-blue-500', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200' },
-  half_day: { label: 'Half Day', color: 'bg-purple-500', badgeClass: 'bg-purple-50 text-purple-700 border-purple-200' },
-  absent: { label: 'Absent', color: 'bg-red-500', badgeClass: 'bg-red-50 text-red-700 border-red-200' },
+  on_time: { label: 'On Time', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
+  late: { label: 'Late', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
+  early_departure: { label: 'Early Departure', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
+  half_day: { label: 'Half Day', badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' },
+  absent: { label: 'Absent', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' },
 } as const
 
 export type AttendanceStatusKey = keyof typeof ATTENDANCE_STATUS
 
 export const USER_ROLES = {
-  it: { label: 'IT Admin', color: 'text-blue-600', bgColor: 'bg-blue-50' },
-  hr: { label: 'HR Manager', color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
-  front_desk: { label: 'Front Desk', color: 'text-orange-600', bgColor: 'bg-orange-50' },
+  it: { label: 'IT Admin', badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' },
+  hr: { label: 'HR Manager', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
+  front_desk: { label: 'Front Desk', badgeClass: 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' },
 } as const
 
 export const BIOMETRIC_STATUS = {
-  registered: { label: 'Registered', badgeClass: 'bg-green-100 text-green-700 hover:bg-green-200' },
-  not_registered: { label: 'Not Registered', badgeClass: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+  registered: { label: 'Registered', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
+  not_registered: { label: 'Not Registered', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
 } as const
 
 export const CHART_COLORS = {
@@ -135,6 +135,14 @@ export const REFRESH_INTERVALS = {
   EMPLOYEES: 30000,
 } as const
 
+export const STATUS_COLORS = {
+  success: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
+  warning: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
+  error: 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100',
+  info: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
+  neutral: 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100',
+} as const
+
 // ============================================================================
 // STATUS HELPERS
 // ============================================================================
@@ -144,7 +152,7 @@ export function getStatusLabel(status: string): string {
 }
 
 export function getStatusBadgeClass(status: string): string {
-  return ATTENDANCE_STATUS[status as AttendanceStatusKey]?.badgeClass || 'bg-gray-50 text-gray-700 border-gray-200'
+  return ATTENDANCE_STATUS[status as AttendanceStatusKey]?.badgeClass || STATUS_COLORS.neutral
 }
 
 // ============================================================================

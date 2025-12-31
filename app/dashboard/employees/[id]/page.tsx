@@ -50,6 +50,7 @@ import {
   Tooltip as RechartsTooltip
 } from 'recharts'
 import { capitalize, cn } from "@/lib/utils"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { type Employee, type AttendanceRecord, mapDbEmployeeToEmployee, mapDbAttendanceToAttendance } from "@/lib/types"
 
 
@@ -539,14 +540,7 @@ export default function EmployeeDetailPage() {
                               </td>
                               <td className="px-6 py-4 text-sm font-medium">{record.totalHours?.toFixed(1) || "0.0"}h</td>
                               <td className="px-6 py-4 text-right">
-                                <Badge variant="outline" className={`rounded-md font-bold px-2.5 py-0.5 border-none ${record.status === 'on_time' ? 'bg-emerald-50 text-emerald-700' :
-                                  record.status === 'late' ? 'bg-orange-50 text-orange-700' :
-                                    'bg-blue-50 text-blue-700'
-                                  }`}>
-                                  {record.status === 'on_time' ? 'On Time' :
-                                    record.status === 'late' ? 'Late' :
-                                      'Punctual'}
-                                </Badge>
+                                <StatusBadge status={record.status} variant="pill" />
                               </td>
                             </tr>
                           ))}

@@ -26,7 +26,7 @@ import { AddEmployeeSheet } from "@/components/add-employee-sheet"
 import { BulkUploadSheet } from "@/components/bulk-upload-sheet"
 
 // Utilities
-import { cn, capitalize, BIOMETRIC_STATUS, REFRESH_INTERVALS } from "@/lib/utils"
+import { cn, capitalize, BIOMETRIC_STATUS, STATUS_COLORS, REFRESH_INTERVALS } from "@/lib/utils"
 import { type Employee, mapDbEmployeeToEmployee } from "@/lib/types"
 
 export default function EmployeesPage() {
@@ -107,7 +107,14 @@ export default function EmployeesPage() {
   const BiometricBadge = ({ registered, className }: { registered: boolean; className?: string }) => {
     const config = registered ? BIOMETRIC_STATUS.registered : BIOMETRIC_STATUS.not_registered
     return (
-      <Badge variant={registered ? "default" : "secondary"} className={cn(config.badgeClass, className)}>
+      <Badge
+        variant="outline"
+        className={cn(
+          "px-2.5 py-0.5 rounded-md font-bold shadow-xs transition-colors",
+          config.badgeClass,
+          className
+        )}
+      >
         {config.label}
       </Badge>
     )
@@ -319,7 +326,7 @@ export default function EmployeesPage() {
                     <div className="mt-5 pt-4 border-t border-border/40 flex items-center justify-between">
                       <div className="flex flex-col gap-1">
                         <span className="text-[9px] uppercase font-bold text-muted-foreground/50 leading-none">Status</span>
-                        <Badge variant="outline" className="text-[10px] px-2 py-0 h-5 bg-background font-semibold border-border/60">
+                        <Badge variant="outline" className={cn("text-[10px] px-2 py-0 h-5 font-semibold shadow-xs transition-colors", STATUS_COLORS.neutral)}>
                           {capitalize(employee.employeeType || "Staff")}
                         </Badge>
                       </div>

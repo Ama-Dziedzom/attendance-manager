@@ -30,6 +30,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { toast } from "sonner"
+import { cn, STATUS_COLORS } from "@/lib/utils"
 import { db } from "@/lib/supabase/db"
 import {
     Upload,
@@ -450,21 +451,21 @@ export function BulkUploadSheet({ open, onOpenChange, onSuccess }: BulkUploadShe
                                                     </TableCell>
                                                     <TableCell>
                                                         {emp.status === "pending" && (
-                                                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                                            <Badge variant="outline" className={cn("gap-1.5 px-2.5 py-0.5 font-bold shadow-xs transition-colors", STATUS_COLORS.success)}>
+                                                                <CheckCircle2 className="w-3 h-3" />
                                                                 Ready
                                                             </Badge>
                                                         )}
                                                         {emp.status === "exists" && (
-                                                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                                                                <AlertCircle className="w-3 h-3 mr-1" />
+                                                            <Badge variant="outline" className={cn("gap-1.5 px-2.5 py-0.5 font-bold shadow-xs transition-colors", STATUS_COLORS.warning)}>
+                                                                <AlertCircle className="w-3 h-3" />
                                                                 Exists
                                                             </Badge>
                                                         )}
                                                         {emp.status === "error" && (
                                                             <div>
-                                                                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                                                    <XCircle className="w-3 h-3 mr-1" />
+                                                                <Badge variant="outline" className={cn("gap-1.5 px-2.5 py-0.5 font-bold shadow-xs transition-colors", STATUS_COLORS.error)}>
+                                                                    <XCircle className="w-3 h-3" />
                                                                     Error
                                                                 </Badge>
                                                                 {emp.error && (

@@ -30,7 +30,7 @@ import { SearchInput } from "@/components/ui/search-input"
 import { DataTable, type ColumnDef } from "@/components/ui/data-table"
 
 // Utilities
-import { USER_ROLES, formatDate, getInitials } from "@/lib/utils"
+import { USER_ROLES, formatDate, getInitials, cn } from "@/lib/utils"
 import { isValidEmail, sanitizeName, sanitizeString } from "@/lib/security"
 import type { Database } from "@/lib/database.types"
 
@@ -142,12 +142,16 @@ export default function UserManagement() {
         const Icon = role === 'it' ? Shield : (role === 'hr' ? UserCheck : ShieldCheck)
 
         return (
-            <div className={`flex items-center gap-2 ${config?.color || 'text-gray-600'}`}>
-                <Icon className="h-3.5 w-3.5" />
-                <span className="text-xs font-medium uppercase tracking-wider">
-                    {config?.label || role}
-                </span>
-            </div>
+            <Badge
+                variant="outline"
+                className={cn(
+                    "gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest font-bold shadow-xs transition-colors",
+                    config?.badgeClass || 'bg-gray-50 text-gray-700 border-gray-200'
+                )}
+            >
+                <Icon className="h-3 w-3" />
+                {config?.label || role}
+            </Badge>
         )
     }
 
@@ -177,7 +181,10 @@ export default function UserManagement() {
             key: "status",
             header: "Status",
             render: () => (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] uppercase tracking-widest font-bold">
+                <Badge
+                    variant="outline"
+                    className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] uppercase tracking-widest font-bold shadow-xs"
+                >
                     Active
                 </Badge>
             ),

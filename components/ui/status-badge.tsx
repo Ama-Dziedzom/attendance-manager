@@ -16,30 +16,14 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, className, variant = 'default' }: StatusBadgeProps) {
     const config = ATTENDANCE_STATUS[status as AttendanceStatusKey] || {
         label: status,
-        color: 'bg-gray-500',
         badgeClass: 'bg-gray-50 text-gray-700 border-gray-200',
-    }
-
-    if (variant === 'outline') {
-        return (
-            <Badge
-                variant="outline"
-                className={cn(
-                    "rounded-md font-bold px-2.5 py-0.5 border-none",
-                    config.badgeClass,
-                    className
-                )}
-            >
-                {config.label}
-            </Badge>
-        )
     }
 
     if (variant === 'pill') {
         return (
             <span
                 className={cn(
-                    "px-2.5 py-0.5 rounded-full text-xs font-semibold",
+                    "px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-xs transition-colors",
                     config.badgeClass,
                     className
                 )}
@@ -51,8 +35,12 @@ export function StatusBadge({ status, className, variant = 'default' }: StatusBa
 
     return (
         <Badge
-            variant="default"
-            className={cn(config.color, className)}
+            variant="outline"
+            className={cn(
+                "rounded-md font-bold px-2.5 py-0.5 shadow-xs transition-colors",
+                config.badgeClass,
+                className
+            )}
         >
             {config.label}
         </Badge>

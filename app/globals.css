@@ -123,3 +123,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Sonner Close Button Fix */
+.toaster [data-close-button] {
+  top: 12px !important;
+  right: 12px !important;
+  left: auto !important;
+  transform: none !important;
+  background: var(--background) !important;
+  border: 1px solid var(--border) !important;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.toaster .group:hover [data-close-button] {
+  opacity: 1;
+}
+
