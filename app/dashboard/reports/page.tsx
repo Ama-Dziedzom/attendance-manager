@@ -1,18 +1,27 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, Label, PolarRadiusAxis, RadialBar, RadialBarChart, PolarAngleAxis, PolarGrid, Radar, RadarChart } from "recharts"
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfWeek, endOfWeek, isSameDay } from "date-fns"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
-import { Users, UserCheck, Clock, TrendingUp, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react"
+import { Users, UserCheck, Clock, TrendingUp, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Download, ChevronDown, FileSpreadsheet, FileText, File } from "lucide-react"
+import { toast } from "sonner"
 
 import { cn } from "@/lib/utils"
 import { db } from "@/lib/supabase/db"
+import { exportAttendanceReport } from "@/lib/export-utils"
+import { mapDbAttendanceToAttendance } from "@/lib/types"
 
 type Timeframe = "week" | "month" | "year"
 
@@ -21,6 +30,8 @@ export default function ReportsPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const [reportData, setReportData] = useState<any[]>([])
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([])
+  const [dateRange, setDateRange] = useState({ start: new Date(), end: new Date() })
   const [metrics, setMetrics] = useState({
     avgAttendance: 0,
     totalEmployees: 0,
@@ -51,15 +62,21 @@ export default function ReportsPage() {
       const startDateStr = format(start, "yyyy-MM-dd")
       const endDateStr = format(end, "yyyy-MM-dd")
 
-      const [summaryData, employees] = await Promise.all([
+      setDateRange({ start, end })
+
+      const [summaryData, employees, rawRecords] = await Promise.all([
         db.dashboard.getSummaryRange(startDateStr, endDateStr),
-        db.employees.getAll()
+        db.employees.getAll(),
+        db.attendance.getRecords(startDateStr, endDateStr)
       ])
+
+      // Store attendance records for export
+      setAttendanceRecords(rawRecords.map(mapDbAttendanceToAttendance))
 
       const totalEmpCount = employees.length
 
       // Create a map for quick lookup
-      const summaryMap = new Map(summaryData.map(s => [s.date, s]))
+      const summaryMap = new Map(summaryData.map(s => [s.attendance_date, s]))
 
       // Generate all dates in the range to ensure a continuous chart
       const chartData: any[] = []
@@ -111,6 +128,38 @@ export default function ReportsPage() {
   useEffect(() => {
     loadReportData()
   }, [timeframe, currentDate])
+
+  // Export handler
+  const handleExport = useCallback((exportFormat: 'excel' | 'pdf') => {
+    try {
+      if (attendanceRecords.length === 0) {
+        toast.error('No data to export', {
+          description: 'No attendance records available for the selected period.',
+        })
+        return
+      }
+
+      const dateRangeStr = `${format(dateRange.start, 'yyyy-MM-dd')}_to_${format(dateRange.end, 'yyyy-MM-dd')}`
+
+      exportAttendanceReport(attendanceRecords, {
+        format: exportFormat,
+        filename: `attendance_analytics_${dateRangeStr}.${exportFormat === 'excel' ? 'xlsx' : exportFormat}`,
+        dateRange: {
+          start: dateRange.start,
+          end: dateRange.end
+        }
+      })
+
+      toast.success(`Report exported successfully`, {
+        description: `Your ${exportFormat.toUpperCase()} report has been downloaded.`,
+      })
+    } catch (error) {
+      console.error('Export error:', error)
+      toast.error('Export failed', {
+        description: error instanceof Error ? error.message : 'Failed to export report',
+      })
+    }
+  }, [attendanceRecords, dateRange])
 
   const navigate = (direction: "prev" | "next") => {
     if (timeframe === "week") {
@@ -202,6 +251,27 @@ export default function ReportsPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Export Button */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Download className="h-4 w-4" />
+                Export
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer">
+                <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                <span>Export as Excel</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2 cursor-pointer">
+                <File className="h-4 w-4 text-red-600" />
+                <span>Export as PDF</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <div className="flex items-center border rounded-md p-1 bg-muted/40">
             <Button
               variant="ghost"

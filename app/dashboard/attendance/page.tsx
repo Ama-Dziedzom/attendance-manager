@@ -9,11 +9,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Calendar } from "@/components/ui/calendar"
 import { db } from "@/lib/supabase/db"
-import { CalendarIcon, Upload, ChevronDown } from "lucide-react"
+import { CalendarIcon, Download, ChevronDown, FileSpreadsheet, FileText, File } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
+import { toast } from "sonner"
 
 // Reusable components
 import { PageHeader } from "@/components/ui/page-header"
@@ -24,6 +31,7 @@ import { StatusBadge } from "@/components/ui/status-badge"
 // Utilities
 import { cn, formatTimeLocale, formatHours } from "@/lib/utils"
 import { type AttendanceRecord, mapDbAttendanceToAttendance } from "@/lib/types"
+import { exportAttendanceReport } from "@/lib/export-utils"
 
 type SortKey = "name" | "clockInTime" | "status" | "totalHours"
 
@@ -81,17 +89,15 @@ export default function AttendancePage() {
   // Filter and sort data
   const filteredData = useMemo(() => {
     const filtered = attendanceData.filter((record) => {
-      const recordDate = record.date
-      const startDateStr = dateRange.start ? format(dateRange.start, "yyyy-MM-dd") : ""
-      const endDateStr = dateRange.end ? format(dateRange.end, "yyyy-MM-dd") : ""
-      const inDateRange = (!startDateStr || recordDate >= startDateStr) && (!endDateStr || recordDate <= endDateStr)
+      // Note: Date filtering is handled by the backend query in loadData
+      // No need to filter by date here since attendanceData is already filtered
       const inDepartment = department === "all" || record.department === department
       const matchesSearch =
         (record.employeeName || "").toLowerCase().includes(searchName.toLowerCase()) ||
         (record.empId || "").toLowerCase().includes(searchName.toLowerCase())
       const matchesStatus = statusFilter === "all" || record.status === statusFilter
 
-      return inDateRange && inDepartment && matchesSearch && matchesStatus
+      return inDepartment && matchesSearch && matchesStatus
     })
 
     // Sort
@@ -125,7 +131,41 @@ export default function AttendancePage() {
     })
 
     return filtered
-  }, [dateRange, department, searchName, statusFilter, sortKey, sortOrder, attendanceData])
+  }, [department, searchName, statusFilter, sortKey, sortOrder, attendanceData])
+
+  // Export handler
+  const handleExport = useCallback((exportFormat: 'excel' | 'pdf') => {
+    try {
+      if (filteredData.length === 0) {
+        toast.error('No data to export', {
+          description: 'Please adjust your filters to include records.',
+        })
+        return
+      }
+
+      const dateRangeStr = dateRange.start && dateRange.end
+        ? `${format(dateRange.start, 'yyyy-MM-dd')}_to_${format(dateRange.end, 'yyyy-MM-dd')}`
+        : format(new Date(), 'yyyy-MM-dd')
+
+      exportAttendanceReport(filteredData, {
+        format: exportFormat,
+        filename: `attendance_report_${dateRangeStr}.${exportFormat === 'excel' ? 'xlsx' : exportFormat}`,
+        dateRange: {
+          start: dateRange.start || new Date(),
+          end: dateRange.end || new Date()
+        }
+      })
+
+      toast.success(`Report exported successfully`, {
+        description: `Your ${exportFormat.toUpperCase()} report has been downloaded.`,
+      })
+    } catch (error) {
+      console.error('Export error:', error)
+      toast.error('Export failed', {
+        description: error instanceof Error ? error.message : 'Failed to export report',
+      })
+    }
+  }, [filteredData, dateRange])
 
   // Table columns
   const columns: ColumnDef<AttendanceRecord>[] = [
@@ -182,10 +222,25 @@ export default function AttendancePage() {
         title="Attendance Report"
         description="View and filter employee attendance records"
       >
-        <Button className="gap-2">
-          <Upload className="h-4 w-4" />
-          Export
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="gap-2">
+              <Download className="h-4 w-4" />
+              Export Report
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer">
+              <FileSpreadsheet className="h-4 w-4 text-green-600" />
+              <span>Export as Excel</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2 cursor-pointer">
+              <File className="h-4 w-4 text-red-600" />
+              <span>Export as PDF</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </PageHeader>
 
       {/* Filters */}
