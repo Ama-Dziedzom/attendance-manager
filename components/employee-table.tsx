@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { db } from "@/lib/supabase/db"
 import { mapDbEmployeeToEmployee, type Employee } from "@/lib/types"
 import { CheckCircle, XCircle, Loader2 } from "lucide-react"
+import { capitalize } from "@/lib/utils"
 
 interface EmployeeTableProps {
   onDownload?: (employee: Employee) => void
@@ -67,6 +68,8 @@ export function EmployeeTable({ onDownload, refreshTrigger }: EmployeeTableProps
               <th className="px-6 py-3 text-left text-sm font-semibold">Name</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Department</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Agency</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Job Title</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Type</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
               <th className="px-6 py-3 text-center text-sm font-semibold">Biometric</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Joined</th>
@@ -87,6 +90,12 @@ export function EmployeeTable({ onDownload, refreshTrigger }: EmployeeTableProps
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">
                   {emp.agency || "—"}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-600">
+                  {emp.jobTitle || "—"}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-600">
+                  {capitalize(emp.employeeType)}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-xs">
                   {emp.email || "—"}

@@ -353,38 +353,30 @@ export type Database = {
             }
             profiles: {
                 Row: {
-                    id: string
+                    created_at: string | null
                     email: string
                     full_name: string | null
-                    role: Database['public']['Enums']['app_role']
-                    created_at: string | null
+                    id: string
+                    role: Database["public"]["Enums"]["app_role"]
                     updated_at: string | null
                 }
                 Insert: {
-                    id: string
+                    created_at?: string | null
                     email: string
                     full_name?: string | null
-                    role?: Database['public']['Enums']['app_role']
-                    created_at?: string | null
+                    id: string
+                    role?: Database["public"]["Enums"]["app_role"]
                     updated_at?: string | null
                 }
                 Update: {
-                    id?: string
+                    created_at?: string | null
                     email?: string
                     full_name?: string | null
-                    role?: Database['public']['Enums']['app_role']
-                    created_at?: string | null
+                    id?: string
+                    role?: Database["public"]["Enums"]["app_role"]
                     updated_at?: string | null
                 }
-                Relationships: [
-                    {
-                        foreignKeyName: "profiles_id_fkey"
-                        columns: ["id"]
-                        isOneToOne: true
-                        referencedRelation: "users"
-                        referencedColumns: ["id"]
-                    }
-                ]
+                Relationships: []
             }
         }
         Views: {
@@ -436,7 +428,7 @@ export type Database = {
             }
         }
         Enums: {
-            app_role: "it_admin" | "hr_manager"
+            app_role: "it" | "hr" | "front_desk"
         }
         CompositeTypes: {
             [_ in never]: never
@@ -444,29 +436,29 @@ export type Database = {
     }
 }
 
-type PublicSchema = Database[Extract<keyof Database, "public">]
+type PublicSchemaName = Extract<keyof Database, "public">
 
-type DatabaseSchema = Extract<keyof Database, "public">
+type PublicSchema = Database[PublicSchemaName]
 
 export type Tables<
     PublicTableNameOrOptions extends
-    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
-    | { schema: DatabaseSchema },
-    TableName extends PublicTableNameOrOptions extends { schema: DatabaseSchema }
+    | keyof (Database["public"]["Tables"] & Database["public"]["Views"])
+    | { schema: PublicSchemaName },
+    TableName extends PublicTableNameOrOptions extends { schema: PublicSchemaName }
     ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
         Database[PublicTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = PublicTableNameOrOptions extends { schema: DatabaseSchema }
+> = PublicTableNameOrOptions extends { schema: PublicSchemaName }
     ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
         Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
             Row: infer R
         }
     ? R
     : never
-    : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
-        PublicSchema["Views"])
-    ? (PublicSchema["Tables"] &
-        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+    : PublicTableNameOrOptions extends keyof (Database["public"]["Tables"] &
+        Database["public"]["Views"])
+    ? (Database["public"]["Tables"] &
+        Database["public"]["Views"])[PublicTableNameOrOptions] extends {
             Row: infer R
         }
     ? R
@@ -475,19 +467,19 @@ export type Tables<
 
 export type TablesInsert<
     PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
-    | { schema: DatabaseSchema },
-    TableName extends PublicTableNameOrOptions extends { schema: DatabaseSchema }
+    | keyof Database["public"]["Tables"]
+    | { schema: PublicSchemaName },
+    TableName extends PublicTableNameOrOptions extends { schema: PublicSchemaName }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: DatabaseSchema }
+> = PublicTableNameOrOptions extends { schema: PublicSchemaName }
     ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
         Insert: infer I
     }
     ? I
     : never
-    : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+    : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+    ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
     }
     ? I
@@ -496,19 +488,19 @@ export type TablesInsert<
 
 export type TablesUpdate<
     PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
-    | { schema: DatabaseSchema },
-    TableName extends PublicTableNameOrOptions extends { schema: DatabaseSchema }
+    | keyof Database["public"]["Tables"]
+    | { schema: PublicSchemaName },
+    TableName extends PublicTableNameOrOptions extends { schema: PublicSchemaName }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: DatabaseSchema }
+> = PublicTableNameOrOptions extends { schema: PublicSchemaName }
     ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
         Update: infer U
     }
     ? U
     : never
-    : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+    : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+    ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
     }
     ? U
@@ -517,30 +509,29 @@ export type TablesUpdate<
 
 export type Enums<
     PublicEnumNameOrOptions extends
-    | keyof PublicSchema["Enums"]
-    | { schema: DatabaseSchema },
-    EnumName extends PublicEnumNameOrOptions extends { schema: DatabaseSchema }
+    | keyof Database["public"]["Enums"]
+    | { schema: PublicSchemaName },
+    EnumName extends PublicEnumNameOrOptions extends { schema: PublicSchemaName }
     ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = PublicEnumNameOrOptions extends { schema: DatabaseSchema }
+> = PublicEnumNameOrOptions extends { schema: PublicSchemaName }
     ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
-    : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
-    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : PublicEnumNameOrOptions extends keyof Database["public"]["Enums"]
+    ? Database["public"]["Enums"][PublicEnumNameOrOptions]
     : never
+
 
 export type CompositeTypes<
     PublicCompositeTypeNameOrOptions extends
     | keyof PublicSchema["CompositeTypes"]
-    | { schema: DatabaseSchema },
+    | { schema: PublicSchemaName },
     CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-        schema: DatabaseSchema
+        schema: PublicSchemaName
     }
     ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: DatabaseSchema }
+> = PublicCompositeTypeNameOrOptions extends { schema: PublicSchemaName }
     ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
     : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
     ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
-

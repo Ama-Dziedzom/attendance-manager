@@ -25,7 +25,7 @@ export default function UsersPage() {
                     .eq('id', user.id)
                     .single()
 
-                if (data?.role !== 'it_admin') {
+                if (data?.role !== 'it') {
                     router.push('/dashboard')
                     return
                 }

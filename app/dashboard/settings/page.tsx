@@ -22,8 +22,34 @@ import { useEffect } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CalendarIcon, FileSpreadsheet, FileText, Save, AlertTriangle, Trash2, KeyRound, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 export default function SettingsPage() {
+  const [isLoading, setIsLoading] = useState(true)
+  const [profile, setProfile] = useState<any>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        if (profileData?.role !== 'it') {
+          router.push('/dashboard')
+          return
+        }
+        setProfile(profileData)
+      }
+      setIsLoading(false)
+    }
+    checkRole()
+  }, [router])
+
   const [exportFormat, setExportFormat] = useState("excel")
   const [dateRange, setDateRange] = useState({
     start: "2025-11-01",
@@ -192,6 +218,15 @@ export default function SettingsPage() {
     } finally {
       setIsUpdatingPassword(false)
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-8 space-y-10">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+    )
   }
 
   return (

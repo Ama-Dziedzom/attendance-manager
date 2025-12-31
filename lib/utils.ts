@@ -111,8 +111,9 @@ export const ATTENDANCE_STATUS = {
 export type AttendanceStatusKey = keyof typeof ATTENDANCE_STATUS
 
 export const USER_ROLES = {
-  it_admin: { label: 'IT Admin', color: 'text-blue-600', bgColor: 'bg-blue-50' },
-  hr_manager: { label: 'HR Manager', color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
+  it: { label: 'IT Admin', color: 'text-blue-600', bgColor: 'bg-blue-50' },
+  hr: { label: 'HR Manager', color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
+  front_desk: { label: 'Front Desk', color: 'text-orange-600', bgColor: 'bg-orange-50' },
 } as const
 
 export const BIOMETRIC_STATUS = {

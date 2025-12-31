@@ -89,33 +89,53 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
 
     const navigationGroups = React.useMemo(() => {
-        return [
-            {
+        const groups = []
+
+        // Overview group - Only for IT and HR
+        if (profile?.role === 'it' || profile?.role === 'hr') {
+            groups.push({
                 label: "Dashboard",
                 items: [
                     { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
                 ]
-            },
-            {
-                label: "Tracking",
-                items: [
-                    { href: "/dashboard/attendance", label: "Attendance", icon: FileText },
-                    { href: "/dashboard/reports", label: "Reports", icon: FileChartLine },
-                ]
-            },
-            {
+            })
+        }
+
+        // Tracking group - Seen by everyone
+        groups.push({
+            label: "Tracking",
+            items: [
+                { href: "/dashboard/attendance", label: "Attendance", icon: FileText },
+                { href: "/dashboard/reports", label: "Reports", icon: FileChartLine },
+            ]
+        })
+
+        // Management group - IT sees Users, IT/HR see Employees
+        const managementItems = []
+        if (profile?.role === 'it' || profile?.role === 'hr') {
+            managementItems.push({
+                href: "/dashboard/employees",
+                label: "Employees",
+                icon: UsersRound,
+                badge: employeeCount?.toString()
+            })
+        }
+        if (profile?.role === 'it') {
+            managementItems.push({
+                href: "/dashboard/users",
+                label: "Users",
+                icon: UserCircle
+            })
+        }
+
+        if (managementItems.length > 0) {
+            groups.push({
                 label: "Management",
-                items: [
-                    {
-                        href: "/dashboard/employees",
-                        label: "Employees",
-                        icon: UsersRound,
-                        badge: employeeCount?.toString()
-                    },
-                    ...(profile?.role === 'it_admin' ? [{ href: "/dashboard/users", label: "Users", icon: UserCircle }] : []),
-                ]
-            }
-        ]
+                items: managementItems
+            })
+        }
+
+        return groups
     }, [profile?.role, employeeCount])
 
     return (
@@ -135,11 +155,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             </div>
                             {!isCollapsed && (
                                 <div className="flex flex-col overflow-hidden">
-                                    <span className="text-sm font-semibold tracking-tight text-foreground leading-tight">
+                                    <span className="text-sm font-semibold tracking-tight text-foreground leading-tight text-primary">
                                         Attendance Hub
                                     </span>
                                     <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground mt-1 flex items-center gap-1.5">
-                                        {profile?.role === "it_admin" ? "IT Administrator" : "HR Manager"}
+                                        {profile?.role === "it" && "IT Administrator"}
+                                        {profile?.role === "hr" && "HR Manager"}
+                                        {profile?.role === "front_desk" && "Front Desk"}
                                     </span>
                                 </div>
                             )}
@@ -197,23 +219,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
             <SidebarFooter className="p-2 mt-auto border-t">
                 <SidebarMenu>
-                    <SidebarMenuItem className="mb-1">
-                        <SidebarMenuButton
-                            asChild
-                            isActive={pathname === "/dashboard/settings"}
-                            tooltip="Settings"
-                            className={cn(
-                                "h-9",
-                                isCollapsed ? "px-0 justify-center" : "px-3",
-                                pathname !== "/dashboard/settings" && "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                            )}
-                        >
-                            <Link href="/dashboard/settings" className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
-                                <Settings className="size-4 shrink-0" />
-                                {!isCollapsed && <span className="text-sm">Settings</span>}
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    {profile?.role === 'it' && (
+                        <SidebarMenuItem className="mb-1">
+                            <SidebarMenuButton
+                                asChild
+                                isActive={pathname === "/dashboard/settings"}
+                                tooltip="Settings"
+                                className={cn(
+                                    "h-9",
+                                    isCollapsed ? "px-0 justify-center" : "px-3",
+                                    pathname !== "/dashboard/settings" && "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                )}
+                            >
+                                <Link href="/dashboard/settings" className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
+                                    <Settings className="size-4 shrink-0" />
+                                    {!isCollapsed && <span className="text-sm">Settings</span>}
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    )}
 
                     <SidebarMenuItem>
                         <DropdownMenu>

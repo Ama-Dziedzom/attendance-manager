@@ -115,6 +115,18 @@ export default function EmployeesPage() {
       render: (row) => row.agency || "N/A",
     },
     {
+      key: "jobTitle",
+      header: "Job Title",
+      className: "text-muted-foreground",
+      render: (row) => row.jobTitle || "N/A",
+    },
+    {
+      key: "employeeType",
+      header: "Type",
+      className: "text-muted-foreground",
+      render: (row) => capitalize(row.employeeType),
+    },
+    {
       key: "email",
       header: "Email",
       className: "text-muted-foreground",
@@ -249,6 +261,14 @@ export default function EmployeesPage() {
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Email</p>
                       <p className="text-sm text-foreground">{employee.email || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Job Title</p>
+                      <p className="text-sm text-foreground">{employee.jobTitle || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Employment Type</p>
+                      <p className="text-sm text-foreground">{capitalize(employee.employeeType)}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-2">Biometric Status</p>

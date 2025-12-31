@@ -38,7 +38,6 @@ export interface Employee {
     jobTitle: string | null
     location: string | null
     employeeType: string | null
-    hireDate: string | null
     gender: string | null
     maritalStatus: string | null
     address: string | null
@@ -171,8 +170,7 @@ export function mapDbEmployeeToEmployee(dbEmployee: any): Employee {
         agencyId: dbEmployee.agency_id,
         jobTitle: dbEmployee.job_title || null,
         location: dbEmployee.location || null,
-        employeeType: dbEmployee.employee_type,
-        hireDate: dbEmployee.hire_date,
+        employeeType: dbEmployee.employment_type,
         gender: dbEmployee.gender,
         maritalStatus: dbEmployee.marital_status,
         address: dbEmployee.address,

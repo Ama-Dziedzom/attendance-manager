@@ -87,6 +87,14 @@ interface BulkUploadFlowProps {
         departmentId: string
         email: string
         agencyId: string
+        gender?: string | null
+        maritalStatus?: string | null
+        address?: string | null
+        emergencyContact?: string | null
+        education?: string | null
+        jobTitle?: string | null
+        employmentType?: string | null
+        dateJoin?: string | null
     }) => void
 }
 
@@ -287,6 +295,14 @@ Jane Smith,jane@example.com,HR,Main Office,female,married,"456 Park Ave, Town",J
             departmentId: emp.departmentId,
             email: emp.email,
             agencyId: emp.agencyId,
+            gender: emp.gender,
+            maritalStatus: emp.maritalStatus,
+            address: emp.address,
+            emergencyContact: emp.emergencyContact,
+            education: emp.education,
+            jobTitle: emp.jobTitle,
+            employmentType: emp.employmentType,
+            dateJoin: emp.dateJoin,
         })
     }
 

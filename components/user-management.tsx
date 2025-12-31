@@ -35,7 +35,7 @@ import { isValidEmail, sanitizeName, sanitizeString } from "@/lib/security"
 import type { Database } from "@/lib/database.types"
 
 type Profile = Database['public']['Tables']['profiles']['Row']
-type UserRole = 'it_admin' | 'hr_manager'
+type UserRole = 'it' | 'hr' | 'front_desk'
 
 export default function UserManagement() {
     const [profiles, setProfiles] = useState<Profile[]>([])
@@ -48,7 +48,7 @@ export default function UserManagement() {
     // Form state
     const [email, setEmail] = useState("")
     const [fullName, setFullName] = useState("")
-    const [role, setRole] = useState<UserRole>('hr_manager')
+    const [role, setRole] = useState<UserRole>('hr')
 
     const fetchProfiles = useCallback(async () => {
         const { data: { user } } = await supabase.auth.getUser()
@@ -121,7 +121,7 @@ export default function UserManagement() {
             // Reset form
             setEmail("")
             setFullName("")
-            setRole("hr_manager")
+            setRole("hr")
         } catch (error: any) {
             toast.error(error.message)
         } finally {
@@ -139,7 +139,7 @@ export default function UserManagement() {
     // Role badge component
     const RoleBadge = ({ role }: { role: string }) => {
         const config = USER_ROLES[role as keyof typeof USER_ROLES]
-        const Icon = role === 'it_admin' ? Shield : UserCheck
+        const Icon = role === 'it' ? Shield : (role === 'hr' ? UserCheck : ShieldCheck)
 
         return (
             <div className={`flex items-center gap-2 ${config?.color || 'text-gray-600'}`}>
@@ -268,16 +268,22 @@ export default function UserManagement() {
                                         <SelectValue placeholder="Select a role" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="it_admin">
+                                        <SelectItem value="it">
                                             <div className="flex items-center gap-2">
                                                 <Shield className="h-4 w-4 text-blue-600" />
                                                 <span>IT Admin</span>
                                             </div>
                                         </SelectItem>
-                                        <SelectItem value="hr_manager">
+                                        <SelectItem value="hr">
                                             <div className="flex items-center gap-2">
-                                                <UserCheck className="h-4 w-4 text-green-600" />
+                                                <UserCheck className="h-4 w-4 text-emerald-600" />
                                                 <span>HR Manager</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="front_desk">
+                                            <div className="flex items-center gap-2">
+                                                <ShieldCheck className="h-4 w-4 text-orange-600" />
+                                                <span>Front Desk</span>
                                             </div>
                                         </SelectItem>
                                     </SelectContent>

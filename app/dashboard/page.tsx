@@ -15,6 +15,8 @@ import {
   TrendingUp,
 } from "lucide-react"
 import { format } from "date-fns"
+import { supabase } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
 
 // Reusable components
 import { MetricsGrid } from "@/components/ui/metric-card"
@@ -32,6 +34,7 @@ export default function DashboardPage() {
   const [totalEmployees, setTotalEmployees] = useState(0)
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
   const { sortKey, sortOrder, toggleSort } = useTableSort<SortKey>("clockInTime", "desc")
 
@@ -86,6 +89,24 @@ export default function DashboardPage() {
       setIsLoading(false)
     }
   }, [date])
+
+  useEffect(() => {
+    const checkRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.role === 'front_desk') {
+          router.push('/dashboard/attendance')
+        }
+      }
+    }
+    checkRole()
+  }, [])
 
   useEffect(() => {
     loadData()
