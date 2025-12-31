@@ -33,6 +33,8 @@ export interface DataTableProps<T> {
     className?: string
     rowClassName?: string | ((row: T, index: number) => string)
     onRowClick?: (row: T) => void
+    pagination?: boolean
+    pageSize?: number
 }
 
 // ============================================================================
@@ -84,7 +86,11 @@ export function DataTable<T>({
     className,
     rowClassName,
     onRowClick,
+    pagination = false,
+    pageSize = 10,
 }: DataTableProps<T>) {
+    const [currentPage, setCurrentPage] = React.useState(1)
+
     const getAlignClass = (align?: 'left' | 'center' | 'right') => {
         switch (align) {
             case 'center': return 'text-center'
@@ -93,9 +99,19 @@ export function DataTable<T>({
         }
     }
 
+    // Reset to first page when data changes
+    React.useEffect(() => {
+        setCurrentPage(1)
+    }, [data.length])
+
+    const totalPages = Math.ceil(data.length / pageSize)
+    const paginatedData = pagination
+        ? data.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+        : data
+
     return (
-        <Card className={cn("bg-card border-border", className)}>
-            <div className="overflow-x-auto">
+        <Card className={cn("bg-card border-border flex flex-col", className)}>
+            <div className="overflow-x-auto flex-1">
                 <table className="w-full">
                     <thead className="border-b border-border">
                         <tr className="bg-muted/50">
@@ -125,7 +141,7 @@ export function DataTable<T>({
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                        {data.length === 0 ? (
+                        {paginatedData.length === 0 ? (
                             <tr>
                                 <td
                                     colSpan={columns.length}
@@ -135,7 +151,7 @@ export function DataTable<T>({
                                 </td>
                             </tr>
                         ) : (
-                            data.map((row, index) => (
+                            paginatedData.map((row, index) => (
                                 <tr
                                     key={index}
                                     className={cn(
@@ -163,6 +179,41 @@ export function DataTable<T>({
                     </tbody>
                 </table>
             </div>
+
+            {pagination && data.length > 0 && (
+                <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+                    <div className="text-sm text-muted-foreground">
+                        Showing <span className="font-medium text-foreground">{(currentPage - 1) * pageSize + 1}</span> to{" "}
+                        <span className="font-medium text-foreground">
+                            {Math.min(currentPage * pageSize, data.length)}
+                        </span>{" "}
+                        of <span className="font-medium text-foreground">{data.length}</span> results
+                    </div>
+                    {totalPages > 1 && (
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                            >
+                                Previous
+                            </Button>
+                            <div className="text-sm font-medium">
+                                Page {currentPage} of {totalPages}
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            )}
         </Card>
     )
 }

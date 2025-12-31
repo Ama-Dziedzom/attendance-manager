@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { User, Search, LayoutGrid, Table, Upload, UserPlus, Download } from "lucide-react"
+import { User, Search, LayoutGrid, Table, Upload, UserPlus, Building, Building2, Briefcase } from "lucide-react"
 import { db } from "@/lib/supabase/db"
 import { Badge } from "@/components/ui/badge"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
@@ -35,7 +35,7 @@ export default function EmployeesPage() {
   const [agencyFilter, setAgencyFilter] = useState("all")
   const [sortBy, setSortBy] = useState("name")
   const [viewMode, setViewMode] = useState<"table" | "grid">("table")
-  const [statusFilter, setStatusFilter] = useState<"active" | "all">("active")
+  const [biometricFilter, setBiometricFilter] = useState<"all" | "registered" | "not_registered">("all")
   const [employees, setEmployees] = useState<Employee[]>([])
   const [departments, setDepartments] = useState<string[]>([])
   const [agencies, setAgencies] = useState<string[]>([])
@@ -47,7 +47,7 @@ export default function EmployeesPage() {
   const loadEmployees = useCallback(async () => {
     try {
       const [employeesData, depts, agcs] = await Promise.all([
-        db.employees.getAll(statusFilter === "all"),
+        db.employees.getAll(true), // Fetch all employees
         db.departments.getAll(),
         db.agencies.getAll().catch(() => []),
       ])
@@ -58,13 +58,15 @@ export default function EmployeesPage() {
     } catch (error) {
       console.error("Error loading employees:", error)
     }
-  }, [statusFilter])
+  }, [])
 
   useEffect(() => {
     loadEmployees()
     const interval = setInterval(loadEmployees, REFRESH_INTERVALS.EMPLOYEES)
     return () => clearInterval(interval)
   }, [loadEmployees])
+
+  const [currentPage, setCurrentPage] = useState(1)
 
   const filteredEmployees = useMemo(() => {
     const filtered = employees.filter((emp) => {
@@ -74,7 +76,12 @@ export default function EmployeesPage() {
       const matchesDept = departmentFilter === "all" || emp.department === departmentFilter
       const matchesAgency = agencyFilter === "all" || emp.agency === agencyFilter
 
-      return matchesSearch && matchesDept && matchesAgency
+      const matchesBiometric =
+        biometricFilter === "all" ||
+        (biometricFilter === "registered" && emp.biometricRegistered) ||
+        (biometricFilter === "not_registered" && !emp.biometricRegistered)
+
+      return matchesSearch && matchesDept && matchesAgency && matchesBiometric
     })
 
     if (sortBy === "name") {
@@ -84,13 +91,23 @@ export default function EmployeesPage() {
     }
 
     return filtered
-  }, [searchTerm, departmentFilter, agencyFilter, sortBy, employees])
+  }, [searchTerm, departmentFilter, agencyFilter, sortBy, biometricFilter, employees])
+
+  const PAGE_SIZE = 10
+  const totalPages = Math.ceil(filteredEmployees.length / PAGE_SIZE)
+  const paginatedEmployees = useMemo(() => {
+    return filteredEmployees.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  }, [filteredEmployees, currentPage])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, departmentFilter, agencyFilter, sortBy, biometricFilter])
 
   // Biometric badge component
-  const BiometricBadge = ({ registered }: { registered: boolean }) => {
+  const BiometricBadge = ({ registered, className }: { registered: boolean; className?: string }) => {
     const config = registered ? BIOMETRIC_STATUS.registered : BIOMETRIC_STATUS.not_registered
     return (
-      <Badge variant={registered ? "default" : "secondary"} className={config.badgeClass}>
+      <Badge variant={registered ? "default" : "secondary"} className={cn(config.badgeClass, className)}>
         {config.label}
       </Badge>
     )
@@ -173,10 +190,6 @@ export default function EmployeesPage() {
             <Upload className="h-4 w-4" />
             Bulk Upload
           </Button>
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
         </div>
       </PageHeader>
 
@@ -226,13 +239,14 @@ export default function EmployeesPage() {
             </SelectContent>
           </Select>
 
-          <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
-            <SelectTrigger className="w-[150px] h-10">
-              <SelectValue placeholder="Status" />
+          <Select value={biometricFilter} onValueChange={(v: any) => setBiometricFilter(v)}>
+            <SelectTrigger className="w-[180px] h-10">
+              <SelectValue placeholder="Biometric Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="active">Active Only</SelectItem>
-              <SelectItem value="all">All Employees</SelectItem>
+              <SelectItem value="all">All Biometrics</SelectItem>
+              <SelectItem value="registered">Registered</SelectItem>
+              <SelectItem value="not_registered">Not Registered</SelectItem>
             </SelectContent>
           </Select>
 
@@ -264,55 +278,94 @@ export default function EmployeesPage() {
 
       {/* Grid View */}
       {viewMode === "grid" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEmployees.map((employee) => (
-            <Link key={employee.id} href={`/dashboard/employees/${employee.empId}`}>
-              <Card className="bg-card border-border hover:border-primary cursor-pointer transition-all h-full hover:shadow-md">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground">{capitalize(employee.name)}</h3>
-                      <p className="text-sm text-muted-foreground">{employee.empId}</p>
-                    </div>
-                    <div className="p-2 bg-primary/10 rounded-full">
-                      <User className="w-5 h-5 text-primary" />
-                    </div>
-                  </div>
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+            {paginatedEmployees.map((employee) => (
+              <Link key={employee.id} href={`/dashboard/employees/${employee.empId}`}>
+                <Card className="bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/40 cursor-pointer transition-all duration-300 h-full hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden">
+                  {/* Subtle accent line on hover */}
+                  <div className="absolute top-0 left-0 w-full h-0.5 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
 
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Department</p>
-                      <p className="text-sm text-foreground">{capitalize(employee.department)}</p>
+                  <CardContent className="p-5 flex flex-col h-full">
+                    <div className="flex items-center gap-3.5 mb-5">
+                      <div className="h-11 w-11 shrink-0 rounded-xl bg-primary/5 flex items-center justify-center group-hover:bg-primary transition-all duration-300 shadow-sm">
+                        <User className="w-5.5 h-5.5 text-primary group-hover:text-white transition-colors" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-[15px] font-bold text-foreground leading-tight truncate group-hover:text-primary transition-colors">
+                          {capitalize(employee.name)}
+                        </h3>
+                        <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground/70 mt-0.5">
+                          {employee.empId}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Agency</p>
-                      <p className="text-sm text-foreground">{employee.agency || "N/A"}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Email</p>
-                      <p className="text-sm text-foreground">{employee.email || "N/A"}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Job Title</p>
-                      <p className="text-sm text-foreground">{employee.jobTitle || "N/A"}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Employment Type</p>
-                      <p className="text-sm text-foreground">{capitalize(employee.employeeType)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-2">Biometric Status</p>
-                      <BiometricBadge registered={employee.biometricRegistered} />
-                    </div>
-                  </div>
 
-                  <Button className="w-full mt-4" variant="secondary" asChild>
-                    <span>View Details</span>
+                    <div className="space-y-2.5 flex-1">
+                      <div className="flex items-center gap-2.5 text-muted-foreground/80 group-hover:text-muted-foreground transition-colors">
+                        <div className="p-1 rounded-md bg-muted/30">
+                          <Building className="h-3 w-3 shrink-0" />
+                        </div>
+                        <span className="text-[12.5px] truncate">{capitalize(employee.department)}</span>
+                      </div>
+                      <div className="flex items-center gap-2.5 text-muted-foreground/80 group-hover:text-muted-foreground transition-colors">
+                        <div className="p-1 rounded-md bg-muted/30">
+                          <Building2 className="h-3 w-3 shrink-0" />
+                        </div>
+                        <span className="text-[12.5px] truncate">{employee.agency || "N/A"}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 pt-4 border-t border-border/40 flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] uppercase font-bold text-muted-foreground/50 leading-none">Status</span>
+                        <Badge variant="outline" className="text-[10px] px-2 py-0 h-5 bg-background font-semibold border-border/60">
+                          {capitalize(employee.employeeType || "Staff")}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-col gap-1 items-end">
+                        <span className="text-[9px] uppercase font-bold text-muted-foreground/50 leading-none">Biometric</span>
+                        <BiometricBadge registered={employee.biometricRegistered} className="h-5 px-2 text-[10px] font-semibold" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+
+          {filteredEmployees.length > 0 && (
+            <div className="flex items-center justify-between mt-8 px-2">
+              <div className="text-sm text-muted-foreground">
+                Showing <span className="font-medium text-foreground">{(currentPage - 1) * PAGE_SIZE + 1}</span> to{" "}
+                <span className="font-medium text-foreground">
+                  {Math.min(currentPage * PAGE_SIZE, filteredEmployees.length)}
+                </span>{" "}
+                of <span className="font-medium text-foreground">{filteredEmployees.length}</span> results
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
                   </Button>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                  <div className="text-sm font-medium">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -322,6 +375,7 @@ export default function EmployeesPage() {
           data={filteredEmployees}
           columns={columns}
           emptyMessage="No employees found matching your criteria"
+          pagination
         />
       )}
 

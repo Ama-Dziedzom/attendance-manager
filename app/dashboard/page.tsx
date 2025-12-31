@@ -297,6 +297,7 @@ export default function DashboardPage() {
             onSort={(key) => toggleSort(key as SortKey)}
             emptyMessage="No attendance records for this date"
             className="border-0 shadow-none"
+            pagination
           />
         </div>
       </Card>

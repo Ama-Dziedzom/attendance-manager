@@ -342,6 +342,7 @@ export default function AttendancePage() {
         sortOrder={sortOrder}
         onSort={(key) => toggleSort(key as SortKey)}
         emptyMessage="No attendance records matching your criteria"
+        pagination
       />
     </div>
   )

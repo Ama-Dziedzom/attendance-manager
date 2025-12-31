@@ -112,14 +112,8 @@ export function AddEmployeeSheet({ open, onOpenChange, onSuccess }: AddEmployeeS
         setIsSubmitting(true)
 
         try {
-            // Generate employee ID
-            const agency = agencies.find(a => a.id === formData.agencyId)
-            const agencyPrefix = agency?.name.slice(0, 3).toUpperCase() || "EMP"
-            const empId = `${agencyPrefix}-${Date.now().toString().slice(-8)}`
-
-            // Create employee
+            // Create employee - emp_id is now generated automatically by the DB trigger
             const newEmployee = await db.employees.create({
-                emp_id: empId,
                 name: formData.name,
                 department_id: formData.departmentId,
                 agency_id: formData.agencyId,
@@ -135,6 +129,8 @@ export function AddEmployeeSheet({ open, onOpenChange, onSuccess }: AddEmployeeS
                 is_active: true,
             })
 
+            const empId = newEmployee.emp_id || "PENDING";
+
             // Register biometric credential
             await db.biometric.register({
                 employee_id: newEmployee.id,
@@ -146,12 +142,14 @@ export function AddEmployeeSheet({ open, onOpenChange, onSuccess }: AddEmployeeS
                 is_active: true,
             })
 
+            // Get agency name (re-fetching from agencies loaded in handleFormSubmit)
+            const agency = agencies.find(a => a.id === formData.agencyId)
             // Get department name for display
             const dept = departments.find(d => d.id === formData.departmentId)
 
             const employeeForDisplay: Employee = {
                 id: newEmployee.id,
-                empId: newEmployee.emp_id || empId,
+                empId: empId,
                 name: newEmployee.name,
                 email: newEmployee.email || null,
                 department: dept?.name || null,

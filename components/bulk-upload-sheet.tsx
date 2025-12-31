@@ -276,13 +276,8 @@ export function BulkUploadSheet({ open, onOpenChange, onSuccess }: BulkUploadShe
             const emp = validEmployees[i]
 
             try {
-                // Generate employee ID
-                const agency = agencies.find(a => a.id === emp.agencyId)
-                const agencyPrefix = agency?.name.slice(0, 3).toUpperCase() || "EMP"
-                const empId = `${agencyPrefix}-${Date.now().toString().slice(-8)}-${i}`
-
+                // emp_id is now generated automatically by the DB trigger
                 await db.employees.create({
-                    emp_id: empId,
                     name: emp.name,
                     department_id: emp.departmentId,
                     agency_id: emp.agencyId,

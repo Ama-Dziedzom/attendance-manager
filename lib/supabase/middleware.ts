@@ -56,8 +56,12 @@ export async function updateSession(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser()
 
-    // 1. If user is NOT logged in and trying to access dashboard -> redirect to login
-    if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    // Public routes that don't require authentication
+    const publicRoutes = ['/scan', '/login']
+    const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route))
+
+    // 1. If user is NOT logged in and trying to access protected routes -> redirect to login
+    if (!user && !isPublicRoute) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)
