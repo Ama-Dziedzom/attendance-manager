@@ -56,6 +56,7 @@ export type Database = {
                     employee_id: string
                     id: string
                     status: string
+                    terminal_id: string | null  // NEW: MB460 terminal reference
                     total_hours: number | null
                     updated_at: string | null
                     verification_method: string
@@ -68,6 +69,7 @@ export type Database = {
                     employee_id: string
                     id?: string
                     status?: string
+                    terminal_id?: string | null  // NEW: MB460 terminal reference
                     total_hours?: number | null
                     updated_at?: string | null
                     verification_method?: string
@@ -80,6 +82,7 @@ export type Database = {
                     employee_id?: string
                     id?: string
                     status?: string
+                    terminal_id?: string | null  // NEW: MB460 terminal reference
                     total_hours?: number | null
                     updated_at?: string | null
                     verification_method?: string
@@ -90,6 +93,13 @@ export type Database = {
                         columns: ["employee_id"]
                         isOneToOne: false
                         referencedRelation: "employees"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "attendance_records_terminal_id_fkey"
+                        columns: ["terminal_id"]
+                        isOneToOne: false
+                        referencedRelation: "terminals"
                         referencedColumns: ["id"]
                     },
                 ]
@@ -123,40 +133,52 @@ export type Database = {
             }
             biometric_credentials: {
                 Row: {
+                    biometric_type: string | null  // NEW: fingerprint, face, or both
                     counter: number | null
                     credential_id: string
                     device_type: string | null
+                    device_user_id: string | null  // NEW: MB460 internal user ID
                     employee_id: string
+                    face_template_id: string | null  // NEW: Face recognition template
                     fingerprint_id: string | null
                     id: string
                     is_active: boolean | null
                     last_used_at: string | null
                     public_key: string
                     registered_at: string | null
+                    terminal_id: string | null  // NEW: Enrolled on which terminal
                 }
                 Insert: {
+                    biometric_type?: string | null
                     counter?: number | null
                     credential_id: string
                     device_type?: string | null
+                    device_user_id?: string | null
                     employee_id: string
+                    face_template_id?: string | null
                     fingerprint_id?: string | null
                     id?: string
                     is_active?: boolean | null
                     last_used_at?: string | null
                     public_key: string
                     registered_at?: string | null
+                    terminal_id?: string | null
                 }
                 Update: {
+                    biometric_type?: string | null
                     counter?: number | null
                     credential_id?: string
                     device_type?: string | null
+                    device_user_id?: string | null
                     employee_id?: string
+                    face_template_id?: string | null
                     fingerprint_id?: string | null
                     id?: string
                     is_active?: boolean | null
                     last_used_at?: string | null
                     public_key?: string
                     registered_at?: string | null
+                    terminal_id?: string | null
                 }
                 Relationships: [
                     {
@@ -164,6 +186,13 @@ export type Database = {
                         columns: ["employee_id"]
                         isOneToOne: false
                         referencedRelation: "employees"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "biometric_credentials_terminal_id_fkey"
+                        columns: ["terminal_id"]
+                        isOneToOne: false
+                        referencedRelation: "terminals"
                         referencedColumns: ["id"]
                     },
                 ]
@@ -381,6 +410,63 @@ export type Database = {
                 }
                 Relationships: []
             }
+            // NEW: MB460 Terminals table
+            terminals: {
+                Row: {
+                    id: string
+                    serial_number: string
+                    agency_id: string | null
+                    name: string | null
+                    model: string | null
+                    ip_address: string | null
+                    port: number | null
+                    status: string | null
+                    last_seen: string | null
+                    firmware_version: string | null
+                    face_enabled: boolean | null
+                    created_at: string | null
+                    updated_at: string | null
+                }
+                Insert: {
+                    id?: string
+                    serial_number: string
+                    agency_id?: string | null
+                    name?: string | null
+                    model?: string | null
+                    ip_address?: string | null
+                    port?: number | null
+                    status?: string | null
+                    last_seen?: string | null
+                    firmware_version?: string | null
+                    face_enabled?: boolean | null
+                    created_at?: string | null
+                    updated_at?: string | null
+                }
+                Update: {
+                    id?: string
+                    serial_number?: string
+                    agency_id?: string | null
+                    name?: string | null
+                    model?: string | null
+                    ip_address?: string | null
+                    port?: number | null
+                    status?: string | null
+                    last_seen?: string | null
+                    firmware_version?: string | null
+                    face_enabled?: boolean | null
+                    created_at?: string | null
+                    updated_at?: string | null
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "terminals_agency_id_fkey"
+                        columns: ["agency_id"]
+                        isOneToOne: false
+                        referencedRelation: "agencies"
+                        referencedColumns: ["id"]
+                    },
+                ]
+            }
         }
         Views: {
             mv_daily_attendance_summary: {
@@ -516,8 +602,8 @@ export type TablesUpdate<
     }
     ? U
     : never
-    : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    : PublicTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
     }
     ? U
