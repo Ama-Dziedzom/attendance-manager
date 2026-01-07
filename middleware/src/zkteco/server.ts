@@ -38,7 +38,7 @@ export function startZKTecoServer(
                     // Store device serial for tracking
                     if (event.deviceSerial && !deviceSerial) {
                         deviceSerial = event.deviceSerial;
-                        connectedDevices.set(deviceSerial, socket);
+                        connectedDevices.set(event.deviceSerial, socket);
                         logger.info(`Device identified: ${deviceSerial}`);
                     }
 

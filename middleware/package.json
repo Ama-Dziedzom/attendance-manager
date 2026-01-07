@@ -7,7 +7,12 @@
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
         "build": "tsc",
         "start": "node dist/index.js",
-        "lint": "eslint src/**/*.ts"
+        "lint": "eslint src/**/*.ts",
+        "simulate": "ts-node scripts/simulate-terminal.ts",
+        "test:quick": "ts-node scripts/quick-test.ts",
+        "test:health": "ts-node scripts/quick-test.ts health",
+        "test:in": "ts-node scripts/quick-test.ts in",
+        "test:out": "ts-node scripts/quick-test.ts out"
     },
     "keywords": [
         "zkteco",
@@ -28,6 +33,7 @@
     "devDependencies": {
         "@types/express": "^4.17.21",
         "@types/node": "^22.0.0",
+        "ts-node": "^10.9.2",
         "ts-node-dev": "^2.0.0",
         "typescript": "^5.6.0"
     },
