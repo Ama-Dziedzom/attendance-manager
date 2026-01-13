@@ -5,10 +5,12 @@ interface InviteRequest {
     email: string;
     fullName: string;
     role: 'it' | 'hr' | 'front_desk';
+    redirectTo?: string;
 }
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
@@ -61,13 +63,20 @@ Deno.serve(async (req: Request) => {
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         );
 
-        const { email, fullName, role }: InviteRequest = await req.json();
+        const { email, fullName, role, redirectTo: bodyRedirectTo }: InviteRequest = await req.json();
+
+        // Determine the redirect URL: 
+        // 1. Use the one from body if provided
+        // 2. Otherwise use the origin header
+        // 3. Fallback to a hardcoded dashboard callback if all else fails
+        const origin = req.headers.get('origin');
+        const finalRedirectTo = bodyRedirectTo || (origin ? `${origin}/auth/v1/callback` : null);
 
         // 3. Invite the user via Supabase Auth
         const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
             data: { full_name: fullName },
-            // Redirect back to our dashboard password reset page (we will build this later)
-            redirectTo: `${req.headers.get('origin')}/auth/v1/callback`,
+            // Redirect back to our dashboard password reset page
+            ...(finalRedirectTo ? { redirectTo: finalRedirectTo } : {}),
         });
 
         if (inviteError) throw inviteError;

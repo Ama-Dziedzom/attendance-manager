@@ -103,7 +103,8 @@ export default function UserManagement() {
                     body: JSON.stringify({
                         email: sanitizedEmail,
                         fullName: sanitizedName,
-                        role
+                        role,
+                        redirectTo: `${window.location.origin}/auth/v1/callback`
                     }),
                 }
             )
