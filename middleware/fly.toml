@@ -8,9 +8,6 @@ primary_region = 'lhr'
   API_PORT = "3001"
   ZKTECO_PORT = "4370"
 
-[processes]
-  app = "npm start"
-
 # API + WebSocket service (HTTP/HTTPS)
 [[services]]
   internal_port = 3001
@@ -18,6 +15,7 @@ primary_region = 'lhr'
   auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
+  processes = ["app"]
 
   [[services.ports]]
     port = 80
@@ -39,6 +37,7 @@ primary_region = 'lhr'
   auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
+  processes = ["app"]
 
   [[services.ports]]
     port = 4370
@@ -48,3 +47,7 @@ primary_region = 'lhr'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
+
+# Process definition
+[processes]
+  app = "npm start"
