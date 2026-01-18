@@ -116,8 +116,56 @@ export async function updateTerminalStatus(
 }
 
 /**
- * Get all terminals
+ * Smart toggle attendance status based on current database state
  */
+export async function smartToggleAttendance(
+    empId: string,
+    terminalSerial: string,
+    verificationMethod: string = 'fingerprint',
+    timestamp: Date = new Date()
+): Promise<{ success: boolean; action?: string; data?: any; error?: string }> {
+    const supabase = getSupabase();
+
+    try {
+        // 1. Get the latest record for this employee today
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        const { data: latestRecord, error: fetchError } = await supabase
+            .from('attendance_records')
+            .select('*')
+            .eq('emp_id', empId)
+            .gte('clock_in_time', todayStart.toISOString())
+            .order('clock_in_time', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (fetchError) {
+            logger.error('Error fetching latest attendance:', fetchError);
+            return { success: false, error: fetchError.message };
+        }
+
+        // 2. Decide action based on state
+        if (!latestRecord) {
+            // No record today -> Clock In
+            logger.info(`[SmartToggle] No record for ${empId}, starting Clock-In`);
+            const result = await clockInFromTerminal(empId, terminalSerial, verificationMethod, timestamp);
+            return { ...result, action: 'clock_in' };
+        } else if (latestRecord.clock_in_time && !latestRecord.clock_out_time) {
+            // Already clocked in but not out -> Clock Out
+            logger.info(`[SmartToggle] Open record found for ${empId}, starting Clock-Out`);
+            const result = await clockOutFromTerminal(empId, terminalSerial, verificationMethod, timestamp);
+            return { ...result, action: 'clock_out' };
+        } else {
+            // Already clocked out -> Attendance complete
+            logger.info(`[SmartToggle] Record already complete for ${empId} today`);
+            return { success: false, error: 'Employee already clocked out for today', action: 'none' };
+        }
+    } catch (err) {
+        logger.error('Smart toggle exception:', err);
+        return { success: false, error: String(err) };
+    }
+}
 export async function getTerminals(): Promise<any[]> {
     const supabase = getSupabase();
 
@@ -149,6 +197,32 @@ export async function getEmployeeByEmpId(empId: string): Promise<any | null> {
 
     if (error) {
         logger.error('Get employee error:', error);
+        return null;
+    }
+
+    return data;
+}
+
+/**
+ * Get employee by numeric ID part
+ * Used for ZKTeco devices that only support numeric PINs
+ */
+export async function getEmployeeByNumericId(numericId: string): Promise<any | null> {
+    const supabase = getSupabase();
+
+    // Try various matching strategies
+    // 1. Exact match (if the DB already uses purely numeric IDs)
+    // 2. Ends with (e.g., "00004" matches "ID-00004")
+    const { data, error } = await supabase
+        .from('employees')
+        .select('*, department:departments(name), agency:agencies(name)')
+        .or(`emp_id.eq.${numericId},emp_id.ilike.%-${numericId}`)
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+
+    if (error) {
+        logger.warn(`Could not resolve numeric ID ${numericId}:`, error.message);
         return null;
     }
 

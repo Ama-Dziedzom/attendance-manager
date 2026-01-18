@@ -6,13 +6,19 @@
  * - Get terminal status
  * - Get connected devices
  * - Trigger manual sync
+ * - Handle ADMS device communication
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupApiRoutes = setupApiRoutes;
+const adms_routes_1 = require("./adms-routes");
 const logger_1 = require("../utils/logger");
 const supabase_1 = require("../services/supabase");
 const server_1 = require("../zkteco/server");
 function setupApiRoutes(app, io) {
+    // Initialize Supabase for ADMS routes
+    const supabase = (0, supabase_1.initSupabase)();
+    // Setup ADMS routes for ZKTeco PUSH protocol
+    (0, adms_routes_1.setupAdmsRoutes)(app, supabase);
     // =========================================================================
     // TERMINALS
     // =========================================================================

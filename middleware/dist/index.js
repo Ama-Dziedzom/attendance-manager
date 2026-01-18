@@ -31,8 +31,12 @@ const io = new socket_io_1.Server(httpServer, {
         methods: ['GET', 'POST']
     }
 });
-// Middleware
+// Middleware - IMPORTANT: Parse both JSON and raw body for ADMS devices
+// Raw body parser must come first to capture the original body
+app.use(express_1.default.raw({ type: '*/*', limit: '10mb' }));
 app.use(express_1.default.json());
+app.use(express_1.default.text({ type: 'text/plain' })); // For ADMS raw data
+app.use(express_1.default.urlencoded({ extended: true }));
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({

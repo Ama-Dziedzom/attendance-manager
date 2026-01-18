@@ -33,7 +33,7 @@ function startZKTecoServer(port, supabase, io) {
                     // Store device serial for tracking
                     if (event.deviceSerial && !deviceSerial) {
                         deviceSerial = event.deviceSerial;
-                        connectedDevices.set(deviceSerial, socket);
+                        connectedDevices.set(event.deviceSerial, socket);
                         logger_1.logger.info(`Device identified: ${deviceSerial}`);
                     }
                     // Handle the event

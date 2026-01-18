@@ -5,6 +5,7 @@
  * - Get terminal status
  * - Get connected devices
  * - Trigger manual sync
+ * - Handle ADMS device communication
  */
 import { Express } from 'express';
 import { Server as SocketIOServer } from 'socket.io';
