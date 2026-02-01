@@ -28,8 +28,10 @@ export class ScannerService {
     /**
      * Start fingerprint enrollment using the PowerShell bridge
      * This waits for the physical scanner to capture a finger
+     * 
+     * @param onProgress Callback for status updates (e.g. "Capture 1/3")
      */
-    async enrollFingerprint(): Promise<ScanResult> {
+    async enrollFingerprint(onProgress?: (status: string) => void): Promise<ScanResult> {
         if (this.isBusy) {
             return { success: false, error: 'Scanner is already in use' };
         }
@@ -52,7 +54,12 @@ export class ScannerService {
                 output += text;
                 // Log status updates but don't spam
                 if (text.includes('STATUS:')) {
-                    logger.info(`[Scanner Bridge] ${text.trim()}`);
+                    const statusLine = text.trim().split('\n').find((l: string) => l.includes('STATUS:'));
+                    if (statusLine) {
+                        const statusMsg = statusLine.replace('STATUS:', '').trim();
+                        logger.info(`[Scanner Bridge] ${statusMsg}`);
+                        if (onProgress) onProgress(statusMsg);
+                    }
                 }
             });
 
@@ -83,14 +90,14 @@ export class ScannerService {
                 }
             });
 
-            // Safety timeout (script has its own 15s timeout, but just in case)
+            // Safety timeout (increased for 3-step enrollment)
             setTimeout(() => {
                 if (this.isBusy) {
                     ps.kill();
                     this.isBusy = false;
                     resolve({ success: false, error: 'Capture process timed out' });
                 }
-            }, 20000);
+            }, 60000);
         });
     }
 }

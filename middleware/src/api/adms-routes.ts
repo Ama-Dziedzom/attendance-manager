@@ -80,84 +80,94 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                 return res.send(command);
             }
 
-            // 2. Automatic Agency-Based Synchronization Logic
-            // This implements the "Middleware as the Brain" architecture:
-            // - Identify device -> Identify agencies (supports multi-agency) -> Identify employees -> Push missing
+            // 3. Automatic Synchronization Logic
+            // Priority: Check for employees explicitly marked as 'pending' for this terminal
+            const syncStatus = await getTerminalSyncStatus(terminalSerial);
+            const pendingEmpIds = syncStatus.filter(s => s.status === 'pending').map(s => s.emp_id);
 
-            const agencyIds = await getTerminalAgencies(terminalSerial);
-            logger.info(`[ADMS] Heartbeat from ${terminalSerial}. Linked agencies: ${agencyIds.join(', ') || 'None'}`);
+            let missingEmployees: any[] = [];
 
-            if (agencyIds.length > 0) {
-                const agencyEmployees = await getEmployeesByAgencies(agencyIds);
-                const syncStatus = await getTerminalSyncStatus(terminalSerial);
-
-                // Find employees that belong to linked agencies but are not yet synced to this terminal
-                const syncedEmpIds = new Set(syncStatus.filter(s => s.status === 'synced').map(s => s.emp_id));
-                const missingEmployees = agencyEmployees.filter(emp => !syncedEmpIds.has(emp.emp_id));
-
-                logger.info(`[ADMS] Found ${missingEmployees.length} unsynced employees for ${terminalSerial}`);
-
+            if (pendingEmpIds.length > 0) {
+                // Fetch specific pending employees
+                const { data: pendingEmps } = await (await import('../services/supabase')).getSupabase()
+                    .from('employees')
+                    .select('*')
+                    .in('emp_id', pendingEmpIds)
+                    .eq('is_active', true);
+                missingEmployees = pendingEmps || [];
                 if (missingEmployees.length > 0) {
-                    const emp = missingEmployees[0]; // Process one at a time per heartbeat to avoid flooding
-                    const cmdId = Math.floor(Math.random() * 10000);
-
-                    let numericPin: string;
-                    if (emp.device_pin) {
-                        numericPin = emp.device_pin.toString();
-                    } else {
-                        const partToUse = emp.emp_id.includes('-') ? emp.emp_id.split('-')[1] : emp.emp_id;
-                        numericPin = partToUse.replace(/\D/g, '');
-                    }
-
-                    const simplePin = parseInt(numericPin, 10).toString();
-                    const tab = String.fromCharCode(9);
-
-                    logger.info(`[ADMS] Processing sync for ${emp.name} (UUID: ${emp.id}, PIN: ${simplePin})`);
-
-                    // 1. Fetch Fingerprints first so we know what to queue
-                    const fingerprints = await getEmployeeFingerprints(emp.id);
-                    logger.info(`[ADMS] Fingerprints found in DB for ${emp.name}: ${fingerprints.length}`);
-
-                    // 2. Create User Command
-                    // We must send the USER first, then the FPTMP commands will follow from the queue
-                    // Added Verify=0 (Fingerprint+Password) for better compatibility
-                    const userCmd = `C:${cmdId}:DATA USER PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=0`;
-
-                    logger.info(`[ADMS] Auto-syncing employee to device: ${emp.name} (PIN ${simplePin}) to ${terminalSerial}`);
-
-                    // 3. Queue Fingerprint Commands (These will be pulled on the NEXT heartbeats)
-                    if (fingerprints.length > 0) {
-                        if (!commandQueue[terminalSerial]) {
-                            commandQueue[terminalSerial] = [];
-                        }
-                        for (const fp of fingerprints) {
-                            const fpCmdId = Math.floor(Math.random() * 10000);
-                            const cleanTemplate = fp.template.trim();
-
-                            // Log template properties for debugging
-                            logger.info(`[ADMS] Syncing finger ${fp.finger_index} for ${emp.name}. Template length: ${cleanTemplate.length}`);
-
-                            /**
-                             * MB460 / ADMS Standard Fingerprint Command Format:
-                             * DATA FPTMP PIN=X [TAB] FingerID=X [TAB] Valid=1 [TAB] Template=XXX [TAB] Reserved=0 [TAB] MajorVer=10
-                             * 
-                             * Note: Some firmwares use 'Size' but 'MajorVer' + 'Template' is the modern standard.
-                             */
-                            const fpCmd = `C:${fpCmdId}:DATA FPTMP PIN=${simplePin}${tab}FingerID=${fp.finger_index}${tab}Valid=1${tab}Template=${cleanTemplate}${tab}Reserved=0${tab}MajorVer=10`;
-
-                            commandQueue[terminalSerial].push(fpCmd);
-                        }
-                        logger.info(`[ADMS] Queued ${fingerprints.length} fingerprints for ${emp.name} to ${terminalSerial}`);
-                    } else {
-                        logger.warn(`[ADMS] No fingerprints found in DB for ${emp.name}. Device will only have names, verification will FAIL.`);
-                    }
-
-                    // Mark as synced ONLY after the fingerprints are queued
-                    await markEmployeeSynced(emp.emp_id, terminalSerial, 'synced');
-
-                    logger.info(`[ADMS] Sending USER command for ${emp.name} (Next heartbeats will pull ${fingerprints.length} fingerprints)`);
-                    return res.send(userCmd);
+                    logger.info(`[ADMS] Found ${missingEmployees.length} explicitly pending employees for ${terminalSerial}`);
                 }
+            }
+
+            // Fallback: If no explicit pending, do agency-based auto-discovery
+            if (missingEmployees.length === 0) {
+                const agencyIds = await getTerminalAgencies(terminalSerial);
+                if (agencyIds.length > 0) {
+                    const agencyEmployees = await getEmployeesByAgencies(agencyIds);
+                    const syncedEmpIds = new Set(syncStatus.filter(s => s.status === 'synced').map(s => s.emp_id));
+                    missingEmployees = agencyEmployees.filter(emp => !syncedEmpIds.has(emp.emp_id));
+                    if (missingEmployees.length > 0) {
+                        logger.info(`[ADMS] Auto-discovery: Found ${missingEmployees.length} missing employees from agencies for ${terminalSerial}`);
+                    }
+                }
+            }
+
+            if (missingEmployees.length > 0) {
+                const emp = missingEmployees[0];
+                const cmdId = Math.floor(Math.random() * 10000);
+
+                let numericPin: string;
+                if (emp.device_pin) {
+                    numericPin = emp.device_pin.toString();
+                } else {
+                    const partToUse = emp.emp_id.includes('-') ? emp.emp_id.split('-')[1] : emp.emp_id;
+                    numericPin = partToUse.replace(/\D/g, '');
+                }
+                const simplePin = parseInt(numericPin, 10).toString();
+                const tab = String.fromCharCode(9);
+
+                // 1. Fetch Fingerprints
+                const fingerprints = await getEmployeeFingerprints(emp.id);
+                logger.info(`[ADMS Heartbeat] Found ${fingerprints.length} fingerprints for ${emp.name} (UUID: ${emp.id})`);
+
+                if (fingerprints.length === 0) {
+                    logger.warn(`[ADMS Heartbeat] CANNOT SYNC BIOMETRICS for ${emp.name}: No templates found in 'employee_fingerprints' table.`);
+                }
+
+                // 2. Queue User Command
+                const userCmd = `C:${cmdId}:DATA USER PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=0`;
+                logger.info(`[ADMS] Syncing user to device: ${emp.name} (PIN ${simplePin})`);
+
+                // 3. Queue Fingerprints
+                for (const fp of fingerprints) {
+                    const fpCmdId = Math.floor(Math.random() * 10000);
+                    let templateBuffer = Buffer.from(fp.template.replace(/\s/g, ''), 'base64');
+
+                    // Force alignment to 1232 bytes (SilkID raw)
+                    // If it's 1260, we skip the 28-byte header.
+                    // If it's anything else, we take the last 1232 bytes (standard for ZK wrappers)
+                    if (templateBuffer.length === 1260) {
+                        templateBuffer = templateBuffer.slice(28);
+                    } else if (templateBuffer.length > 1232) {
+                        templateBuffer = templateBuffer.slice(templateBuffer.length - 1232);
+                    }
+
+                    const templateSize = templateBuffer.length;
+                    const base64Template = templateBuffer.toString('base64');
+                    const fingerID = Math.min(9, Math.max(0, fp.finger_index));
+                    // Using terminal-native verb (FP) and tags (PIN, FID, Size, Valid, TMP)
+                    const fpCmd = `C:${fpCmdId}:FP PIN=${simplePin}${tab}FID=${fingerID}${tab}Size=${templateSize}${tab}Valid=1${tab}TMP=${base64Template}`;
+
+                    if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
+                    commandQueue[terminalSerial].push(fpCmd);
+                    logger.info(`[ADMS] Final Template for ${emp.name} PIN ${simplePin}: FID ${fingerID}, Size ${templateSize}`);
+                }
+
+                // Update status to synced
+                await markEmployeeSynced(emp.emp_id, terminalSerial, 'synced');
+
+                return res.send(userCmd);
             }
 
             // No commands, just respond OK
@@ -168,49 +178,136 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
         }
     });
 
+    // Helper endpoint to queue template query (for diagnostics)
+    app.get('/api/terminals/:serial/query-templates', async (req: Request, res: Response) => {
+        try {
+            const { serial } = req.params;
+            const terminalSerial = String(serial).trim();
+
+            if (!commandQueue[terminalSerial]) {
+                commandQueue[terminalSerial] = [];
+            }
+
+            const queryCmdId = Math.floor(Math.random() * 10000);
+            const queryCmd = `C:${queryCmdId}:DATA QUERY FPTMP`;
+            commandQueue[terminalSerial].push(queryCmd);
+
+            logger.info(`[Diagnostic] Template query queued for ${terminalSerial}`);
+            res.json({
+                success: true,
+                message: `Template query command (${queryCmdId}) queued for ${terminalSerial}. It will be picked up on the next heartbeat.`,
+                queueSize: commandQueue[terminalSerial].length
+            });
+        } catch (error) {
+            logger.error('[ADMS] Query-templates error:', error);
+            res.status(500).json({ error: String(error) });
+        }
+    });
+
+    // New diagnostic pull that tries multiple formats
+    app.get('/api/terminals/:serial/diagnostic-pull', async (req: Request, res: Response) => {
+        try {
+            const { serial } = req.params;
+            const terminalSerial = String(serial).trim();
+
+            if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
+
+            // Try 3 common formats to get templates back
+            commandQueue[terminalSerial].push(`C:${Math.floor(Math.random() * 10000)}:DATA QUERY FPTMP PIN=1`);
+            commandQueue[terminalSerial].push(`C:${Math.floor(Math.random() * 10000)}:GET USERPIN 1 FPTMP`);
+            commandQueue[terminalSerial].push(`C:${Math.floor(Math.random() * 10000)}:DATA QUERY FPTMP`);
+
+            logger.info(`[Diagnostic] 3-way Diagnostic Pull queued for ${terminalSerial}`);
+            res.json({ success: true, message: '3 diagnostic formats queued. Watch for Akosua/PIN 1 in logs.' });
+        } catch (error) {
+            res.status(500).json({ error: String(error) });
+        }
+    });
+
+    // Final attempt to force the device to push its own data
+    app.get('/api/terminals/:serial/force-upload', async (req: Request, res: Response) => {
+        try {
+            const { serial } = req.params;
+            const terminalSerial = String(serial).trim();
+            if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
+
+            // These commands tell the device to upload its current user database to the server
+            commandQueue[terminalSerial].push(`C:${Math.floor(Math.random() * 10000)}:DATA QUERY USERINFO`);
+            commandQueue[terminalSerial].push(`C:${Math.floor(Math.random() * 10000)}:DATA QUERY FPTMP`);
+            commandQueue[terminalSerial].push(`C:${Math.floor(Math.random() * 10000)}:SET OPTIONS DataPostFp=1`);
+
+            logger.info(`[Diagnostic] Force Upload queued for ${terminalSerial}`);
+            res.json({ success: true, message: 'Force upload commands queued. Check /iclock/cdata logs in 60s.' });
+        } catch (error) {
+            res.status(500).json({ error: String(error) });
+        }
+    });
+
     // Helper endpoint to queue employee sync (can be triggered by dashboard)
     app.get('/api/sync-to-device', async (req: Request, res: Response) => {
         try {
-            const { SN, force } = req.query;
+            const { SN, force, all, clear } = req.query;
             if (!SN) return res.status(400).json({ error: 'Missing SN (Serial Number)' });
 
             const terminalSerial = String(SN).trim();
-            logger.info(`[Sync API] Requested sync for device SN: "${terminalSerial}"`);
+            logger.info(`[Sync API] Requested sync for ${terminalSerial} (All: ${all}, Clear: ${clear})`);
 
-            // Get all agencies linked to this terminal
-            const agencyIds = await getTerminalAgencies(terminalSerial);
-            logger.info(`[Sync API] Agencies found for ${terminalSerial}:`, agencyIds);
-
-            if (agencyIds.length === 0) {
-                logger.warn(`[Sync API] Sync failed: No agencies linked to ${terminalSerial}`);
-                return res.status(404).json({ error: `Device ${terminalSerial} not linked to any agency. Please register the terminal first.` });
+            if (clear === 'true') {
+                commandQueue[terminalSerial] = [];
+                logger.info(`[Sync API] Command queue cleared for ${terminalSerial}`);
             }
 
-            // Fetch employees for all linked agencies
-            const employees = await getEmployeesByAgencies(agencyIds);
-
-            if (!employees || employees.length === 0) {
-                return res.json({ message: `No employees found for the linked agencies` });
+            let employees;
+            if (all === 'true') {
+                const { data } = await (await import('../services/supabase')).getSupabase()
+                    .from('employees').select('*').eq('is_active', true);
+                employees = data || [];
+            } else {
+                const agencyIds = await getTerminalAgencies(terminalSerial);
+                employees = await getEmployeesByAgencies(agencyIds);
             }
 
-            // If force is provided, we reset the sync status for these employees on this device
-            if (force === 'true') {
-                logger.info(`[Sync] Force-resetting sync status for ${employees.length} employees on ${terminalSerial}`);
-                for (const emp of employees) {
-                    await markEmployeeSynced(emp.emp_id, terminalSerial, 'pending');
-                    logger.info(`[Sync] Employee ${emp.emp_id} (${emp.name}) marked as pending`);
+            if (!employees || employees.length === 0) return res.json({ message: 'No employees found.' });
+
+            for (const emp of employees) {
+                // Force state to pending so heartbeat doesn't skip
+                await markEmployeeSynced(emp.emp_id, terminalSerial, 'pending');
+
+                // EXTRA: For small test sets, we can queue commands IMMEDIATELY
+                if (employees.length < 5) {
+                    const fingerprints = await getEmployeeFingerprints(emp.id);
+                    const partToUse = emp.emp_id.includes('-') ? emp.emp_id.split('-')[1] : emp.emp_id;
+                    const simplePin = parseInt(partToUse.replace(/\D/g, ''), 10).toString();
+                    const tab = String.fromCharCode(9);
+
+                    // 1. Queue User
+                    const userCmd = `C:${Math.floor(Math.random() * 10000)}:DATA USER PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=0`;
+                    if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
+                    commandQueue[terminalSerial].push(userCmd);
+
+                    // 2. Queue Fingerprints with the 1232-byte alignment
+                    for (const fp of fingerprints) {
+                        let templateBuffer = Buffer.from(fp.template.replace(/\s/g, ''), 'base64');
+                        if (templateBuffer.length === 1260) templateBuffer = templateBuffer.slice(28);
+                        else if (templateBuffer.length > 1232) templateBuffer = templateBuffer.slice(templateBuffer.length - 1232);
+
+                        const size = templateBuffer.length;
+                        const base64 = templateBuffer.toString('base64');
+                        const fid = Math.min(9, Math.max(0, fp.finger_index));
+
+                        // We use the DATA FPTMP verb but FID/TMP tags
+                        const fpCmd = `C:${Math.floor(Math.random() * 10000)}:DATA FPTMP PIN=${simplePin}${tab}FID=${fid}${tab}Size=${size}${tab}Valid=1${tab}TMP=${base64}${tab}MajorVer=10${tab}MinorVer=1`;
+
+                        commandQueue[terminalSerial].push(fpCmd);
+                        logger.info(`[Sync API] Direct Queue for ${emp.name} (PIN ${simplePin}): FID ${fid}, Size ${size}`);
+                    }
                 }
             }
 
-            res.json({
-                success: true,
-                message: `Sync initiated for ${employees.length} employees on device ${terminalSerial}. They will be pushed during next heartbeats.`,
-                agencyCount: agencyIds.length,
-                employees: employees.map((e: { name: string }) => e.name)
-            });
-        } catch (error: unknown) {
-            logger.error('[ADMS] Sync error:', error);
-            res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+            res.json({ success: true, message: `Sync/Queue initiated for ${employees.length} employees.` });
+        } catch (error) {
+            logger.error('[Sync API] Error:', error);
+            res.status(500).json({ error: String(error) });
         }
     });
 
@@ -313,7 +410,8 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                             logger.info(`[ADMS] ✅ Attendance ${action} successful for ${resolvedEmpId}`, data);
                         }
                     } else {
-                        logger.warn('[ADMS] Could not parse line:', line);
+                        // Log unknown lines - this is where we'll catch pushed templates/users
+                        logger.info(`[ADMS RAW DATA] Device ${terminalSerial} sent:`, line);
                     }
                 }
             } else {
@@ -331,12 +429,41 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
     app.post('/iclock/devicecmd', async (req: Request, res: Response) => {
         try {
             const { SN } = req.query;
-            let body = req.body;
-            if (Buffer.isBuffer(body)) body = body.toString();
+            let bodyStr = '';
 
-            // Log the raw response from device (Crucial for debugging "Illegal Fingerprint")
-            // Usually looks like: ID=123&Return=0 (Success) or ID=123&Return=-1 (Error)
-            logger.info(`[ADMS CMD Response] Device ${SN || 'unknown'}:`, body);
+            if (Buffer.isBuffer(req.body)) {
+                bodyStr = req.body.toString();
+            } else if (typeof req.body === 'string') {
+                bodyStr = req.body;
+            } else if (typeof req.body === 'object') {
+                // If express.urlencoded already parsed it
+                const params = new URLSearchParams();
+                for (const [key, value] of Object.entries(req.body)) {
+                    params.append(key, String(value));
+                }
+                bodyStr = params.toString();
+            }
+
+            logger.info(`[ADMS CMD Response] Device ${SN || 'unknown'}: ${bodyStr}`);
+
+            // Parse response (Format: ID=123&Return=0)
+            const params = new URLSearchParams(bodyStr.replace(/\0/g, ''));
+            const cmdId = params.get('ID');
+            const returnCode = params.get('Return');
+
+            if (returnCode && returnCode !== '0') {
+                logger.error(`[ADMS CMD FAILED] Device ${SN} rejected command ${cmdId} with code: ${returnCode}`);
+
+                // Common error codes:
+                // -1: General error
+                // -2: Illegal fingerprint/template
+                // -3: User not found
+                if (returnCode === '-2') {
+                    logger.error(`[ADMS] Specific error: Illegal Fingerprint Template structure.`);
+                }
+            } else if (returnCode === '0') {
+                logger.info(`[ADMS CMD SUCCESS] Command ${cmdId} accepted by device ${SN}`);
+            }
 
             res.send('OK');
         } catch (error) {

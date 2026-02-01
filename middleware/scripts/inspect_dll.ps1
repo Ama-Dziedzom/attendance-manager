@@ -15,6 +15,8 @@ $assembly.GetTypes() | ForEach-Object {
     Write-Output "Type: $($_.FullName)"
     Write-Output "  Static Methods:"
     $_.GetMethods([System.Reflection.BindingFlags]"Public,Static") | ForEach-Object {
-        Write-Output "    $($_.Name)"
+        $params = $_.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }
+        $paramStr = $params -join ", "
+        Write-Output "    $($_.Name)($paramStr)"
     }
 }

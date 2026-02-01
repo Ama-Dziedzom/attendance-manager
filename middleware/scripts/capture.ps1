@@ -36,66 +36,134 @@ if ($devHandle -eq 0) {
     exit 1
 }
 
-# Allocate buffer (2048 bytes is standard for ZK templates)
-$templateSize = 2048
-$templateBuffer = New-Object byte[] $templateSize
 
 # Allocate image buffer (Width * Height, usually < 100KB for SLK20R)
 # Safe bet 200KB
 $imgSize = 200 * 1024
 $imgBuffer = New-Object byte[] $imgSize
 
-$actualSize = 0
 
 Write-Output "STATUS: Ready to capture. Place finger on sensor..."
 
-# Simple polling loop for capture (timeout 10s)
-$startTime = Get-Date
-$captured = $false
-
-while (($working -ne $false) -and ((Get-Date) - $startTime).TotalSeconds -lt 15) {
-    $sizeRef = $templateSize
-    
-    # AcquireFingerprint(IntPtr devHandle, byte[] imgBuffer, byte[] templateBuffer, ref int size)
-    # Note: We don't need the image for enrollment, just the template
-    # Some older DLL versions might behave differently. 
-    # Let's try the high level helper if available, otherwise raw.
-    
-    # Checking if "cap" helper is available or raw Acquire
+# --- SilkID High-Res Mode (1232 bytes) ---
+# Many MB460 devices require the 1232-byte template (SilkID v2.1)
+# We try potential parameters to force the larger template size
+$paramsToTry = @(1101, 1102, 1103)
+foreach ($p in $paramsToTry) {
     try {
-        $ret = [libzkfpcsharp.zkfp2]::AcquireFingerprint($devHandle, $imgBuffer, $templateBuffer, [ref]$sizeRef)
-        if ($ret -eq 0) {
-            $captured = $true
-            $actualSize = $sizeRef
-            break
-        }
+        Write-Debug "Attempting to set parameter $p for SilkID mode..."
+        [libzkfpcsharp.zkfp2]::SetParameters($devHandle, $p, [byte[]](1, 0, 0, 0), 4) | Out-Null
+        Write-Debug "Parameter $p set successfully (or ignored if not supported)."
     }
     catch {
-        Write-Output "ERROR: Exception during capture: $_"
-        break
+        Write-Debug "Setting parameter $p failed: $($_.Exception.Message)"
     }
-    
-    Start-Sleep -Milliseconds 100
 }
-
-if ($captured) {
-    # Convert active part of buffer to Base64
-    if ($actualSize -gt 0) {
-        # Create a sized array
-        $finalBytes = New-Object byte[] $actualSize
-        [Array]::Copy($templateBuffer, $finalBytes, $actualSize)
-        $b64 = [Convert]::ToBase64String($finalBytes)
-        
-        Write-Output "SUCCESS: $b64"
-    }
-    else {
-        Write-Output "ERROR: Captured size was 0"
-    }
+    
+# Verify current template size setting if possible
+[byte[]]$val = New-Object byte[] 4
+$vLen = 4
+if ([libzkfpcsharp.zkfp2]::GetParameters($devHandle, 1102, $val, [ref]$vLen) -eq 0) {
+    $currentMode = [System.BitConverter]::ToInt32($val, 0)
+    Write-Debug "Current SilkID Mode (Param 1102): $currentMode"
 }
 else {
-    Write-Output "ERROR: Timeout or failed to capture."
+    Write-Debug "Could not retrieve parameter 1102 (SilkID Mode)."
 }
 
+# --- 3. Enrollment Loop (3 Presses) ---
+$template1 = $null
+$template2 = $null
+$template3 = $null
+
+$dbHandle = [libzkfpcsharp.zkfp2]::DBInit()
+if ($dbHandle -eq 0) {
+    Write-Output "ERROR: Failed to initialize Fingerprint DB."
+    [libzkfpcsharp.zkfp2]::CloseDevice($devHandle)
+    [libzkfpcsharp.zkfp2]::Terminate()
+    exit 1
+}
+
+for ($i = 1; $i -le 3; $i++) {
+    Write-Host "STATUS: Place finger on sensor ($i/3)..."
+    
+    # Wait for finger
+    $timeout = 0
+    $buf = New-Object byte[] 2048
+    $size = 2048
+    $res = -8
+    while ($res -ne 0) {
+        $size = 2048 # Reset size for each acquisition attempt
+        $res = [libzkfpcsharp.zkfp2]::AcquireFingerprint($devHandle, $imgBuffer, $buf, [ref]$size)
+        if ($res -ne 0) {
+            Start-Sleep -Milliseconds 100
+            $timeout++
+            if ($timeout -gt 300) {
+                # 30 seconds
+                Write-Host "ERROR: Timeout waiting for finger"
+                [libzkfpcsharp.zkfp2]::DBFree($dbHandle)
+                [libzkfpcsharp.zkfp2]::CloseDevice($devHandle)
+                [libzkfpcsharp.zkfp2]::Terminate()
+                exit 1
+            }
+        }
+    }
+
+    # Success capture
+    if ($size -lt 100) {
+        Write-Host "STATUS: Capture too small ($size bytes), try again..."
+        $i-- # Retry this index
+        Start-Sleep -Milliseconds 500
+        continue
+    }
+
+    $tempBytes = $buf[0..($size - 1)]
+    Write-Host "STATUS: Capture $i/3 success ($size bytes). Lift finger..."
+    
+    if ($i -eq 1) { $template1 = $tempBytes }
+    if ($i -eq 2) { $template2 = $tempBytes }
+    if ($i -eq 3) { $template3 = $tempBytes }
+
+    # Wait for finger lift
+    $liftTimeout = 0
+    while ($res -eq 0) {
+        $dummySize = 2048
+        $res = [libzkfpcsharp.zkfp2]::AcquireFingerprint($devHandle, $imgBuffer, $buf, [ref]$dummySize)
+        if ($res -eq 0) {
+            Start-Sleep -Milliseconds 100
+            $liftTimeout++
+            if ($liftTimeout -gt 50) { break } 
+        }
+    }
+    Start-Sleep -Milliseconds 800 # Pause for sensor to clear
+}
+
+Write-Host "STATUS: Merging templates..."
+
+# --- 4. Merge Templates (Registration) ---
+if ($null -eq $template1 -or $null -eq $template2 -or $null -eq $template3) {
+    Write-Host "ERROR: One or more captures missing."
+    [libzkfpcsharp.zkfp2]::DBFree($dbHandle)
+    [libzkfpcsharp.zkfp2]::CloseDevice($devHandle)
+    [libzkfpcsharp.zkfp2]::Terminate()
+    exit 1
+}
+
+$regTemp = New-Object byte[] 2048
+$regSize = 2048
+$mergeRes = [libzkfpcsharp.zkfp2]::DBMerge($dbHandle, $template1, $template2, $template3, $regTemp, [ref]$regSize)
+
+if ($mergeRes -eq 0) {
+    # Success!
+    $finalBytes = $regTemp[0..($regSize - 1)]
+    $base64 = [Convert]::ToBase64String($finalBytes)
+    Write-Host "SUCCESS: $base64"
+}
+else {
+    Write-Host "ERROR: Merge failed (Code: $mergeRes). Fingerprints may not match or quality is too low."
+}
+
+[libzkfpcsharp.zkfp2]::DBFree($dbHandle)
 [libzkfpcsharp.zkfp2]::CloseDevice($devHandle)
 [libzkfpcsharp.zkfp2]::Terminate()
 exit 0

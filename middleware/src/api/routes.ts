@@ -154,7 +154,9 @@ export function setupApiRoutes(app: Express, io: SocketIOServer): void {
      */
     app.post('/api/scanner/capture', async (req: Request, res: Response) => {
         try {
-            const result = await scannerService.enrollFingerprint();
+            const result = await scannerService.enrollFingerprint((status) => {
+                io.emit('scanner:progress', { status });
+            });
             res.json(result);
         } catch (error) {
             logger.error('Scanner capture error:', error);

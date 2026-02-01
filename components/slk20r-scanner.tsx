@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { io } from "socket.io-client"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Fingerprint, CheckCircle2, XCircle, RefreshCw, Info, Loader2, ShieldAlert } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 /**
  * ZKTeco SLK20R Fingerprint Scanner Component
@@ -31,9 +33,26 @@ export function SLK20RScanner({
     const [scanError, setScanError] = useState<string | null>(null)
     const [isConnected, setIsConnected] = useState(false)
     const [isChecking, setIsChecking] = useState(true)
+    const [statusText, setStatusText] = useState<string>("Initializing...")
 
     useEffect(() => {
         checkScannerConnection()
+
+        // Setup Socket.IO for real-time progress updates
+        const socket = io(MIDDLEWARE_URL)
+
+        socket.on('connect', () => {
+            console.log('[Scanner UI] Connected to middleware WebSocket')
+        })
+
+        socket.on('scanner:progress', (data: { status: string }) => {
+            console.log('[Scanner UI] Progress:', data.status)
+            setStatusText(data.status)
+        })
+
+        return () => {
+            socket.disconnect()
+        }
     }, [])
 
     const checkScannerConnection = async () => {
@@ -57,6 +76,7 @@ export function SLK20RScanner({
     const handleStartScan = async () => {
         setIsScanning(true)
         setScanError(null)
+        setStatusText("Ready to capture. Place finger on sensor...")
 
         try {
             // 1. Trigger the physical scanner to capture
@@ -72,6 +92,7 @@ export function SLK20RScanner({
 
             // 2. Enrollment Success - Send template to parent
             setScanSuccess(true)
+            setStatusText("Capture successful!")
 
             // Allow user to see the success state before closing
             setTimeout(() => {
@@ -166,15 +187,28 @@ export function SLK20RScanner({
                                 <Fingerprint className="w-10 h-10 text-primary" />
                             </div>
                             <div className="text-center">
-                                <h3 className="text-xl font-bold animate-pulse text-primary">Scanning Finger...</h3>
+                                <h3 className="text-xl font-bold animate-pulse text-primary">{statusText.includes('/') ? `Capture ${statusText.match(/\d\/\d/)?.[0]}` : 'Processing...'}</h3>
                                 <p className="text-sm font-medium text-muted-foreground mt-2">
-                                    Hold finger steady on the USB reader
+                                    {statusText}
                                 </p>
                             </div>
-                            <div className="flex gap-1">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${i * 0.2}s` }} />
-                                ))}
+                            <div className="flex gap-2">
+                                {[1, 2, 3].map(i => {
+                                    const currentStep = statusText.match(/(\d)\/3/)?.[1];
+                                    const isDone = currentStep ? parseInt(currentStep) > i : false;
+                                    const isActive = currentStep ? parseInt(currentStep) === i : false;
+
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={cn(
+                                                "w-3 h-3 rounded-full transition-all duration-300",
+                                                isDone ? "bg-green-500 scale-110" :
+                                                    isActive ? "bg-primary animate-bounce" : "bg-gray-200"
+                                            )}
+                                        />
+                                    );
+                                })}
                             </div>
                         </>
                     )}

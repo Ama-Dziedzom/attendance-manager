@@ -1,0 +1,129 @@
+2026-02-01 01:49:46 [error]: Clock in RPC error: relation "biometric_credentials" does not exist {"code":"42P01","details":null,"hint":null}
+2026-02-01 01:51:36 [error]: Clock in RPC error: relation "biometric_credentials" does not exist {"code":"42P01","details":null,"hint":null}
+2026-02-01 01:51:44 [error]: Clock in RPC error: relation "biometric_credentials" does not exist {"code":"42P01","details":null,"hint":null}
+2026-02-01 01:56:05 [error]: [Scanner Bridge Error] Method invocation failed because [libzkfpcsharp.zkfp2] does not contain a method named 'GetFingerStatus'.
+
+2026-02-01 01:56:05 [error]: [Scanner Bridge Error] At D:\attendance-manager\middleware\scripts\capture.ps1:61 char:12
++     while ([libzkfpcsharp.zkfp2]::GetFingerStatus($devHandle) -eq 0)  ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
+    + FullyQualifiedErrorId : MethodNotFound
+ 
+
+2026-02-01 01:56:28 [error]: [Scanner Bridge Error] Method invocation failed because [libzkfpcsharp.zkfp2] does not contain a method named 'GetFingerStatus'.
+
+2026-02-01 01:56:28 [error]: [Scanner Bridge Error] At D:\attendance-manager\middleware\scripts\capture.ps1:61 char:12
++     while ([libzkfpcsharp.zkfp2]::GetFingerStatus($devHandle) -eq 0)  ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
+    + FullyQualifiedErrorId : MethodNotFound
+ 
+
+2026-02-01 10:40:09 [error]: [Scanner Bridge Error] Method invocation failed because [libzkfpcsharp.zkfp2] does not contain a method named 'GetFingerStatus'.
+
+2026-02-01 10:40:09 [error]: [Scanner Bridge Error] At D:\attendance-manager\middleware\scripts\capture.ps1:58 char:12
++     while ([libzkfpcsharp.zkfp2]::GetFingerStatus($devHandle) -eq 0)  ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
+    + FullyQualifiedErrorId : MethodNotFound
+ 
+
+2026-02-01 10:47:06 [error]: [Scanner Bridge Error] Cannot find an overload for "DBAdd" and the argument count: "4".
+
+2026-02-01 10:47:06 [error]: [Scanner Bridge Error] At D:\attendance-manager\middleware\scripts\capture.ps1:105 char:1
++ $ret1 = [libzkfpcsharp.zkfp2]::DBAdd($devHandle, $tempId, 1, $templat ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodException
+    + FullyQualifiedErrorId : MethodCountCouldNotFindBest
+ 
+
+2026-02-01 10:47:06 [error]: [Scanner Bridge Error] Cannot find an overload for "DBAdd" and the argument count: "4".
+
+2026-02-01 10:47:06 [error]: [Scanner Bridge Error] At D:\attendance-manager\middleware\scripts\capture.ps1:106 char:1
++ $ret2 = [libzkfpcsharp.zkfp2]::DBAdd($devHandle, $tempId, 2, $templat ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodException
+    + FullyQualifiedErrorId : MethodCountCouldNotFindBest
+ 
+
+2026-02-01 10:47:06 [error]: [Scanner Bridge Error] Cannot find an overload for "DBAdd" and the argument count: "4".
+
+2026-02-01 10:47:06 [error]: [Scanner Bridge Error] At D:\attendance-manager\middleware\scripts\capture.ps1:107 char:1
++ $ret3 = [libzkfpcsharp.zkfp2]::DBAdd($devHandle, $tempId, 3, $templat ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodException
+    + FullyQualifiedErrorId : MethodCountCouldNotFindBest
+ 
+
+2026-02-01 10:47:06 [error]: [Scanner Bridge Error] Cannot find an overload for "DBMerge" and the argument count: "4".
+
+2026-02-01 10:47:06 [error]: [Scanner Bridge Error] At D:\attendance-manager\middleware\scripts\capture.ps1:116 char:1
++ $mergeRes = [libzkfpcsharp.zkfp2]::DBMerge($devHandle, $tempId, $regT ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodException
+    + FullyQualifiedErrorId : MethodCountCouldNotFindBest
+ 
+
+2026-02-01 10:47:40 [error]: [Scanner Bridge Error] Cannot find an overload for "DBAdd" and the argument count: "4".
+At D:\attendance-manager\middleware\scripts\capture.ps1:105 char:1
+
+2026-02-01 10:47:40 [error]: [Scanner Bridge Error] + $ret1 = [libzkfpcsharp.zkfp2]::DBAdd($devHandle, $tempId, 1, $templat ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodException
+    + FullyQualifiedErrorId : MethodCountCouldNotFindBest
+ 
+
+2026-02-01 10:47:40 [error]: [Scanner Bridge Error] Cannot find an overload for "DBAdd" and the argument count: "4".
+
+2026-02-01 10:47:40 [error]: [Scanner Bridge Error] At D:\attendance-manager\middleware\scripts\capture.ps1:106 char:1
++ $ret2 = [libzkfpcsharp.zkfp2]::DBAdd($devHandle, $tempId, 2, $templat ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodException
+    + FullyQualifiedErrorId : MethodCountCouldNotFindBest
+ 
+
+2026-02-01 10:47:40 [error]: [Scanner Bridge Error] Cannot find an overload for "DBAdd" and the argument count: "4".
+
+2026-02-01 10:47:40 [error]: [Scanner Bridge Error] At D:\attendance-manager\middleware\scripts\capture.ps1:107 char:1
++ $ret3 = [libzkfpcsharp.zkfp2]::DBAdd($devHandle, $tempId, 3, $templat ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodException
+    + FullyQualifiedErrorId : MethodCountCouldNotFindBest
+ 
+
+2026-02-01 10:47:40 [error]: [Scanner Bridge Error] Cannot find an overload for "DBMerge" and the argument count: "4".
+
+2026-02-01 10:47:40 [error]: [Scanner Bridge Error] At D:\attendance-manager\middleware\scripts\capture.ps1:116 char:1
++ $mergeRes = [libzkfpcsharp.zkfp2]::DBMerge($devHandle, $tempId, $regT ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodException
+    + FullyQualifiedErrorId : MethodCountCouldNotFindBest
+ 
+
+2026-02-01 11:25:32 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 4407 with code: -1002
+2026-02-01 11:30:12 [error]: Clock in RPC error: relation "biometric_credentials" does not exist {"code":"42P01","details":null,"hint":null}
+2026-02-01 11:41:57 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 4272 with code: -1004
+2026-02-01 11:44:39 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 1301 with code: -1004
+2026-02-01 11:49:23 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 5845 with code: -1002
+2026-02-01 11:52:03 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 2526 with code: -1004
+2026-02-01 11:52:03 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 4353 with code: -1002
+2026-02-01 11:52:03 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 587 with code: -1004
+2026-02-01 11:53:32 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 6747 with code: -1002
+2026-02-01 11:57:22 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 5775 with code: -1004
+2026-02-01 11:58:23 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 8577 with code: -1002
+2026-02-01 12:02:09 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 1061 with code: -1002
+2026-02-01 12:03:25 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 1533 with code: -1002
+2026-02-01 12:04:41 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 8089 with code: -1004
+2026-02-01 12:12:40 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 5893 with code: -1002
+2026-02-01 12:15:29 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 9702 with code: -1002
+2026-02-01 12:15:30 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 5880 with code: -1002
+2026-02-01 12:17:11 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 8001 with code: -1002
+2026-02-01 12:17:12 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 379 with code: -1002
+2026-02-01 12:24:13 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 3208 with code: -1002
+2026-02-01 12:24:15 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 5436 with code: -1002
+2026-02-01 12:28:47 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 2724 with code: -1002
+2026-02-01 12:28:48 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 6890 with code: -1002
+2026-02-01 12:30:55 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 4053 with code: -1002
+2026-02-01 12:30:57 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 7589 with code: -1002
+2026-02-01 12:37:31 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 9096 with code: -1002
+2026-02-01 12:37:32 [error]: [ADMS CMD FAILED] Device QWC5234701115 rejected command 1260 with code: -1002
