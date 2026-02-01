@@ -10,10 +10,12 @@
  */
 
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 import { createServer } from 'http';
 import express from 'express';
+import cors from 'cors';
 import { Server as SocketIOServer } from 'socket.io';
 import { logger } from './utils/logger';
 import { initSupabase } from './services/supabase';
@@ -31,12 +33,36 @@ const io = new SocketIOServer(httpServer, {
     }
 });
 
-// Middleware - IMPORTANT: Parse both JSON and raw body for ADMS devices
-// Raw body parser must come first to capture the original body
-app.use(express.raw({ type: '*/*', limit: '10mb' }));
-app.use(express.json());
-app.use(express.text({ type: 'text/plain' })); // For ADMS raw data
-app.use(express.urlencoded({ extended: true }));
+// 1. CORS - Must be first for browser pre-flight (OPTIONS)
+app.use(cors({
+    origin: process.env.CORS_ORIGIN || '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true
+}));
+
+// 0. Global Logger (Diagnostic)
+app.use((req, res, next) => {
+    logger.info(`[Traffic] ${req.method} ${req.url} from ${req.ip}`);
+    next();
+});
+
+// 2. Body Parsers - Order matters!
+// JSON parser first to catch browser API calls
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Raw parser for ADMS devices (only fallback for non-JSON)
+app.use(express.raw({
+    type: (req) => {
+        // Only use raw parsing if it's NOT JSON
+        const contentType = req.headers['content-type'];
+        return !contentType || !contentType.includes('application/json');
+    },
+    limit: '20mb'
+}));
+
+app.use(express.text({ type: 'text/plain' }));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -66,6 +92,8 @@ async function main() {
 
         // Start HTTP server (API + WebSocket)
         const apiPort = parseInt(process.env.API_PORT || '3001');
+        logger.info(`Checking port config... Env API_PORT: ${process.env.API_PORT}, Final: ${apiPort}`);
+
         httpServer.listen(apiPort, () => {
             logger.info(`API server listening on port ${apiPort}`);
             logger.info(`WebSocket server ready on port ${apiPort}`);

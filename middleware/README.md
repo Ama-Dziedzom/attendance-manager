@@ -65,6 +65,7 @@ npm start
 | `/api/terminals` | GET | List all terminals |
 | `/api/terminals/connected` | GET | List connected terminals |
 | `/api/terminals/:serial/status` | GET | Check terminal status |
+| `/api/fingerprints/enroll` | POST | Enroll fingerprint template (SLK20R) |
 | `/api/simulate/attendance` | POST | Simulate attendance (dev only) |
 | `/api/stats` | GET | Server statistics |
 

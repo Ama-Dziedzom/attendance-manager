@@ -5,57 +5,50 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Fingerprint, CheckCircle2, XCircle, RefreshCw, Info, Loader2, ShieldAlert } from "lucide-react"
-import {
-    registerFingerprint,
-    isPlatformAuthenticatorAvailable,
-    getWindowsHelloInstructions,
-    type BiometricCredential
-} from "@/lib/webauthn-helper"
 
 /**
  * ZKTeco SLK20R Fingerprint Scanner Component
- * Handles biometric enrollment for new employees
- * Captures fingerprint using WebAuthn platform authenticator
+ * Handles biometric enrollment for new employees via Direct USB Hardware
  */
 
 interface SLK20RScannerProps {
-    onScanComplete: (credential: BiometricCredential) => void
+    onScanComplete: (data: { template: string; quality: number }) => void
     onError: (error: string) => void
     employeeId: string
     employeeName: string
-    employeeEmail: string
 }
+
+const MIDDLEWARE_URL = process.env.NEXT_PUBLIC_MIDDLEWARE_URL || "http://localhost:3001"
 
 export function SLK20RScanner({
     onScanComplete,
     onError,
     employeeId,
-    employeeName,
-    employeeEmail
+    employeeName
 }: SLK20RScannerProps) {
     const [isScanning, setIsScanning] = useState(false)
     const [scanSuccess, setScanSuccess] = useState(false)
     const [scanError, setScanError] = useState<string | null>(null)
-    const [isSupported, setIsSupported] = useState(false)
+    const [isConnected, setIsConnected] = useState(false)
     const [isChecking, setIsChecking] = useState(true)
-    const [instructions, setInstructions] = useState<string[]>([])
 
     useEffect(() => {
-        checkWindowsHello()
+        checkScannerConnection()
     }, [])
 
-    const checkWindowsHello = async () => {
+    const checkScannerConnection = async () => {
         setIsChecking(true)
         try {
-            const available = await isPlatformAuthenticatorAvailable()
-            setIsSupported(available)
-
-            if (!available) {
-                const setup = getWindowsHelloInstructions()
-                setInstructions(setup)
+            const response = await fetch(`${MIDDLEWARE_URL}/health`)
+            if (response.ok) {
+                setIsConnected(true)
+                setScanError(null)
+            } else {
+                setIsConnected(false)
             }
         } catch (error) {
-            setIsSupported(false)
+            console.error('Middleware connection error:', error)
+            setIsConnected(false)
         } finally {
             setIsChecking(false)
         }
@@ -66,11 +59,28 @@ export function SLK20RScanner({
         setScanError(null)
 
         try {
-            const credential = await registerFingerprint(employeeId, employeeName, employeeEmail)
+            // 1. Trigger the physical scanner to capture
+            const response = await fetch(`${MIDDLEWARE_URL}/api/scanner/capture`, {
+                method: 'POST'
+            })
+
+            const result = await response.json()
+
+            if (!result.success) {
+                throw new Error(result.error || "Capture failed")
+            }
+
+            // 2. Enrollment Success - Send template to parent
             setScanSuccess(true)
+
+            // Allow user to see the success state before closing
             setTimeout(() => {
-                onScanComplete(credential)
-            }, 1500)
+                onScanComplete({
+                    template: result.template,
+                    quality: result.quality || 100
+                })
+            }, 2000)
+
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : "Failed to scan fingerprint"
             setScanError(errorMsg)
@@ -86,36 +96,40 @@ export function SLK20RScanner({
 
     if (isChecking) {
         return (
-            <Card className="p-8">
+            <Card className="p-8 border-dashed">
                 <div className="flex flex-col items-center justify-center space-y-4">
-                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Checking SLK20R connection...</p>
+                    <Loader2 className="w-8 h-8 animate-spin text-primary/50" />
+                    <p className="text-sm text-muted-foreground font-medium">Connecting to SLK20R Service...</p>
                 </div>
             </Card>
         )
     }
 
-    if (!isSupported) {
+    if (!isConnected) {
         return (
-            <Card className="p-8 space-y-4">
-                <Alert variant="destructive">
-                    <ShieldAlert className="h-4 w-4" />
-                    <AlertDescription>
-                        <div className="space-y-2">
-                            <p className="font-semibold">SLK20R Reader Not Detected</p>
-                            <p className="text-sm">Ensure the ZKTeco Eco SLK20R is properly connected and configured:</p>
+            <Card className="p-8 space-y-4 border-red-100 bg-red-50/10">
+                <Alert variant="destructive" className="border-none bg-transparent p-0">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-100 rounded-full">
+                            <ShieldAlert className="h-5 w-5 text-red-600" />
                         </div>
-                    </AlertDescription>
+                        <div>
+                            <p className="font-bold text-red-900">Scanner Service Offline</p>
+                            <p className="text-sm text-red-700">The SLK20R bridge is not responding.</p>
+                        </div>
+                    </div>
                 </Alert>
 
-                <div className="space-y-2 text-sm text-muted-foreground">
-                    <p className="font-semibold text-foreground">Setup Instructions:</p>
-                    {instructions.map((instruction, index) => (
-                        <p key={index}>{index + 1}. {instruction}</p>
-                    ))}
+                <div className="space-y-3 pt-2">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Troubleshooting:</div>
+                    <ul className="space-y-2 text-sm text-gray-600 list-disc pl-4">
+                        <li>Ensure the <strong>ZKTeco Middleware</strong> is running on this PC.</li>
+                        <li>Check if the SLK20R is plugged into a USB port.</li>
+                        <li>Verify that the <strong>ZKTECO_PORT</strong> is correct in .env.</li>
+                    </ul>
                 </div>
 
-                <Button onClick={checkWindowsHello} variant="outline" className="w-full">
+                <Button onClick={checkScannerConnection} variant="outline" className="w-full mt-4 hover:bg-white">
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Retry Connection Test
                 </Button>
@@ -125,18 +139,22 @@ export function SLK20RScanner({
 
     return (
         <div className="space-y-6">
-            {/* Scanner Interface */}
-            <Card className="p-8">
-                <div className="flex flex-col items-center justify-center space-y-4">
+            <Card className="p-10 border-2 border-dashed bg-gray-50/30 overflow-hidden relative">
+                {/* Background Pattern */}
+                <div className="absolute top-0 right-0 p-4 opacity-5">
+                    <Fingerprint className="w-32 h-32" />
+                </div>
+
+                <div className="flex flex-col items-center justify-center space-y-6 relative z-10">
                     {!isScanning && !scanSuccess && !scanError && (
                         <>
-                            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
-                                <Fingerprint className="w-12 h-12 text-primary" />
+                            <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center rotate-3 border-2 border-primary/20 shadow-lg">
+                                <Fingerprint className="w-10 h-10 text-primary -rotate-3" />
                             </div>
                             <div className="text-center">
-                                <h3 className="text-lg font-semibold">Ready to Enroll</h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    Click below and place finger on SLK20R sensor
+                                <h3 className="text-xl font-bold text-gray-900">Scanner Ready</h3>
+                                <p className="text-sm text-muted-foreground mt-2 max-w-[250px]">
+                                    Place <strong>{employeeName}</strong>'s finger on the sensor and click start.
                                 </p>
                             </div>
                         </>
@@ -144,28 +162,32 @@ export function SLK20RScanner({
 
                     {isScanning && !scanSuccess && (
                         <>
-                            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
-                                <Fingerprint className="w-12 h-12 text-primary" />
+                            <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center animate-pulse border-2 border-primary/30 shadow-xl">
+                                <Fingerprint className="w-10 h-10 text-primary" />
                             </div>
                             <div className="text-center">
-                                <h3 className="text-lg font-semibold">Scanning...</h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    Hold finger steady on reader
+                                <h3 className="text-xl font-bold animate-pulse text-primary">Scanning Finger...</h3>
+                                <p className="text-sm font-medium text-muted-foreground mt-2">
+                                    Hold finger steady on the USB reader
                                 </p>
                             </div>
-                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                            <div className="flex gap-1">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${i * 0.2}s` }} />
+                                ))}
+                            </div>
                         </>
                     )}
 
                     {scanSuccess && (
                         <>
-                            <div className="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center">
-                                <CheckCircle2 className="w-12 h-12 text-green-600" />
+                            <div className="w-20 h-20 rounded-2xl bg-green-100 flex items-center justify-center border-2 border-green-200 shadow-lg">
+                                <CheckCircle2 className="w-10 h-10 text-green-600" />
                             </div>
                             <div className="text-center">
-                                <h3 className="text-lg font-semibold text-green-600">Enrollment Successful!</h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    Fingerprint captured and stored
+                                <h3 className="text-xl font-bold text-green-700">Capture Complete!</h3>
+                                <p className="text-sm font-medium text-green-600/70 mt-1">
+                                    Biometric data successfully extracted.
                                 </p>
                             </div>
                         </>
@@ -173,52 +195,47 @@ export function SLK20RScanner({
 
                     {scanError && (
                         <>
-                            <div className="w-24 h-24 rounded-full bg-red-100 flex items-center justify-center">
-                                <XCircle className="w-12 h-12 text-red-600" />
+                            <div className="w-20 h-20 rounded-2xl bg-red-100 flex items-center justify-center border-2 border-red-200">
+                                <XCircle className="w-10 h-10 text-red-600" />
                             </div>
-                            <div className="text-center">
-                                <h3 className="text-lg font-semibold text-red-600">Enrollment Failed</h3>
-                                <p className="text-sm text-muted-foreground mt-1">{scanError}</p>
+                            <div className="text-center px-4">
+                                <h3 className="text-xl font-bold text-red-700">Error Occurred</h3>
+                                <p className="text-sm font-medium text-red-600/70 mt-2">{scanError}</p>
                             </div>
                         </>
                     )}
                 </div>
             </Card>
 
-            {/* Action Buttons */}
             {!isScanning && !scanSuccess && (
                 <Button
                     onClick={handleStartScan}
-                    className="w-full"
+                    className="w-full h-12 text-md font-bold shadow-lg"
                     size="lg"
                     disabled={!!scanError}
                 >
-                    <Fingerprint className="w-4 h-4 mr-2" />
-                    Start Enrollment
+                    <Fingerprint className="w-5 h-5 mr-3" />
+                    Start Hardware Capture
                 </Button>
             )}
 
             {scanError && (
-                <Button
-                    onClick={handleRetry}
-                    variant="outline"
-                    className="w-full"
-                    size="lg"
-                >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Try Again
-                </Button>
+                <div className="flex gap-3">
+                    <Button onClick={handleRetry} variant="outline" className="flex-1">
+                        Try Again
+                    </Button>
+                    <Button onClick={checkScannerConnection} variant="ghost" size="icon">
+                        <RefreshCw className="w-4 h-4" />
+                    </Button>
+                </div>
             )}
 
-            {/* Info Card */}
-            <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                    <p className="text-sm">
-                        <strong>ZKTeco SLK20R:</strong> Ensure the device is connected via USB and the driver is installed. The reader will capture and store the fingerprint template.
-                    </p>
-                </AlertDescription>
-            </Alert>
+            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex gap-3">
+                <Info className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                <p className="text-[13px] text-blue-700 leading-relaxed font-medium">
+                    The <strong>SLK20R</strong> captures a high-resolution 500 DPI template compatible with MB460 terminals. Make sure the finger is clean and dry for the best result.
+                </p>
+            </div>
         </div>
     )
 }

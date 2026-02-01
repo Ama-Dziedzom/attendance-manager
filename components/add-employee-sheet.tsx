@@ -37,8 +37,9 @@ import {
 // Reuse existing components
 import { FingerprintForm } from "@/components/fingerprint-form"
 import { SLK20RScanner } from "@/components/slk20r-scanner"
-import type { BiometricCredential } from "@/lib/webauthn-helper"
 import type { Employee } from "@/lib/types"
+
+const MIDDLEWARE_URL = process.env.NEXT_PUBLIC_MIDDLEWARE_URL || "http://localhost:3001"
 
 interface AddEmployeeSheetProps {
     open: boolean
@@ -104,7 +105,7 @@ export function AddEmployeeSheet({ open, onOpenChange, onSuccess }: AddEmployeeS
     }
 
     // Handle fingerprint scan completion (Step 2 complete)
-    const handleScanComplete = async (credential: BiometricCredential) => {
+    const handleScanComplete = async (credential: { template: string; quality: number }) => {
         if (!formData) {
             toast.error("Employee data missing")
             return
@@ -132,16 +133,23 @@ export function AddEmployeeSheet({ open, onOpenChange, onSuccess }: AddEmployeeS
 
             const empId = newEmployee.emp_id || "PENDING";
 
-            // Register biometric credential
-            await db.biometric.register({
-                employee_id: newEmployee.id,
-                credential_id: credential.credentialId,
-                fingerprint_id: `FP-${empId}-${credential.credentialId.slice(0, 8)}`,
-                public_key: credential.publicKey,
-                counter: credential.counter,
-                device_type: credential.deviceType || "windows-hello",
-                is_active: true,
-            })
+            // 2. Register biometric credential via Middleware
+            // This stores the template and triggers sync to all matching terminals
+            const biometricResult = await fetch(`${MIDDLEWARE_URL}/api/fingerprints/enroll`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    employeeId: newEmployee.id,
+                    fingerIndex: 0, // Default to first finger
+                    template: credential.template
+                })
+            });
+
+            const bioData = await biometricResult.json();
+            if (!bioData.success) {
+                console.error("Fingerprint sync failed but employee was created", bioData.error);
+                toast.warning("Employee created, but fingerprint sync failed. You may need to re-enroll.");
+            }
 
             // Get agency name (re-fetching from agencies loaded in handleFormSubmit)
             const agency = agencies.find(a => a.id === formData.agencyId)
@@ -169,8 +177,8 @@ export function AddEmployeeSheet({ open, onOpenChange, onSuccess }: AddEmployeeS
                 isActive: true,
                 createdAt: newEmployee.created_at || new Date().toISOString(),
                 biometricRegistered: true,
-                fingerprintId: credential.credentialId,
-                biometricDeviceType: credential.deviceType || "windows-hello",
+                fingerprintId: 'SLK20R-V10',
+                biometricDeviceType: 'SLK20R',
                 biometricRegisteredAt: new Date().toISOString(),
             }
 
@@ -260,7 +268,6 @@ export function AddEmployeeSheet({ open, onOpenChange, onSuccess }: AddEmployeeS
                                         onError={handleScanError}
                                         employeeId={formData.agencyId}
                                         employeeName={formData.name}
-                                        employeeEmail={formData.email || ""}
                                     />
                                 )}
                             </div>

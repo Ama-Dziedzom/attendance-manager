@@ -1,0 +1,542 @@
+2026-02-01 00:37:39 [info]: [ADMS] Routes configured
+2026-02-01 00:37:39 [info]: API routes configured
+2026-02-01 00:37:39 [info]: Starting Attendance Middleware...
+2026-02-01 00:37:39 [info]: Supabase client initialized
+2026-02-01 00:37:39 [info]: ZKTeco server listening on port 4370
+2026-02-01 00:37:39 [info]: Checking port config... Env API_PORT: 3001, Final: 3001
+2026-02-01 00:37:39 [info]: Attendance Middleware started successfully!
+2026-02-01 00:37:39 [info]: Waiting for MB460 terminal connections...
+2026-02-01 00:37:39 [info]: API server listening on port 3001
+2026-02-01 00:37:39 [info]: WebSocket server ready on port 3001
+2026-02-01 00:37:39 [info]: ZKTeco TCP server listening on 0.0.0.0:4370
+2026-02-01 00:37:48 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:37:48 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:37:48 [info]: [ADMS] ⏰ Clock sync queued for QWC5234701115: 2026-02-01 00:37:48
+2026-02-01 00:37:48 [info]: [ADMS] Sending priority command to device: {"terminalSerial":"QWC5234701115","command":"C:1909:SET OPTION DateTime=2026-02-01 00:37:48"}
+2026-02-01 00:37:48 [info]: [Traffic] POST /iclock/devicecmd?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:37:48 [info]: [ADMS Request] POST /devicecmd?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:37:48 [info]: [ADMS CMD Response] Device QWC5234701115:
+2026-02-01 00:37:48 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:37:48 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:37:48 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:37:49 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:37:49 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:37:50 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:37:50 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:37:50 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:37:50 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:37:51 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:37:51 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:37:51 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:37:53 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:37:53 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:37:53 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:37:54 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:37:54 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:37:54 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:37:57 [info]: [Traffic] GET /api/sync-to-device?SN=QWC5234701115&force=true from ::1
+2026-02-01 00:37:57 [info]: [Sync API] Requested sync for device SN: "QWC5234701115"
+2026-02-01 00:37:57 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:37:57 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:37:57 [info]: [Sync API] Agencies found for QWC5234701115: {"0":"2016bd10-88fa-4e65-b4dd-45963331221a","1":"5692e5d4-ceed-49f6-bc88-b22cd0847fd9"}
+2026-02-01 00:37:58 [info]: [Sync] Force-resetting sync status for 4 employees on QWC5234701115
+2026-02-01 00:37:58 [info]: [Sync] Employee ID-00004 (Ama Dziedzom) marked as pending
+2026-02-01 00:37:58 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:37:58 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:37:58 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:37:58 [info]: [Sync] Employee RE-00005 (Ama Mensah) marked as pending
+2026-02-01 00:37:59 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:37:59 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:37:59 [info]: [Sync] Employee ID-00006 (Caleb Mensah) marked as pending
+2026-02-01 00:37:59 [info]: [Sync] Employee RE-00007 (Araba Quainoo) marked as pending
+2026-02-01 00:37:59 [info]: [ADMS] Found 4 unsynced employees for QWC5234701115
+2026-02-01 00:37:59 [info]: [ADMS] Processing sync for Ama Dziedzom (UUID: 64e7d345-2dae-42fa-a521-cfc23ba3a145, PIN: 4)
+2026-02-01 00:37:59 [info]: [ADMS] Fingerprints found in DB for Ama Dziedzom: 1
+2026-02-01 00:37:59 [info]: [ADMS] Auto-syncing employee to device: Ama Dziedzom (PIN 4) to QWC5234701115
+2026-02-01 00:37:59 [info]: [ADMS] Syncing finger 0 for Ama Dziedzom. Template length: 44
+2026-02-01 00:37:59 [info]: [ADMS] Queued 1 fingerprints for Ama Dziedzom to QWC5234701115
+2026-02-01 00:37:59 [info]: [ADMS] Sending USER command for Ama Dziedzom (Next heartbeats will pull 1 fingerprints)
+2026-02-01 00:38:00 [info]: [Traffic] POST /iclock/devicecmd?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:00 [info]: [ADMS Request] POST /devicecmd?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:00 [info]: [ADMS CMD Response] Device QWC5234701115:
+2026-02-01 00:38:00 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:00 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:00 [info]: [ADMS] Sending priority command to device: {"terminalSerial":"QWC5234701115","command":"C:9147:DATA FPTMP PIN=4\tFingerID=0\tValid=1\tTemplate=WktURUNPX1YxMF9NT0NLX1RFTVBMQVRFX2ttbjAxbg==\tReserved=0\tMajorVer=10"}
+2026-02-01 00:38:00 [info]: [Traffic] POST /iclock/devicecmd?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:00 [info]: [ADMS Request] POST /devicecmd?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:00 [info]: [ADMS CMD Response] Device QWC5234701115:
+2026-02-01 00:38:00 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:00 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:00 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:38:00 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:38:00 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:38:01 [info]: [ADMS] Found 3 unsynced employees for QWC5234701115
+2026-02-01 00:38:01 [info]: [ADMS] Processing sync for Ama Mensah (UUID: 69fe3f57-a0db-4290-8801-bc11079c5442, PIN: 5)
+2026-02-01 00:38:01 [info]: [ADMS] Fingerprints found in DB for Ama Mensah: 1
+2026-02-01 00:38:01 [info]: [ADMS] Auto-syncing employee to device: Ama Mensah (PIN 5) to QWC5234701115
+2026-02-01 00:38:01 [info]: [ADMS] Syncing finger 0 for Ama Mensah. Template length: 44
+2026-02-01 00:38:01 [info]: [ADMS] Queued 1 fingerprints for Ama Mensah to QWC5234701115
+2026-02-01 00:38:01 [info]: [ADMS] Sending USER command for Ama Mensah (Next heartbeats will pull 1 fingerprints)
+2026-02-01 00:38:01 [info]: [Traffic] POST /iclock/devicecmd?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:01 [info]: [ADMS Request] POST /devicecmd?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:01 [info]: [ADMS CMD Response] Device QWC5234701115:
+2026-02-01 00:38:01 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:01 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:01 [info]: [ADMS] Sending priority command to device: {"terminalSerial":"QWC5234701115","command":"C:304:DATA FPTMP PIN=5\tFingerID=0\tValid=1\tTemplate=WktURUNPX1YxMF9NT0NLX1RFTVBMQVRFX3d0cjYyaA==\tReserved=0\tMajorVer=10"}
+2026-02-01 00:38:02 [info]: [Traffic] POST /iclock/devicecmd?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:02 [info]: [ADMS Request] POST /devicecmd?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:02 [info]: [ADMS CMD Response] Device QWC5234701115:
+2026-02-01 00:38:02 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:02 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:02 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:38:02 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:38:02 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:38:03 [info]: [ADMS] Found 2 unsynced employees for QWC5234701115
+2026-02-01 00:38:03 [info]: [ADMS] Processing sync for Caleb Mensah (UUID: 034bfeea-f936-4a05-8c91-ede3f4720847, PIN: 6)
+2026-02-01 00:38:03 [info]: [ADMS] Fingerprints found in DB for Caleb Mensah: 1
+2026-02-01 00:38:03 [info]: [ADMS] Auto-syncing employee to device: Caleb Mensah (PIN 6) to QWC5234701115
+2026-02-01 00:38:03 [info]: [ADMS] Syncing finger 0 for Caleb Mensah. Template length: 44
+2026-02-01 00:38:03 [info]: [ADMS] Queued 1 fingerprints for Caleb Mensah to QWC5234701115
+2026-02-01 00:38:03 [info]: [ADMS] Sending USER command for Caleb Mensah (Next heartbeats will pull 1 fingerprints)
+2026-02-01 00:38:03 [info]: [Traffic] POST /iclock/devicecmd?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:03 [info]: [ADMS Request] POST /devicecmd?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:03 [info]: [ADMS CMD Response] Device QWC5234701115:
+2026-02-01 00:38:03 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:03 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:03 [info]: [ADMS] Sending priority command to device: {"terminalSerial":"QWC5234701115","command":"C:9876:DATA FPTMP PIN=6\tFingerID=0\tValid=1\tTemplate=WktURUNPX1YxMF9NT0NLX1RFTVBMQVRFXzRndnBscQ==\tReserved=0\tMajorVer=10"}
+2026-02-01 00:38:03 [info]: [Traffic] POST /iclock/devicecmd?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:03 [info]: [ADMS Request] POST /devicecmd?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:03 [info]: [ADMS CMD Response] Device QWC5234701115:
+2026-02-01 00:38:03 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:03 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:03 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:38:04 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:38:04 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:38:04 [info]: [ADMS] Found 1 unsynced employees for QWC5234701115
+2026-02-01 00:38:04 [info]: [ADMS] Processing sync for Araba Quainoo (UUID: 84e3f798-a770-4b97-b6fa-db2fafd5ef7e, PIN: 7)
+2026-02-01 00:38:05 [info]: [ADMS] Fingerprints found in DB for Araba Quainoo: 1
+2026-02-01 00:38:05 [info]: [ADMS] Auto-syncing employee to device: Araba Quainoo (PIN 7) to QWC5234701115
+2026-02-01 00:38:05 [info]: [ADMS] Syncing finger 0 for Araba Quainoo. Template length: 44
+2026-02-01 00:38:05 [info]: [ADMS] Queued 1 fingerprints for Araba Quainoo to QWC5234701115
+2026-02-01 00:38:05 [info]: [ADMS] Sending USER command for Araba Quainoo (Next heartbeats will pull 1 fingerprints)
+2026-02-01 00:38:05 [info]: [Traffic] POST /iclock/devicecmd?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:05 [info]: [ADMS Request] POST /devicecmd?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:05 [info]: [ADMS CMD Response] Device QWC5234701115:
+2026-02-01 00:38:05 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:05 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:05 [info]: [ADMS] Sending priority command to device: {"terminalSerial":"QWC5234701115","command":"C:9876:DATA FPTMP PIN=7\tFingerID=0\tValid=1\tTemplate=WktURUNPX1YxMF9NT0NLX1RFTVBMQVRFX3BmZDducw==\tReserved=0\tMajorVer=10"}
+2026-02-01 00:38:05 [info]: [Traffic] POST /iclock/devicecmd?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:05 [info]: [ADMS Request] POST /devicecmd?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:05 [info]: [ADMS CMD Response] Device QWC5234701115:
+2026-02-01 00:38:05 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:05 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:05 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:38:06 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:38:06 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:38:06 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:38:07 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115&INFO=Ver%208.0.4.7-20230726,4,0,33,192.168.0.159,10,7,12,0,111,0,0,0 from ::ffff:192.168.0.159
+2026-02-01 00:38:07 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115&INFO=Ver%208.0.4.7-20230726,4,0,33,192.168.0.159,10,7,12,0,111,0,0,0 {"query":{"SN":"QWC5234701115","INFO":"Ver 8.0.4.7-20230726,4,0,33,192.168.0.159,10,7,12,0,111,0,0,0"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:07 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:38:08 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:38:08 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:38:08 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:38:10 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:10 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:10 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:38:11 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:38:11 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:38:11 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:38:15 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:15 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:15 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:38:16 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:38:16 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:38:16 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:38:21 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:21 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:21 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:38:22 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:38:22 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:38:22 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:38:29 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:29 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:29 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:38:30 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:38:30 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:38:30 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:38:38 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:38 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:38 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:38:39 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:38:39 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:38:39 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:38:49 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:38:49 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:38:49 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:38:50 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:38:50 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:38:50 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:39:01 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:39:01 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:39:01 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:39:02 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:39:02 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:39:02 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:39:15 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:39:15 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:39:15 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:39:16 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:39:16 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:39:16 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:39:30 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:39:30 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:39:30 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:39:31 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:39:31 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:39:31 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:39:47 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:39:47 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:39:47 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:39:48 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:39:48 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:39:48 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:40:05 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:40:05 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:40:05 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:40:06 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:40:06 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:40:06 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:40:25 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:40:25 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:40:25 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:40:26 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:40:26 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:40:26 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:40:46 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:40:46 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:40:46 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:40:47 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:40:47 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:40:47 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:41:10 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:41:10 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:41:10 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:41:11 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:41:11 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:41:12 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:41:34 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:41:34 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:41:34 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:41:35 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:41:35 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:41:35 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:42:00 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:42:00 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:42:00 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:42:01 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:42:01 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:42:01 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:42:27 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:42:27 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:42:27 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:42:28 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:42:28 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:42:28 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:42:56 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:42:56 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:42:56 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:42:57 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:42:57 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:42:57 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:43:26 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:43:26 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:43:26 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:43:27 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:43:27 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:43:27 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:43:56 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:43:56 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:43:56 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:43:57 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:43:57 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:43:57 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:44:26 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:44:26 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:44:26 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:44:27 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:44:27 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:44:27 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:44:56 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 00:44:56 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 00:44:56 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 00:44:57 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 00:44:57 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 00:44:57 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 00:45:03 [info]: SIGINT received, shutting down...
+2026-02-01 01:06:19 [info]: [ADMS] Routes configured
+2026-02-01 01:06:19 [info]: API routes configured
+2026-02-01 01:06:19 [info]: Starting Attendance Middleware...
+2026-02-01 01:06:19 [info]: Supabase client initialized
+2026-02-01 01:06:19 [info]: ZKTeco server listening on port 4370
+2026-02-01 01:06:19 [info]: Checking port config... Env API_PORT: 3001, Final: 3001
+2026-02-01 01:06:19 [info]: Attendance Middleware started successfully!
+2026-02-01 01:06:19 [info]: Waiting for MB460 terminal connections...
+2026-02-01 01:06:20 [info]: API server listening on port 3001
+2026-02-01 01:06:20 [info]: WebSocket server ready on port 3001
+2026-02-01 01:06:20 [info]: ZKTeco TCP server listening on 0.0.0.0:4370
+2026-02-01 01:06:23 [info]: [Traffic] GET /iclock/cdata?SN=QWC5234701115&options=all&language=69&pushver=2.4.1 from ::ffff:192.168.0.159
+2026-02-01 01:06:23 [info]: [ADMS Request] GET /cdata?SN=QWC5234701115&options=all&language=69&pushver=2.4.1 {"query":{"SN":"QWC5234701115","options":"all","language":"69","pushver":"2.4.1"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:06:24 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115&INFO=Ver%208.0.4.7-20230726,4,0,33,192.168.0.159,10,7,12,0,111,0,0,0 from ::ffff:192.168.0.159
+2026-02-01 01:06:24 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115&INFO=Ver%208.0.4.7-20230726,4,0,33,192.168.0.159,10,7,12,0,111,0,0,0 {"query":{"SN":"QWC5234701115","INFO":"Ver 8.0.4.7-20230726,4,0,33,192.168.0.159,10,7,12,0,111,0,0,0"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:06:24 [info]: [ADMS] ⏰ Clock sync queued for QWC5234701115: 2026-02-01 01:06:24
+2026-02-01 01:06:24 [info]: [ADMS] Sending priority command to device: {"terminalSerial":"QWC5234701115","command":"C:570:SET OPTION DateTime=2026-02-01 01:06:24"}
+2026-02-01 01:06:24 [info]: [Traffic] POST /iclock/devicecmd?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:06:24 [info]: [ADMS Request] POST /devicecmd?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:06:24 [info]: [ADMS CMD Response] Device QWC5234701115:
+2026-02-01 01:06:25 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:06:25 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:06:25 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:06:26 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:06:26 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:06:27 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:06:28 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:06:28 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:06:28 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:06:29 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:06:29 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:06:29 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:06:31 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:06:31 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:06:31 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:06:32 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:06:32 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:06:32 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:06:36 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:06:36 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:06:36 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:06:37 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:06:37 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:06:37 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:06:42 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:06:42 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:06:42 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:06:43 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:06:43 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:06:43 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:06:50 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:06:50 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:06:50 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:06:51 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:06:51 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:06:51 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:06:59 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:06:59 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:06:59 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:07:00 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:07:00 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:07:00 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:07:10 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:07:10 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:07:10 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:07:11 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:07:11 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:07:11 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:07:22 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:07:22 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:07:22 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:07:23 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:07:23 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:07:23 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:07:36 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:07:36 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:07:36 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:07:37 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:07:37 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:07:37 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:07:51 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:07:51 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:07:51 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:07:52 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:07:52 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:07:52 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:08:17 [info]: [ADMS] Routes configured
+2026-02-01 01:08:17 [info]: API routes configured
+2026-02-01 01:08:17 [info]: Starting Attendance Middleware...
+2026-02-01 01:08:17 [info]: Supabase client initialized
+2026-02-01 01:08:17 [info]: ZKTeco server listening on port 4370
+2026-02-01 01:08:17 [info]: Checking port config... Env API_PORT: 3001, Final: 3001
+2026-02-01 01:08:17 [info]: Attendance Middleware started successfully!
+2026-02-01 01:08:17 [info]: Waiting for MB460 terminal connections...
+2026-02-01 01:08:17 [info]: API server listening on port 3001
+2026-02-01 01:08:17 [info]: WebSocket server ready on port 3001
+2026-02-01 01:08:17 [info]: ZKTeco TCP server listening on 0.0.0.0:4370
+2026-02-01 01:08:17 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:08:17 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:08:17 [info]: [ADMS] ⏰ Clock sync queued for QWC5234701115: 2026-02-01 01:08:17
+2026-02-01 01:08:17 [info]: [ADMS] Sending priority command to device: {"terminalSerial":"QWC5234701115","command":"C:1096:SET OPTION DateTime=2026-02-01 01:08:17"}
+2026-02-01 01:08:17 [info]: [Traffic] POST /iclock/devicecmd?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:08:17 [info]: [ADMS Request] POST /devicecmd?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:08:17 [info]: [ADMS CMD Response] Device QWC5234701115:
+2026-02-01 01:08:18 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:08:18 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:08:18 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:08:18 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:08:18 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:08:19 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:08:19 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:08:19 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:08:19 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:08:20 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:08:20 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:08:20 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:08:22 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:08:22 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:08:22 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:08:23 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:08:23 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:08:23 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:08:27 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:08:27 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:08:27 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:08:28 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:08:28 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:08:28 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:08:33 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:08:33 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:08:33 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:08:34 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:08:34 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:08:34 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:08:41 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:08:41 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:08:41 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:08:42 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:08:42 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:08:42 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:08:50 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:08:50 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:08:50 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:08:51 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:08:51 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:08:51 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:09:01 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:09:01 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:09:01 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:09:02 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:09:02 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:09:02 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:09:13 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:09:13 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:09:13 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:09:14 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:09:14 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:09:14 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:09:27 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:09:27 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:09:27 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:09:28 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:09:28 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:09:28 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:09:42 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:09:42 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:09:42 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:09:43 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:09:43 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:09:43 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:09:59 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:09:59 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:09:59 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:10:00 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:10:00 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:10:00 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:10:12 [info]: [Traffic] GET /health from ::1
+2026-02-01 01:10:17 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:10:17 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:10:17 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:10:18 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:10:18 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:10:18 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:10:38 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:10:38 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:10:38 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:10:39 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:10:39 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:10:39 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:10:59 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:10:59 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:10:59 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:11:00 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:11:00 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:11:00 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:11:22 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:11:22 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:11:22 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:11:23 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:11:23 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:11:23 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:11:46 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:11:46 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:11:46 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:11:47 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:11:47 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:11:47 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:12:12 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:12:12 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:12:12 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:12:13 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:12:13 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:12:13 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:12:40 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:12:40 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:12:40 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:12:41 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:12:41 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:12:41 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:13:09 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:13:09 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:13:09 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:13:10 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:13:10 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:13:10 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:13:39 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:13:39 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:13:39 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:13:40 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:13:40 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:13:40 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:14:09 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:14:09 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:14:09 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:14:10 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:14:10 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:14:10 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:14:39 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:14:39 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:14:39 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:14:40 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:14:40 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:14:40 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:15:09 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:15:09 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:15:09 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:15:10 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:15:10 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:15:10 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:15:39 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:15:39 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:15:39 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:15:40 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:15:40 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:15:40 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:16:09 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:16:09 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:16:09 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:16:10 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:16:10 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:16:10 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115
+2026-02-01 01:16:40 [info]: [Traffic] GET /iclock/getrequest?SN=QWC5234701115 from ::ffff:192.168.0.159
+2026-02-01 01:16:40 [info]: [ADMS Request] GET /getrequest?SN=QWC5234701115 {"query":{"SN":"QWC5234701115"},"ip":"::ffff:192.168.0.159"}
+2026-02-01 01:16:40 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
+2026-02-01 01:16:41 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
+2026-02-01 01:16:41 [info]: [ADMS] Heartbeat from QWC5234701115. Linked agencies: 2016bd10-88fa-4e65-b4dd-45963331221a, 5692e5d4-ceed-49f6-bc88-b22cd0847fd9
+2026-02-01 01:16:41 [info]: [ADMS] Found 0 unsynced employees for QWC5234701115

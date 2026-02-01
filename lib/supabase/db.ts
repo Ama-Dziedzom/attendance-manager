@@ -34,7 +34,7 @@ export const employeeService = {
         *,
         department:departments(id, name),
         agency:agencies(id, name),
-        biometric_credential:biometric_credentials(*)
+        employee_fingerprints(*)
       `)
 
         if (!includeInactive) {
@@ -57,7 +57,7 @@ export const employeeService = {
         *,
         department:departments(id, name),
         agency:agencies(id, name),
-        biometric_credential:biometric_credentials(*)
+        employee_fingerprints(*)
       `)
             .eq('emp_id', empId)
             .single()
@@ -79,7 +79,7 @@ export const employeeService = {
         *,
         department:departments(id, name),
         agency:agencies(id, name),
-        biometric_credential:biometric_credentials(*)
+        employee_fingerprints(*)
       `)
             .eq('id', id)
             .single()
@@ -99,7 +99,7 @@ export const employeeService = {
                 *,
                 department:departments(id, name),
                 agency:agencies(id, name),
-                biometric_credential:biometric_credentials(*)
+                employee_fingerprints(*)
             `)
             .single()
 
@@ -125,7 +125,7 @@ export const employeeService = {
                 *,
                 department:departments(id, name),
                 agency:agencies(id, name),
-                biometric_credential:biometric_credentials(*)
+                employee_fingerprints(*)
             `)
             .eq('id', id)
             .single()
@@ -156,7 +156,7 @@ export const employeeService = {
         *,
         department:departments(name),
         agency:agencies(name),
-        biometric_credential:biometric_credentials(*)
+        employee_fingerprints(*)
       `)
             .eq('is_active', true)
             .or(`name.ilike.%${query}%,emp_id.ilike.%${query}%`)

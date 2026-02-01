@@ -14,6 +14,7 @@ import { setupAdmsRoutes } from './adms-routes';
 import { logger } from '../utils/logger';
 import { getTerminals, initSupabase } from '../services/supabase';
 import { getConnectedDevices, isDeviceConnected } from '../zkteco/server';
+import { scannerService } from '../services/scanner';
 
 export function setupApiRoutes(app: Express, io: SocketIOServer): void {
     // Initialize Supabase for ADMS routes
@@ -139,6 +140,106 @@ export function setupApiRoutes(app: Express, io: SocketIOServer): void {
             res.json(result);
         } catch (error) {
             logger.error('Simulation error:', error);
+            res.status(500).json({ success: false, error: String(error) });
+        }
+    });
+
+    // =========================================================================
+    // BIOMETRICS
+    // =========================================================================
+
+    /**
+     * POST /api/scanner/capture
+     * Trigger the physical SLK20R scanner to capture a finger
+     */
+    app.post('/api/scanner/capture', async (req: Request, res: Response) => {
+        try {
+            const result = await scannerService.enrollFingerprint();
+            res.json(result);
+        } catch (error) {
+            logger.error('Scanner capture error:', error);
+            res.status(500).json({ success: false, error: String(error) });
+        }
+    });
+
+    /**
+     * POST /api/fingerprints/enroll
+     * Store fingerprint enrolled via SLK20R
+     */
+    app.post('/api/fingerprints/enroll', async (req: Request, res: Response) => {
+        const { employeeId, fingerIndex, template } = req.body;
+        logger.info(`[Enroll] Enrollment request received for employee: ${employeeId}, finger: ${fingerIndex}`);
+
+        if (!employeeId || fingerIndex === undefined || !template) {
+            logger.warn('[Enroll] Missing required fields');
+            return res.status(400).json({ success: false, error: 'employeeId, fingerIndex, and template are required' });
+        }
+
+        try {
+            // 1. Store the Fingerprint
+            logger.info(`[Enroll] Attempting to upsert fingerprint for UUID: ${employeeId}`);
+            const { error: upsertError } = await supabase
+                .from('employee_fingerprints')
+                .upsert({
+                    employee_id: employeeId,
+                    finger_index: fingerIndex,
+                    template: template,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'employee_id,finger_index' });
+
+            if (upsertError) {
+                logger.error('[Enroll] Fingerprint DB error:', upsertError);
+                throw upsertError;
+            }
+            logger.info(`[Enroll] Fingerprint template saved to DB for employee ${employeeId}`);
+
+            // 2. Lookup Alphanumeric emp_id
+            logger.info(`[Enroll] Looking up emp_id for UUID: ${employeeId}`);
+            const { data: employee, error: empError } = await supabase
+                .from('employees')
+                .select('emp_id, agency_id')
+                .eq('id', employeeId)
+                .single();
+
+            if (empError) {
+                logger.error('[Enroll] Employee lookup error:', empError);
+                throw empError;
+            }
+
+            if (employee) {
+                logger.info(`[Enroll] Resolved UUID ${employeeId} to emp_id: ${employee.emp_id}. Agency: ${employee.agency_id}`);
+
+                // 3. Find Terminals
+                const { data: terminals, error: terminalError } = await supabase
+                    .from('terminal_agencies')
+                    .select('terminal_sn')
+                    .eq('agency_id', employee.agency_id);
+
+                if (terminalError) {
+                    logger.warn(`[Enroll] terminal_agencies lookup failed (maybe using fallback): ${terminalError.message}`);
+                }
+
+                if (terminals && terminals.length > 0) {
+                    logger.info(`[Enroll] Found ${terminals.length} terminals for agency ${employee.agency_id}`);
+                    for (const t of terminals) {
+                        logger.info(`[Enroll] Queuing re-sync for ${employee.emp_id} on ${t.terminal_sn}`);
+                        const { error: syncError } = await supabase.from('employee_terminal_sync').upsert({
+                            emp_id: employee.emp_id,
+                            terminal_sn: t.terminal_sn,
+                            status: 'pending',
+                            last_sync_at: new Date().toISOString()
+                        }, { onConflict: 'emp_id,terminal_sn' });
+
+                        if (syncError) logger.error(`[Enroll] Sync queue error for ${t.terminal_sn}:`, syncError);
+                    }
+                } else {
+                    logger.info(`[Enroll] No specific terminals found for agency ${employee.agency_id}`);
+                }
+            }
+
+            res.json({ success: true, message: 'Fingerprint enrolled and sync triggered' });
+        } catch (error) {
+            logger.error('[Enroll] Enrollment processing error:', error);
             res.status(500).json({ success: false, error: String(error) });
         }
     });

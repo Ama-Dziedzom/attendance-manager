@@ -36,22 +36,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SLK20RScanner } from "@/components/slk20r-scanner"
 import { toast } from "sonner"
-import type { BiometricCredential } from "@/lib/webauthn-helper"
-import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip as RechartsTooltip
-} from 'recharts'
 import { capitalize, cn } from "@/lib/utils"
 import { StatusBadge } from "@/components/ui/status-badge"
-import { type Employee, type AttendanceRecord, mapDbEmployeeToEmployee, mapDbAttendanceToAttendance } from "@/lib/types"
+import { Employee, AttendanceRecord, mapDbEmployeeToEmployee, mapDbAttendanceToAttendance } from "@/lib/types"
+
+const MIDDLEWARE_URL = process.env.NEXT_PUBLIC_MIDDLEWARE_URL || "http://localhost:3001"
 
 
 const ATTENDANCE_METRICS = [
@@ -78,7 +67,17 @@ export default function EmployeeDetailPage() {
       const empData = await db.employees.getByEmpId(employeeId)
       console.log("Raw empData result:", empData)
       if (empData) {
-        setEmployee(mapDbEmployeeToEmployee(empData))
+        const biometric = empData.biometric_credential && Array.isArray(empData.biometric_credential)
+          ? empData.biometric_credential[0]
+          : empData.biometric_credential
+
+        const hardwareFingerprint = empData.employee_fingerprints && Array.isArray(empData.employee_fingerprints)
+          ? empData.employee_fingerprints[0]
+          : empData.employee_fingerprints
+
+        const mapped = mapDbEmployeeToEmployee(empData)
+        console.log("Mapped employee object:", mapped)
+        setEmployee(mapped)
         const attendanceData = await db.attendance.getEmployeeRecords(empData.id, 30)
         console.log("Attendance records found:", attendanceData.length)
         const mappedAttendance = attendanceData.map((r: any) => mapDbAttendanceToAttendance(r))
@@ -101,19 +100,29 @@ export default function EmployeeDetailPage() {
     loadEmployeeData()
   }, [employeeId])
 
-  const handleScanComplete = async (cred: BiometricCredential) => {
+  const handleScanComplete = async (cred: { template: string; quality: number }) => {
     if (!employee) return
 
     try {
-      await db.biometric.register({
-        employee_id: employee.id,
-        credential_id: cred.credentialId,
-        fingerprint_id: `FP-${employee.empId}-${cred.credentialId.slice(0, 8)}`,
-        public_key: cred.publicKey,
-        counter: cred.counter,
-        device_type: cred.deviceType || "slk20r",
-        is_active: true,
-      })
+      // 1. Send to Middleware for DB storage and terminal sync
+      console.log(`[Enroll] Sending request to ${MIDDLEWARE_URL}/api/fingerprints/enroll for ID: ${employee.id}`);
+      const response = await fetch(`${MIDDLEWARE_URL}/api/fingerprints/enroll`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId: employee.id,
+          fingerIndex: 0,
+          template: cred.template
+        })
+      });
+
+      const result = await response.json();
+      console.log("[Enroll] Middleware response:", result);
+
+      if (!result.success) {
+        console.error("[Enroll] Middleware reported failure:", result.error);
+        throw new Error(result.error || "Enrollment failed on middleware");
+      }
 
       toast.success("Biometric registered successfully")
       setIsEnrolling(false)
@@ -442,7 +451,6 @@ export default function EmployeeDetailPage() {
                           onError={handleScanError}
                           employeeId={employee.id}
                           employeeName={employee.name}
-                          employeeEmail={employee.email ?? ""}
                         />
                         <Button
                           variant="ghost"

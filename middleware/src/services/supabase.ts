@@ -119,7 +119,8 @@ export async function updateTerminalStatus(
  * Smart toggle attendance status based on current database state
  */
 export async function smartToggleAttendance(
-    empId: string,
+    employeeInternalId: string, // UUID
+    empId: string,              // human-readable emp_id
     terminalSerial: string,
     verificationMethod: string = 'fingerprint',
     timestamp: Date = new Date()
@@ -128,13 +129,14 @@ export async function smartToggleAttendance(
 
     try {
         // 1. Get the latest record for this employee today
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
+        // Use UTC start of day to match database comparison
+        const todayStart = new Date(timestamp);
+        todayStart.setUTCHours(0, 0, 0, 0);
 
         const { data: latestRecord, error: fetchError } = await supabase
             .from('attendance_records')
             .select('*')
-            .eq('emp_id', empId)
+            .eq('employee_id', employeeInternalId)
             .gte('clock_in_time', todayStart.toISOString())
             .order('clock_in_time', { ascending: false })
             .limit(1)
@@ -148,12 +150,12 @@ export async function smartToggleAttendance(
         // 2. Decide action based on state
         if (!latestRecord) {
             // No record today -> Clock In
-            logger.info(`[SmartToggle] No record for ${empId}, starting Clock-In`);
+            logger.info(`[SmartToggle] No record for ${empId} (${employeeInternalId}), starting Clock-In`);
             const result = await clockInFromTerminal(empId, terminalSerial, verificationMethod, timestamp);
             return { ...result, action: 'clock_in' };
         } else if (latestRecord.clock_in_time && !latestRecord.clock_out_time) {
             // Already clocked in but not out -> Clock Out
-            logger.info(`[SmartToggle] Open record found for ${empId}, starting Clock-Out`);
+            logger.info(`[SmartToggle] Open record found for ${empId} (${employeeInternalId}), starting Clock-Out`);
             const result = await clockOutFromTerminal(empId, terminalSerial, verificationMethod, timestamp);
             return { ...result, action: 'clock_out' };
         } else {
@@ -166,6 +168,114 @@ export async function smartToggleAttendance(
         return { success: false, error: String(err) };
     }
 }
+/**
+ * Get all agency IDs linked to a terminal (supports multi-agency terminals)
+ */
+export async function getTerminalAgencies(terminalSN: string): Promise<string[]> {
+    const supabase = getSupabase();
+    logger.info(`[Supabase] Looking up agencies for terminal: ${terminalSN}`);
+
+    // 1. Check multi-agency association table
+    const { data, error } = await supabase
+        .from('terminal_agencies')
+        .select('agency_id')
+        .ilike('terminal_sn', terminalSN); // Use ILIKE for case-insensitive matching
+
+    let agencies: string[] = data?.map(row => row.agency_id) || [];
+
+    // 2. Fallback or Additional check: single agency_id on terminals table
+    const { data: terminal, error: tError } = await supabase
+        .from('terminals')
+        .select('agency_id')
+        .ilike('serial_number', terminalSN) // Use ILIKE for case-insensitive matching
+        .maybeSingle();
+
+    if (terminal?.agency_id && !agencies.includes(terminal.agency_id)) {
+        agencies.push(terminal.agency_id);
+    }
+
+    if (agencies.length === 0) {
+        logger.warn(`[Supabase] No agencies found for terminal ${terminalSN} (case-insensitive check).`);
+    } else {
+        logger.info(`[Supabase] Found ${agencies.length} agencies for terminal ${terminalSN}`);
+    }
+
+    return agencies;
+}
+
+/**
+ * Get all active employees for one or more agencies
+ */
+export async function getEmployeesByAgencies(agencyIds: string[]): Promise<any[]> {
+    if (!agencyIds || agencyIds.length === 0) return [];
+
+    const supabase = getSupabase();
+
+    const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .in('agency_id', agencyIds)
+        .eq('is_active', true);
+
+    if (error) {
+        logger.error('Get employees by agencies error:', error);
+        return [];
+    }
+
+    return data || [];
+}
+
+/**
+ * Get all active employees for a specific agency (legacy, single agency)
+ */
+export async function getEmployeesByAgency(agencyId: string): Promise<any[]> {
+    return getEmployeesByAgencies([agencyId]);
+}
+
+/**
+ * Get synchronization status for a terminal
+ */
+export async function getTerminalSyncStatus(terminalSN: string): Promise<any[]> {
+    const supabase = getSupabase();
+
+    const { data, error } = await supabase
+        .from('employee_terminal_sync')
+        .select('emp_id, status')
+        .eq('terminal_sn', terminalSN);
+
+    if (error) {
+        // If the table doesn't exist yet, we'll return an empty array
+        logger.warn('Get terminal sync status error (table might not exist):', error.message);
+        return [];
+    }
+
+    return data || [];
+}
+
+/**
+ * Mark an employee as synced to a terminal
+ */
+export async function markEmployeeSynced(empId: string, terminalSN: string, status: string = 'synced'): Promise<void> {
+    const supabase = getSupabase();
+
+    try {
+        const { error } = await supabase
+            .from('employee_terminal_sync')
+            .upsert({
+                emp_id: empId,
+                terminal_sn: terminalSN,
+                status: status,
+                last_sync_at: new Date().toISOString()
+            }, {
+                onConflict: 'emp_id,terminal_sn'
+            });
+
+        if (error) throw error;
+    } catch (err) {
+        logger.error('Mark employee synced error:', err);
+    }
+}
+
 export async function getTerminals(): Promise<any[]> {
     const supabase = getSupabase();
 
@@ -183,17 +293,44 @@ export async function getTerminals(): Promise<any[]> {
 }
 
 /**
- * Get employee by emp_id
+ * Get terminal by its serial number
  */
-export async function getEmployeeByEmpId(empId: string): Promise<any | null> {
+export async function getTerminalBySN(serialNumber: string): Promise<any | null> {
     const supabase = getSupabase();
 
     const { data, error } = await supabase
+        .from('terminals')
+        .select('*, agency:agencies(*)')
+        .ilike('serial_number', serialNumber)
+        .maybeSingle();
+
+    if (error) {
+        logger.error('Get terminal by SN error:', error);
+        return null;
+    }
+
+    return data;
+}
+
+/**
+ * Get employee by identifier (emp_id or device_pin)
+ */
+export async function getEmployeeByEmpId(identifier: string): Promise<any | null> {
+    const supabase = getSupabase();
+
+    let query = supabase
         .from('employees')
         .select('*, department:departments(name), agency:agencies(name)')
-        .eq('emp_id', empId)
-        .eq('is_active', true)
-        .single();
+        .eq('is_active', true);
+
+    if (/^\d+$/.test(identifier)) {
+        const pin = parseInt(identifier, 10);
+        query = query.or(`emp_id.eq.${identifier},device_pin.eq.${pin}`);
+    } else {
+        query = query.eq('emp_id', identifier);
+    }
+
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
         logger.error('Get employee error:', error);
@@ -205,26 +342,25 @@ export async function getEmployeeByEmpId(empId: string): Promise<any | null> {
 
 /**
  * Get employee by numeric ID part
- * Used for ZKTeco devices that only support numeric PINs
  */
 export async function getEmployeeByNumericId(numericId: string): Promise<any | null> {
+    return getEmployeeByEmpId(numericId);
+}
+/**
+ * Get enrolled fingerprints for an employee
+ */
+export async function getEmployeeFingerprints(employeeId: string): Promise<any[]> {
     const supabase = getSupabase();
 
-    // Try various matching strategies
-    // 1. Exact match (if the DB already uses purely numeric IDs)
-    // 2. Ends with (e.g., "00004" matches "ID-00004")
     const { data, error } = await supabase
-        .from('employees')
-        .select('*, department:departments(name), agency:agencies(name)')
-        .or(`emp_id.eq.${numericId},emp_id.ilike.%-${numericId}`)
-        .eq('is_active', true)
-        .limit(1)
-        .single();
+        .from('employee_fingerprints')
+        .select('*')
+        .eq('employee_id', employeeId);
 
     if (error) {
-        logger.warn(`Could not resolve numeric ID ${numericId}:`, error.message);
-        return null;
+        logger.error('Get employee fingerprints error:', error);
+        return [];
     }
 
-    return data;
+    return data || [];
 }

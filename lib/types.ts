@@ -179,11 +179,20 @@ export interface LeaveRequest {
  * Convert database employee to frontend employee
  */
 export function mapDbEmployeeToEmployee(dbEmployee: any): Employee {
+    console.log(`[Mapper] Processing ${dbEmployee.name || 'Unknown'} (UUID: ${dbEmployee.id})`, {
+        has_biometric_credential: !!dbEmployee.biometric_credential,
+        fingerprints_raw: dbEmployee.employee_fingerprints
+    });
+
     const department = Array.isArray(dbEmployee.department) ? dbEmployee.department[0] : dbEmployee.department
     const agency = Array.isArray(dbEmployee.agency) ? dbEmployee.agency[0] : dbEmployee.agency
-    const biometric = Array.isArray(dbEmployee.biometric_credential)
+    const biometric = dbEmployee.biometric_credential && Array.isArray(dbEmployee.biometric_credential)
         ? dbEmployee.biometric_credential[0]
         : dbEmployee.biometric_credential
+
+    const hardwareFingerprint = dbEmployee.employee_fingerprints && Array.isArray(dbEmployee.employee_fingerprints)
+        ? dbEmployee.employee_fingerprints[0]
+        : dbEmployee.employee_fingerprints
 
     return {
         id: dbEmployee.id,
@@ -205,12 +214,12 @@ export function mapDbEmployeeToEmployee(dbEmployee: any): Employee {
         dateJoin: dbEmployee.date_join,
         isActive: dbEmployee.is_active ?? true,
         createdAt: dbEmployee.created_at,
-        biometricRegistered: !!biometric,
-        fingerprintId: biometric?.fingerprint_id,
+        biometricRegistered: !!biometric || !!hardwareFingerprint,
+        fingerprintId: biometric?.fingerprint_id || (hardwareFingerprint ? `HW-${hardwareFingerprint.finger_index}` : undefined),
         faceTemplateId: biometric?.face_template_id,           // NEW: Face template
-        biometricType: biometric?.biometric_type || undefined, // NEW: fingerprint/face/both
-        biometricDeviceType: biometric?.device_type,
-        biometricRegisteredAt: biometric?.registered_at,
+        biometricType: (biometric?.biometric_type || (hardwareFingerprint ? 'fingerprint' : undefined)) as any,
+        biometricDeviceType: biometric?.device_type || (hardwareFingerprint ? 'SLK20R Scanner' : undefined),
+        biometricRegisteredAt: biometric?.registered_at || hardwareFingerprint?.created_at,
     }
 }
 
