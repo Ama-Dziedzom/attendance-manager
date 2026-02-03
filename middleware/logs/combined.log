@@ -7016,3 +7016,39 @@ At D:\attendance-manager\middleware\scripts\capture.ps1:105 char:1
 2026-02-01 12:54:33 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
 2026-02-01 12:54:33 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
 2026-02-01 12:54:59 [info]: SIGINT received, shutting down...
+2026-02-02 14:09:31 [info]: [ADMS] Routes configured
+2026-02-02 14:09:31 [info]: API routes configured
+2026-02-02 14:09:31 [info]: Starting Attendance Middleware...
+2026-02-02 14:09:31 [info]: Supabase client initialized
+2026-02-02 14:09:31 [info]: ZKTeco server listening on port 4370
+2026-02-02 14:09:31 [info]: Checking port config... Env API_PORT: 3001, Final: 3001
+2026-02-02 14:09:31 [info]: Attendance Middleware started successfully!
+2026-02-02 14:09:31 [info]: Waiting for MB460 terminal connections...
+2026-02-02 14:09:31 [info]: API server listening on port 3001
+2026-02-02 14:09:31 [info]: WebSocket server ready on port 3001
+2026-02-02 14:09:31 [info]: ZKTeco TCP server listening on 0.0.0.0:4370
+2026-02-02 14:10:37 [info]: SIGTERM received, shutting down...
+2026-02-02 14:10:38 [info]: [ADMS] Routes configured
+2026-02-02 14:10:38 [info]: API routes configured
+2026-02-02 14:10:38 [info]: Starting Attendance Middleware...
+2026-02-02 14:10:38 [info]: Supabase client initialized
+2026-02-02 14:10:38 [info]: ZKTeco server listening on port 4370
+2026-02-02 14:10:38 [info]: Checking port config... Env API_PORT: 3001, Final: 3001
+2026-02-02 14:10:38 [info]: Attendance Middleware started successfully!
+2026-02-02 14:10:38 [info]: Waiting for MB460 terminal connections...
+2026-02-02 14:10:38 [info]: API server listening on port 3001
+2026-02-02 14:10:38 [info]: WebSocket server ready on port 3001
+2026-02-02 14:10:38 [info]: ZKTeco TCP server listening on 0.0.0.0:4370
+2026-02-02 14:11:44 [info]: SIGTERM received, shutting down...
+2026-02-02 14:11:44 [info]: [ADMS] Routes configured
+2026-02-02 14:11:44 [info]: API routes configured
+2026-02-02 14:11:44 [info]: Starting Attendance Middleware...
+2026-02-02 14:11:44 [info]: Supabase client initialized
+2026-02-02 14:11:44 [info]: ZKTeco server listening on port 4370
+2026-02-02 14:11:44 [info]: Checking port config... Env API_PORT: 3001, Final: 3001
+2026-02-02 14:11:44 [info]: Attendance Middleware started successfully!
+2026-02-02 14:11:44 [info]: Waiting for MB460 terminal connections...
+2026-02-02 14:11:44 [info]: API server listening on port 3001
+2026-02-02 14:11:44 [info]: WebSocket server ready on port 3001
+2026-02-02 14:11:44 [info]: ZKTeco TCP server listening on 0.0.0.0:4370
+2026-02-02 14:21:45 [info]: SIGINT received, shutting down...

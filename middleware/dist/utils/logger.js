@@ -23,13 +23,8 @@ exports.logger = winston_1.default.createLogger({
         new winston_1.default.transports.Console({
             format: combine(colorize(), timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), logFormat)
         }),
-        // Add file transport for production
-        ...(process.env.NODE_ENV === 'production'
-            ? [
-                new winston_1.default.transports.File({ filename: 'logs/error.log', level: 'error' }),
-                new winston_1.default.transports.File({ filename: 'logs/combined.log' })
-            ]
-            : [])
+        new winston_1.default.transports.File({ filename: 'logs/error.log', level: 'error' }),
+        new winston_1.default.transports.File({ filename: 'logs/combined.log' })
     ]
 });
 //# sourceMappingURL=logger.js.map

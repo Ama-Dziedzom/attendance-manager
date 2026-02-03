@@ -8,8 +8,17 @@ exports.getSupabase = getSupabase;
 exports.clockInFromTerminal = clockInFromTerminal;
 exports.clockOutFromTerminal = clockOutFromTerminal;
 exports.updateTerminalStatus = updateTerminalStatus;
+exports.smartToggleAttendance = smartToggleAttendance;
+exports.getTerminalAgencies = getTerminalAgencies;
+exports.getEmployeesByAgencies = getEmployeesByAgencies;
+exports.getEmployeesByAgency = getEmployeesByAgency;
+exports.getTerminalSyncStatus = getTerminalSyncStatus;
+exports.markEmployeeSynced = markEmployeeSynced;
 exports.getTerminals = getTerminals;
+exports.getTerminalBySN = getTerminalBySN;
 exports.getEmployeeByEmpId = getEmployeeByEmpId;
+exports.getEmployeeByNumericId = getEmployeeByNumericId;
+exports.getEmployeeFingerprints = getEmployeeFingerprints;
 const supabase_js_1 = require("@supabase/supabase-js");
 const logger_1 = require("../utils/logger");
 let supabaseClient = null;
@@ -96,8 +105,145 @@ async function updateTerminalStatus(serialNumber, status, ipAddress) {
     }
 }
 /**
- * Get all terminals
+ * Smart toggle attendance status based on current database state
  */
+async function smartToggleAttendance(employeeInternalId, // UUID
+empId, // human-readable emp_id
+terminalSerial, verificationMethod = 'fingerprint', timestamp = new Date()) {
+    const supabase = getSupabase();
+    try {
+        // 1. Get the latest record for this employee today
+        // Use UTC start of day to match database comparison
+        const todayStart = new Date(timestamp);
+        todayStart.setUTCHours(0, 0, 0, 0);
+        const { data: latestRecord, error: fetchError } = await supabase
+            .from('attendance_records')
+            .select('*')
+            .eq('employee_id', employeeInternalId)
+            .gte('clock_in_time', todayStart.toISOString())
+            .order('clock_in_time', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        if (fetchError) {
+            logger_1.logger.error('Error fetching latest attendance:', fetchError);
+            return { success: false, error: fetchError.message };
+        }
+        // 2. Decide action based on state
+        if (!latestRecord) {
+            // No record today -> Clock In
+            logger_1.logger.info(`[SmartToggle] No record for ${empId} (${employeeInternalId}), starting Clock-In`);
+            const result = await clockInFromTerminal(empId, terminalSerial, verificationMethod, timestamp);
+            return { ...result, action: 'clock_in' };
+        }
+        else if (latestRecord.clock_in_time && !latestRecord.clock_out_time) {
+            // Already clocked in but not out -> Clock Out
+            logger_1.logger.info(`[SmartToggle] Open record found for ${empId} (${employeeInternalId}), starting Clock-Out`);
+            const result = await clockOutFromTerminal(empId, terminalSerial, verificationMethod, timestamp);
+            return { ...result, action: 'clock_out' };
+        }
+        else {
+            // Already clocked out -> Attendance complete
+            logger_1.logger.info(`[SmartToggle] Record already complete for ${empId} today`);
+            return { success: false, error: 'Employee already clocked out for today', action: 'none' };
+        }
+    }
+    catch (err) {
+        logger_1.logger.error('Smart toggle exception:', err);
+        return { success: false, error: String(err) };
+    }
+}
+/**
+ * Get all agency IDs linked to a terminal (supports multi-agency terminals)
+ */
+async function getTerminalAgencies(terminalSN) {
+    const supabase = getSupabase();
+    logger_1.logger.info(`[Supabase] Looking up agencies for terminal: ${terminalSN}`);
+    // 1. Check multi-agency association table
+    const { data, error } = await supabase
+        .from('terminal_agencies')
+        .select('agency_id')
+        .ilike('terminal_sn', terminalSN); // Use ILIKE for case-insensitive matching
+    let agencies = data?.map(row => row.agency_id) || [];
+    // 2. Fallback or Additional check: single agency_id on terminals table
+    const { data: terminal, error: tError } = await supabase
+        .from('terminals')
+        .select('agency_id')
+        .ilike('serial_number', terminalSN) // Use ILIKE for case-insensitive matching
+        .maybeSingle();
+    if (terminal?.agency_id && !agencies.includes(terminal.agency_id)) {
+        agencies.push(terminal.agency_id);
+    }
+    if (agencies.length === 0) {
+        logger_1.logger.warn(`[Supabase] No agencies found for terminal ${terminalSN} (case-insensitive check).`);
+    }
+    else {
+        logger_1.logger.info(`[Supabase] Found ${agencies.length} agencies for terminal ${terminalSN}`);
+    }
+    return agencies;
+}
+/**
+ * Get all active employees for one or more agencies
+ */
+async function getEmployeesByAgencies(agencyIds) {
+    if (!agencyIds || agencyIds.length === 0)
+        return [];
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .in('agency_id', agencyIds)
+        .eq('is_active', true);
+    if (error) {
+        logger_1.logger.error('Get employees by agencies error:', error);
+        return [];
+    }
+    return data || [];
+}
+/**
+ * Get all active employees for a specific agency (legacy, single agency)
+ */
+async function getEmployeesByAgency(agencyId) {
+    return getEmployeesByAgencies([agencyId]);
+}
+/**
+ * Get synchronization status for a terminal
+ */
+async function getTerminalSyncStatus(terminalSN) {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+        .from('employee_terminal_sync')
+        .select('emp_id, status')
+        .eq('terminal_sn', terminalSN);
+    if (error) {
+        // If the table doesn't exist yet, we'll return an empty array
+        logger_1.logger.warn('Get terminal sync status error (table might not exist):', error.message);
+        return [];
+    }
+    return data || [];
+}
+/**
+ * Mark an employee as synced to a terminal
+ */
+async function markEmployeeSynced(empId, terminalSN, status = 'synced') {
+    const supabase = getSupabase();
+    try {
+        const { error } = await supabase
+            .from('employee_terminal_sync')
+            .upsert({
+            emp_id: empId,
+            terminal_sn: terminalSN,
+            status: status,
+            last_sync_at: new Date().toISOString()
+        }, {
+            onConflict: 'emp_id,terminal_sn'
+        });
+        if (error)
+            throw error;
+    }
+    catch (err) {
+        logger_1.logger.error('Mark employee synced error:', err);
+    }
+}
 async function getTerminals() {
     const supabase = getSupabase();
     const { data, error } = await supabase
@@ -111,20 +257,63 @@ async function getTerminals() {
     return data || [];
 }
 /**
- * Get employee by emp_id
+ * Get terminal by its serial number
  */
-async function getEmployeeByEmpId(empId) {
+async function getTerminalBySN(serialNumber) {
     const supabase = getSupabase();
     const { data, error } = await supabase
+        .from('terminals')
+        .select('*, agency:agencies(*)')
+        .ilike('serial_number', serialNumber)
+        .maybeSingle();
+    if (error) {
+        logger_1.logger.error('Get terminal by SN error:', error);
+        return null;
+    }
+    return data;
+}
+/**
+ * Get employee by identifier (emp_id or device_pin)
+ */
+async function getEmployeeByEmpId(identifier) {
+    const supabase = getSupabase();
+    let query = supabase
         .from('employees')
         .select('*, department:departments(name), agency:agencies(name)')
-        .eq('emp_id', empId)
-        .eq('is_active', true)
-        .single();
+        .eq('is_active', true);
+    if (/^\d+$/.test(identifier)) {
+        const pin = parseInt(identifier, 10);
+        query = query.or(`emp_id.eq.${identifier},device_pin.eq.${pin}`);
+    }
+    else {
+        query = query.eq('emp_id', identifier);
+    }
+    const { data, error } = await query.maybeSingle();
     if (error) {
         logger_1.logger.error('Get employee error:', error);
         return null;
     }
     return data;
+}
+/**
+ * Get employee by numeric ID part
+ */
+async function getEmployeeByNumericId(numericId) {
+    return getEmployeeByEmpId(numericId);
+}
+/**
+ * Get enrolled fingerprints for an employee
+ */
+async function getEmployeeFingerprints(employeeId) {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+        .from('employee_fingerprints')
+        .select('*')
+        .eq('employee_id', employeeId);
+    if (error) {
+        logger_1.logger.error('Get employee fingerprints error:', error);
+        return [];
+    }
+    return data || [];
 }
 //# sourceMappingURL=supabase.js.map

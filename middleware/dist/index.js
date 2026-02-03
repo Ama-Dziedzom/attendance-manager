@@ -14,9 +14,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
+const path_1 = __importDefault(require("path"));
+dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../.env') });
 const http_1 = require("http");
 const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
 const socket_io_1 = require("socket.io");
 const logger_1 = require("./utils/logger");
 const supabase_1 = require("./services/supabase");
@@ -31,12 +33,32 @@ const io = new socket_io_1.Server(httpServer, {
         methods: ['GET', 'POST']
     }
 });
-// Middleware - IMPORTANT: Parse both JSON and raw body for ADMS devices
-// Raw body parser must come first to capture the original body
-app.use(express_1.default.raw({ type: '*/*', limit: '10mb' }));
-app.use(express_1.default.json());
-app.use(express_1.default.text({ type: 'text/plain' })); // For ADMS raw data
-app.use(express_1.default.urlencoded({ extended: true }));
+// 1. CORS - Must be first for browser pre-flight (OPTIONS)
+app.use((0, cors_1.default)({
+    origin: process.env.CORS_ORIGIN || '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true
+}));
+// 0. Global Logger (Diagnostic)
+app.use((req, res, next) => {
+    logger_1.logger.info(`[Traffic] ${req.method} ${req.url} from ${req.ip}`);
+    next();
+});
+// 2. Body Parsers - Order matters!
+// JSON parser first to catch browser API calls
+app.use(express_1.default.json({ limit: '10mb' }));
+app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
+// Raw parser for ADMS devices (only fallback for non-JSON)
+app.use(express_1.default.raw({
+    type: (req) => {
+        // Only use raw parsing if it's NOT JSON
+        const contentType = req.headers['content-type'];
+        return !contentType || !contentType.includes('application/json');
+    },
+    limit: '20mb'
+}));
+app.use(express_1.default.text({ type: 'text/plain' }));
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({
@@ -60,6 +82,7 @@ async function main() {
         logger_1.logger.info(`ZKTeco server listening on port ${zktecoPort}`);
         // Start HTTP server (API + WebSocket)
         const apiPort = parseInt(process.env.API_PORT || '3001');
+        logger_1.logger.info(`Checking port config... Env API_PORT: ${process.env.API_PORT}, Final: ${apiPort}`);
         httpServer.listen(apiPort, () => {
             logger_1.logger.info(`API server listening on port ${apiPort}`);
             logger_1.logger.info(`WebSocket server ready on port ${apiPort}`);
