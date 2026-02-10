@@ -240,7 +240,7 @@ export async function getTerminalSyncStatus(terminalSN: string): Promise<any[]> 
 
     const { data, error } = await supabase
         .from('employee_terminal_sync')
-        .select('emp_id, status')
+        .select('emp_id, status, last_sync_at')
         .eq('terminal_sn', terminalSN);
 
     if (error) {

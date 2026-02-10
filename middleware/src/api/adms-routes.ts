@@ -54,6 +54,23 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
         (global as any).cmdTracker = {};
     }
 
+    /**
+     * Build the correct PUSH protocol command for syncing a fingerprint template.
+     * Uses DATA UPDATE biodata format which writes to the biometric verification database.
+     * NOTE: DATA UPDATE userinfo with Template= does NOT work — it updates the user record
+     * but silently discards the biometric data. The biodata table is the correct target.
+     */
+    function buildFingerprintCommand(cmdId: number, pin: string, fingerIndex: number, templateBase64: string): string {
+        const tab = String.fromCharCode(9);
+        const fid = Math.min(9, Math.max(0, fingerIndex));
+        const templateSize = Buffer.from(templateBase64, 'base64').length;
+
+        // DATA UPDATE biodata format — the correct format for ZKTeco PUSH protocol biometric sync
+        // Fields: PIN (user ID), No (finger index), Index (sub-index), Valid, Duress, Type (1=fingerprint),
+        //         MajorVer/MinorVer (algorithm version), Format, Size (template bytes), Tmp (base64 template)
+        return `C:${cmdId}:DATA UPDATE biodata${tab}PIN=${pin}${tab}No=${fid}${tab}Index=0${tab}Valid=1${tab}Duress=0${tab}Type=1${tab}MajorVer=10${tab}MinorVer=0${tab}Format=0${tab}Size=${templateSize}${tab}Tmp=${templateBase64}`;
+    }
+
     // Device polling for commands - ENHANCED WITH DEBUGGING
     app.get('/iclock/getrequest', async (req: Request, res: Response) => {
         try {
@@ -107,8 +124,84 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             }
 
             // 3. Automatic Synchronization Logic
-            // Priority: Check for employees explicitly marked as 'pending' for this terminal
+            // PHASE 2: Check for employees who have user created but need fingerprints
             const syncStatus = await getTerminalSyncStatus(terminalSerial);
+            const now = Date.now();
+            const PHASE2_DELAY_MS = 10000; // Wait 10 seconds after user creation before sending fingerprint
+
+            const userCreatedEmpIds = syncStatus
+                .filter(s => {
+                    if (s.status !== 'user_created') return false;
+                    // Enforce delay: terminal needs time to commit user record before accepting biodata
+                    if (s.last_sync_at) {
+                        const createdAt = new Date(s.last_sync_at).getTime();
+                        const elapsed = now - createdAt;
+                        if (elapsed < PHASE2_DELAY_MS) {
+                            logger.info(`[SYNC PHASE 2] ⏳ Waiting for ${s.emp_id} - ${Math.round((PHASE2_DELAY_MS - elapsed) / 1000)}s remaining before fingerprint sync`);
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                .map(s => s.emp_id);
+
+            if (userCreatedEmpIds.length > 0) {
+                // Fetch employees with user_created status - these need fingerprints synced
+                const { data: userCreatedEmps } = await (await import('../services/supabase')).getSupabase()
+                    .from('employees')
+                    .select('*')
+                    .in('emp_id', userCreatedEmpIds)
+                    .eq('is_active', true);
+
+                if (userCreatedEmps && userCreatedEmps.length > 0) {
+                    const emp = userCreatedEmps[0];
+                    const fingerprints = await getEmployeeFingerprints(emp.id);
+
+                    if (fingerprints.length > 0) {
+                        const fp = fingerprints[0];
+                        const fpCmdId = Math.floor(Math.random() * 10000);
+
+                        let numericPin: string;
+                        if (emp.device_pin) {
+                            numericPin = emp.device_pin.toString();
+                        } else {
+                            const partToUse = emp.emp_id.includes('-') ? emp.emp_id.split('-')[1] : emp.emp_id;
+                            numericPin = partToUse.replace(/\D/g, '');
+                        }
+                        const simplePin = parseInt(numericPin, 10).toString();
+
+                        // Use raw template from SLK20R — do NOT manipulate bytes
+                        // SLK20R and MB460 both use SilkID algorithm, templates are already compatible
+                        const base64Template = fp.template.replace(/\s/g, '');
+                        const fingerID = Math.min(9, Math.max(0, fp.finger_index));
+                        const templateSize = Buffer.from(base64Template, 'base64').length;
+
+                        // Using DATA UPDATE biodata — the CORRECT format for biometric data
+                        const fpCmd = buildFingerprintCommand(fpCmdId, simplePin, fingerID, base64Template);
+
+                        // Track command
+                        (global as any).cmdTracker[fpCmdId] = `FINGERPRINT(biodata): ${emp.name} (PIN ${simplePin}) Finger ${fingerID}`;
+
+                        logger.info(`\n========================================`);
+                        logger.info(`[SYNC PHASE 2] 🖐️ SYNCING FINGERPRINT for ${emp.name}`);
+                        logger.info(`[SYNC PHASE 2] PIN: ${simplePin}, Finger: ${fingerID}`);
+                        logger.info(`[SYNC PHASE 2] Template size: ${templateSize} bytes (raw from SLK20R)`);
+                        logger.info(`[SYNC PHASE 2] Format: DATA UPDATE biodata`);
+                        logger.info(`========================================`);
+
+                        // Mark as synced now that fingerprint is being sent
+                        await markEmployeeSynced(emp.emp_id, terminalSerial, 'synced');
+
+                        return res.send(fpCmd);
+                    } else {
+                        // No fingerprints found, mark as synced anyway
+                        await markEmployeeSynced(emp.emp_id, terminalSerial, 'synced');
+                        logger.info(`[SYNC PHASE 2] No fingerprints for ${emp.name}, marking as synced`);
+                    }
+                }
+            }
+
+            // PHASE 1: Check for employees explicitly marked as 'pending' for this terminal
             const pendingEmpIds = syncStatus.filter(s => s.status === 'pending').map(s => s.emp_id);
 
             let missingEmployees: any[] = [];
@@ -131,7 +224,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                 const agencyIds = await getTerminalAgencies(terminalSerial);
                 if (agencyIds.length > 0) {
                     const agencyEmployees = await getEmployeesByAgencies(agencyIds);
-                    const syncedEmpIds = new Set(syncStatus.filter(s => s.status === 'synced').map(s => s.emp_id));
+                    const syncedEmpIds = new Set(syncStatus.filter(s => s.status === 'synced' || s.status === 'user_created').map(s => s.emp_id));
                     missingEmployees = agencyEmployees.filter(emp => !syncedEmpIds.has(emp.emp_id));
                     if (missingEmployees.length > 0) {
                         logger.info(`[ADMS] Auto-discovery: Found ${missingEmployees.length} missing employees from agencies for ${terminalSerial}`);
@@ -166,8 +259,8 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                     logger.warn(`[SYNC] ⚠️ NO FINGERPRINT TEMPLATES for ${emp.name} - user will be created but won't have biometric data!`);
                 }
 
-                // 2. Create User Command
-                const userCmd = `C:${cmdId}:DATA USER PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=0`;
+                // 2. Create User Command - Using DATA UPDATE userinfo (standard for many ZK devices)
+                const userCmd = `C:${cmdId}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=0`;
 
                 // Track command
                 (global as any).cmdTracker[cmdId] = `DATA USER: ${emp.name} (PIN ${simplePin})`;
@@ -175,57 +268,14 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                 logger.info(`[SYNC] 📤 User command created: CmdID ${cmdId}`);
                 logger.info(`[SYNC] User command: ${userCmd}`);
 
-                // 3. Queue Fingerprints with detailed logging
-                for (const fp of fingerprints) {
-                    const fpCmdId = Math.floor(Math.random() * 10000);
-
-                    // Log original template info
-                    const originalSize = Buffer.from(fp.template.replace(/\s/g, ''), 'base64').length;
-                    logger.info(`[SYNC] 🖐️ Processing fingerprint ${fp.finger_index} for ${emp.name}`);
-                    logger.info(`[SYNC] Original template size: ${originalSize} bytes`);
-
-                    let templateBuffer = Buffer.from(fp.template.replace(/\s/g, ''), 'base64');
-
-                    // Force alignment to 1232 bytes (SilkID raw)
-                    if (templateBuffer.length === 1260) {
-                        templateBuffer = templateBuffer.slice(28);
-                        logger.info(`[SYNC] Template adjusted: 1260 -> ${templateBuffer.length} bytes (removed 28-byte header)`);
-                    } else if (templateBuffer.length > 1232) {
-                        const oldLen = templateBuffer.length;
-                        templateBuffer = templateBuffer.slice(templateBuffer.length - 1232);
-                        logger.info(`[SYNC] Template adjusted: ${oldLen} -> ${templateBuffer.length} bytes (took last 1232)`);
-                    } else {
-                        logger.info(`[SYNC] Template size OK: ${templateBuffer.length} bytes`);
-                    }
-
-                    const templateSize = templateBuffer.length;
-                    const base64Template = templateBuffer.toString('base64');
-                    const fingerID = Math.min(9, Math.max(0, fp.finger_index));
-
-                    // Using terminal-native verb (FP) and tags (PIN, FID, Size, Valid, TMP)
-                    const fpCmd = `C:${fpCmdId}:FP PIN=${simplePin}${tab}FID=${fingerID}${tab}Size=${templateSize}${tab}Valid=1${tab}TMP=${base64Template}`;
-
-                    if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
-                    commandQueue[terminalSerial].push(fpCmd);
-
-                    // Track command
-                    (global as any).cmdTracker[fpCmdId] = `FP: ${emp.name} (PIN ${simplePin}) FID ${fingerID} Size ${templateSize}`;
-
-                    logger.info(`[SYNC] 📋 Fingerprint command QUEUED: CmdID ${fpCmdId}`);
-                    logger.info(`[SYNC] FP command preview: C:${fpCmdId}:FP PIN=${simplePin} FID=${fingerID} Size=${templateSize} Valid=1 TMP=[${base64Template.length} chars]`);
+                // 3. TWO-PHASE SYNC: Mark as 'user_created' first, fingerprints will be sent on next cycle
+                if (fingerprints.length > 0) {
+                    await markEmployeeSynced(emp.emp_id, terminalSerial, 'user_created');
+                    logger.info(`[SYNC] ✅ Marked ${emp.emp_id} as 'user_created' - fingerprints pending`);
+                } else {
+                    await markEmployeeSynced(emp.emp_id, terminalSerial, 'synced');
+                    logger.info(`[SYNC] ✅ Marked ${emp.emp_id} as 'synced' (no fingerprints)`);
                 }
-
-                // Show queue status
-                logger.info(`\n[SYNC] 📊 QUEUE STATUS for ${terminalSerial}:`);
-                logger.info(`[SYNC] Commands in queue: ${commandQueue[terminalSerial]?.length || 0}`);
-                logger.info(`[SYNC] User command will be sent NOW`);
-                logger.info(`[SYNC] Fingerprint commands will be sent on SUBSEQUENT heartbeats`);
-
-                // Update status to synced
-                await markEmployeeSynced(emp.emp_id, terminalSerial, 'synced');
-
-                logger.info(`[SYNC] ✅ Marked ${emp.emp_id} as synced for ${terminalSerial}`);
-                logger.info(`[SYNC] 📤 SENDING USER COMMAND NOW...\n`);
 
                 return res.send(userCmd);
             }
@@ -340,26 +390,24 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                     const simplePin = parseInt(partToUse.replace(/\D/g, ''), 10).toString();
                     const tab = String.fromCharCode(9);
 
-                    // 1. Queue User
-                    const userCmd = `C:${Math.floor(Math.random() * 10000)}:DATA USER PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=0`;
+                    // 1. Queue User - PROVEN WORKING FORMAT for MB460
+                    const userCmd = `C:${Math.floor(Math.random() * 10000)}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=0`;
                     if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
                     commandQueue[terminalSerial].push(userCmd);
 
-                    // 2. Queue Fingerprints with the 1232-byte alignment
+                    // 2. Queue Fingerprints using biodata format (correct biometric table)
                     for (const fp of fingerprints) {
-                        let templateBuffer = Buffer.from(fp.template.replace(/\s/g, ''), 'base64');
-                        if (templateBuffer.length === 1260) templateBuffer = templateBuffer.slice(28);
-                        else if (templateBuffer.length > 1232) templateBuffer = templateBuffer.slice(templateBuffer.length - 1232);
-
-                        const size = templateBuffer.length;
-                        const base64 = templateBuffer.toString('base64');
+                        // Use raw template — no byte manipulation needed for SLK20R -> MB460
+                        const base64 = fp.template.replace(/\s/g, '');
                         const fid = Math.min(9, Math.max(0, fp.finger_index));
+                        const size = Buffer.from(base64, 'base64').length;
 
-                        // We use the DATA FPTMP verb but FID/TMP tags
-                        const fpCmd = `C:${Math.floor(Math.random() * 10000)}:DATA FPTMP PIN=${simplePin}${tab}FID=${fid}${tab}Size=${size}${tab}Valid=1${tab}TMP=${base64}${tab}MajorVer=10${tab}MinorVer=1`;
+                        const fpCmdId = Math.floor(Math.random() * 10000);
+                        const fpCmd = buildFingerprintCommand(fpCmdId, simplePin, fid, base64);
 
                         commandQueue[terminalSerial].push(fpCmd);
-                        logger.info(`[Sync API] Direct Queue for ${emp.name} (PIN ${simplePin}): FID ${fid}, Size ${size}`);
+                        (global as any).cmdTracker[fpCmdId] = `FP(biodata): ${emp.name} Finger ${fid}`;
+                        logger.info(`[Sync API] Direct Queue for ${emp.name} (PIN ${simplePin}): Finger ${fid}, Size ${size}, Format: biodata`);
                     }
                 }
             }
@@ -441,25 +489,18 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             const simplePin = parseInt(partToUse.replace(/\D/g, ''), 10).toString();
 
             const userCmdId = Math.floor(Math.random() * 10000);
-            const userCmd = `C:${userCmdId}:DATA USER PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=0`;
+            const userCmd = `C:${userCmdId}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=0`;
 
-            // Process first fingerprint
+            // Process first fingerprint — use raw template, no byte manipulation
             const fp = fingerprints[0];
-            let templateBuffer = Buffer.from(fp.template.replace(/\s/g, ''), 'base64');
-            if (templateBuffer.length === 1260) templateBuffer = templateBuffer.slice(28);
-            else if (templateBuffer.length > 1232) templateBuffer = templateBuffer.slice(templateBuffer.length - 1232);
+            const base64 = fp.template.replace(/\s/g, '');
+            const fid = Math.min(9, Math.max(0, fp.finger_index));
+            const size = Buffer.from(base64, 'base64').length;
 
             const fpCmdId = Math.floor(Math.random() * 10000);
-            const base64 = templateBuffer.toString('base64');
-            const fid = Math.min(9, Math.max(0, fp.finger_index));
-            const size = templateBuffer.length;
 
-            // Try different fingerprint command formats
-            const fpFormats = [
-                `C:${fpCmdId}:FP PIN=${simplePin}${tab}FID=${fid}${tab}Size=${size}${tab}Valid=1${tab}TMP=${base64}`,
-                `C:${fpCmdId}:DATA FPTMP PIN=${simplePin}${tab}FingerID=${fid}${tab}Size=${size}${tab}Valid=1${tab}Template=${base64}`,
-                `C:${fpCmdId}:DATA FPTMP PIN=${simplePin}${tab}FID=${fid}${tab}Size=${size}${tab}Valid=1${tab}TMP=${base64}${tab}MajorVer=10`,
-            ];
+            // Use DATA UPDATE biodata — correct biometric table
+            const fpCmd = buildFingerprintCommand(fpCmdId, simplePin, fid, base64);
 
             // Queue user first
             if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
@@ -468,14 +509,13 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             // Track
             (global as any).cmdTracker[userCmdId] = `TEST USER: ${emp.name} (PIN ${simplePin})`;
 
-            // Queue fingerprint with format 0 (we'll try others if this fails)
-            const selectedFormat = 0;
-            commandQueue[terminalSerial].push(fpFormats[selectedFormat]);
-            (global as any).cmdTracker[fpCmdId] = `TEST FP: ${emp.name} FID ${fid} (format ${selectedFormat})`;
+            // Queue fingerprint command
+            commandQueue[terminalSerial].push(fpCmd);
+            (global as any).cmdTracker[fpCmdId] = `TEST TEMPLATEV10: ${emp.name} Finger ${fid}`;
 
             logger.info(`[TEST] Combined sync queued for ${emp.name} (PIN ${simplePin})`);
             logger.info(`[TEST] User cmd: ${userCmdId}`);
-            logger.info(`[TEST] FP cmd: ${fpCmdId} (format ${selectedFormat})`);
+            logger.info(`[TEST] FP cmd: ${fpCmdId} (DATA UPDATE biodata format)`);
 
             res.json({
                 success: true,
@@ -484,7 +524,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                 queuedCommands: 2,
                 userCmdId,
                 fpCmdId,
-                fpFormat: selectedFormat,
+                fpFormat: 'DATA UPDATE biodata',
                 message: 'Watch logs for device response. Check /iclock/devicecmd responses.'
             });
         } catch (error) {
@@ -535,19 +575,23 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             const fid = Math.min(9, Math.max(0, fp.finger_index));
             const size = templateBuffer.length;
 
-            // All possible formats to test
+            // All possible formats to test (based on ZKTeco PUSH protocol documentation)
             const formats = [
-                // Format 0: Standard FP verb with TMP
+                // Format 0: Original FP Verbiage (Tabbed)
                 `C:${fpCmdId}:FP PIN=${simplePin}${tab}FID=${fid}${tab}Size=${size}${tab}Valid=1${tab}TMP=${base64}`,
-                // Format 1: DATA FPTMP with FingerID/Template
-                `C:${fpCmdId}:DATA FPTMP PIN=${simplePin}${tab}FingerID=${fid}${tab}Size=${size}${tab}Valid=1${tab}Template=${base64}`,
-                // Format 2: DATA FPTMP with FID/TMP + MajorVer
-                `C:${fpCmdId}:DATA FPTMP PIN=${simplePin}${tab}FID=${fid}${tab}Size=${size}${tab}Valid=1${tab}TMP=${base64}${tab}MajorVer=10`,
-                // Format 3: DATA FP (no TMP suffix)
-                `C:${fpCmdId}:DATA FP PIN=${simplePin}${tab}FID=${fid}${tab}Size=${size}${tab}Valid=1${tab}TMP=${base64}`,
-                // Format 4: DATA UPDATE FPTMP
-                `C:${fpCmdId}:DATA UPDATE FPTMP PIN=${simplePin}${tab}FID=${fid}${tab}Size=${size}${tab}Valid=1${tab}TMP=${base64}`,
-                // Format 5: Simple format without Size
+                // Format 1: DATA UPDATE biodata (TitleCase, Tabbed) - Documented Standard
+                `C:${fpCmdId}:DATA UPDATE biodata${tab}Pin=${simplePin}${tab}No=${fid}${tab}Index=0${tab}Valid=1${tab}Duress=0${tab}Type=1${tab}MajorVer=10${tab}MinorVer=0${tab}Format=0${tab}Tmp=${base64}`,
+                // Format 2: DATA UPDATE templatev10 (TitleCase Pin, Template field) - Newer standard
+                `C:${fpCmdId}:DATA UPDATE templatev10${tab}Pin=${simplePin}${tab}FingerID=${fid}${tab}Size=${size}${tab}Valid=1${tab}Template=${base64}`,
+                // Format 3: DATA FPTMP (No UPDATE) - Common in PHP libraries
+                `C:${fpCmdId}:DATA FPTMP PIN=${simplePin}${tab}FID=${fid}${tab}Size=${size}${tab}Valid=1${tab}TMP=${base64}`,
+                // Format 4: DATA UPDATE biodata (All caps PIN, Tabbed)
+                `C:${fpCmdId}:DATA UPDATE biodata${tab}PIN=${simplePin}${tab}No=${fid}${tab}Index=0${tab}Valid=1${tab}Duress=0${tab}Type=1${tab}MajorVer=10${tab}MinorVer=0${tab}Format=0${tab}Tmp=${base64}`,
+                // Format 5: DATA UPDATE templatev10 (All caps PIN, Tmp field)
+                `C:${fpCmdId}:DATA UPDATE templatev10${tab}PIN=${simplePin}${tab}FingerID=${fid}${tab}Size=${size}${tab}Valid=1${tab}Tmp=${base64}`,
+                // Format 6: DATA UPDATE userinfo with Fingerprint (Combined)
+                `C:${fpCmdId}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}FingerID=${fid}${tab}Template=${base64}`,
+                // Format 7: FP with no size
                 `C:${fpCmdId}:FP PIN=${simplePin}${tab}FID=${fid}${tab}Valid=1${tab}TMP=${base64}`,
             ];
 
@@ -556,7 +600,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
             commandQueue[terminalSerial].push(selectedFormat);
 
-            (global as any).cmdTracker[fpCmdId] = `FP FORMAT TEST ${formatIdx}: ${emp.name} FID ${fid}`;
+            (global as any).cmdTracker[fpCmdId] = `TEMPLATEV10 FORMAT TEST ${formatIdx}: ${emp.name} Finger ${fid}`;
 
             logger.info(`[FORMAT TEST] Testing format ${formatIdx} for ${emp.name}`);
             logger.info(`[FORMAT TEST] Command: ${selectedFormat.substring(0, 120)}...`);
@@ -597,6 +641,28 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
 
             logger.info(`[RESET] All employees reset to pending for ${terminalSerial}`);
             res.json({ success: true, message: `${syncStatus.length} employees reset, queue cleared` });
+        } catch (error) {
+            res.status(500).json({ error: String(error) });
+        }
+    });
+
+    // 5. Send raw command for debugging
+    app.get('/api/terminals/:serial/send-raw-command', async (req: Request, res: Response) => {
+        try {
+            const { serial } = req.params;
+            const { cmd } = req.query;
+            const terminalSerial = String(serial).trim();
+
+            const cmdId = Math.floor(Math.random() * 10000);
+            const fullCmd = `C:${cmdId}:${cmd}`;
+
+            if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
+            commandQueue[terminalSerial].push(fullCmd);
+
+            (global as any).cmdTracker[cmdId] = `RAW: ${cmd}`;
+
+            logger.info(`[RAW] Queued raw command for ${terminalSerial}: ${fullCmd}`);
+            res.json({ success: true, cmdId, fullCmd });
         } catch (error) {
             res.status(500).json({ error: String(error) });
         }
