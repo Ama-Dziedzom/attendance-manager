@@ -157,7 +157,27 @@ if ($mergeRes -eq 0) {
     # Success!
     $finalBytes = $regTemp[0..($regSize - 1)]
     $base64 = [Convert]::ToBase64String($finalBytes)
-    Write-Host "SUCCESS: $base64"
+
+    # --- TEMPLATE SIZE DIAGNOSTICS ---
+    # Log the exact byte count so we can verify MB460 compatibility
+    Write-Host "TEMPLATE_SIZE: $regSize bytes"
+    Write-Host "TEMPLATE_BASE64_LEN: $($base64.Length) chars"
+    # First 20 bytes as hex — helps identify algorithm version header
+    $hexFirst20 = ($finalBytes[0..([Math]::Min(19, $regSize - 1))] | ForEach-Object { '{0:X2}' -f $_ }) -join ''
+    Write-Host "TEMPLATE_HEADER_HEX: $hexFirst20"
+    # Expected: 1232 for SilkID v10.0 (MB460 compatible), 1260 means 28-byte header present
+    if ($regSize -eq 1232) {
+        Write-Host "TEMPLATE_FORMAT: SilkID v10.0 Standard (1232 bytes) - MB460 compatible"
+    }
+    elseif ($regSize -eq 1260) {
+        Write-Host "TEMPLATE_FORMAT: SilkID v10.0 Extended (1260 bytes) - may need 28-byte header trim for MB460"
+    }
+    else {
+        Write-Host "TEMPLATE_FORMAT: Unknown ($regSize bytes) - check device algorithm settings"
+    }
+    # --- END DIAGNOSTICS ---
+
+    [Console]::WriteLine("SUCCESS:$base64")
 }
 else {
     Write-Host "ERROR: Merge failed (Code: $mergeRes). Fingerprints may not match or quality is too low."

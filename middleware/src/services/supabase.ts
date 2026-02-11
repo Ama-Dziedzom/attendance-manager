@@ -348,6 +348,7 @@ export async function getEmployeeByNumericId(numericId: string): Promise<any | n
 }
 /**
  * Get enrolled fingerprints for an employee
+ * Includes validation logging for template integrity
  */
 export async function getEmployeeFingerprints(employeeId: string): Promise<any[]> {
     const supabase = getSupabase();
@@ -355,12 +356,29 @@ export async function getEmployeeFingerprints(employeeId: string): Promise<any[]
     const { data, error } = await supabase
         .from('employee_fingerprints')
         .select('*')
-        .eq('employee_id', employeeId);
+        .eq('employee_id', employeeId)
+        .order('finger_index', { ascending: true });
 
     if (error) {
         logger.error('Get employee fingerprints error:', error);
         return [];
     }
 
-    return data || [];
+    const fingerprints = data || [];
+
+    // Log template metadata for debugging
+    if (fingerprints.length > 0) {
+        logger.info(`[Fingerprints] Found ${fingerprints.length} template(s) for employee ${employeeId}`);
+        for (const fp of fingerprints) {
+            const templateLen = (fp.template || '').length;
+            const cleanTemplate = (fp.template || '').replace(/\s/g, '');
+            let decodedSize = 0;
+            try {
+                decodedSize = Buffer.from(cleanTemplate, 'base64').length;
+            } catch { /* ignore */ }
+            logger.info(`[Fingerprints]   Finger ${fp.finger_index}: Base64=${templateLen} chars, Decoded=${decodedSize} bytes, DB template_size=${fp.template_size || 'N/A'}`);
+        }
+    }
+
+    return fingerprints;
 }

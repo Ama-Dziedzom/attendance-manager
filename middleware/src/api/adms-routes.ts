@@ -63,12 +63,18 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
     function buildFingerprintCommand(cmdId: number, pin: string, fingerIndex: number, templateBase64: string): string {
         const tab = String.fromCharCode(9);
         const fid = Math.min(9, Math.max(0, fingerIndex));
-        const templateSize = Buffer.from(templateBase64, 'base64').length;
 
-        // DATA UPDATE biodata format — the correct format for ZKTeco PUSH protocol biometric sync
-        // Fields: PIN (user ID), No (finger index), Index (sub-index), Valid, Duress, Type (1=fingerprint),
-        //         MajorVer/MinorVer (algorithm version), Format, Size (template bytes), Tmp (base64 template)
-        return `C:${cmdId}:DATA UPDATE biodata${tab}PIN=${pin}${tab}No=${fid}${tab}Index=0${tab}Valid=1${tab}Duress=0${tab}Type=1${tab}MajorVer=10${tab}MinorVer=0${tab}Format=0${tab}Size=${templateSize}${tab}Tmp=${templateBase64}`;
+        // Trim 28-byte header if present (SilkID 10 templates from some SDKs are 1260 bytes)
+        // MB460 expects the raw 1232-byte template data.
+        let templateBuffer = Buffer.from(templateBase64, 'base64');
+        if (templateBuffer.length === 1260) {
+            templateBuffer = templateBuffer.slice(28);
+        }
+        const finalTemplateBase64 = templateBuffer.toString('base64');
+        const templateSize = templateBuffer.length;
+
+        // DATA FPTMP — exact format seen in device's own data push
+        return `C:${cmdId}:DATA FPTMP PIN=${pin}${tab}FingerID=${fid}${tab}Size=${templateSize}${tab}Valid=1${tab}Template=${finalTemplateBase64}`;
     }
 
     // Device polling for commands - ENHANCED WITH DEBUGGING
@@ -260,7 +266,8 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                 }
 
                 // 2. Create User Command - Using DATA UPDATE userinfo (standard for many ZK devices)
-                const userCmd = `C:${cmdId}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=0`;
+                // IMPORTANT: Verify=1 enables fingerprint verification (shows fingerprint icon on device)
+                const userCmd = `C:${cmdId}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=1`;
 
                 // Track command
                 (global as any).cmdTracker[cmdId] = `DATA USER: ${emp.name} (PIN ${simplePin})`;
@@ -391,7 +398,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                     const tab = String.fromCharCode(9);
 
                     // 1. Queue User - PROVEN WORKING FORMAT for MB460
-                    const userCmd = `C:${Math.floor(Math.random() * 10000)}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=0`;
+                    const userCmd = `C:${Math.floor(Math.random() * 10000)}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=1`;
                     if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
                     commandQueue[terminalSerial].push(userCmd);
 
@@ -489,7 +496,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             const simplePin = parseInt(partToUse.replace(/\D/g, ''), 10).toString();
 
             const userCmdId = Math.floor(Math.random() * 10000);
-            const userCmd = `C:${userCmdId}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=0`;
+            const userCmd = `C:${userCmdId}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=1`;
 
             // Process first fingerprint — use raw template, no byte manipulation
             const fp = fingerprints[0];

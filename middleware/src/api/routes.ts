@@ -247,6 +247,110 @@ export function setupApiRoutes(app: Express, io: SocketIOServer): void {
     });
 
     // =========================================================================
+    // TEMPLATE DIAGNOSTICS
+    // =========================================================================
+
+    /**
+     * GET /api/test-template/:empId
+     * Inspect stored fingerprint templates for an employee without syncing.
+     * Validates template integrity, checks MB460 compatibility, and suggests normalization.
+     */
+    app.get('/api/test-template/:empId', async (req: Request, res: Response) => {
+        try {
+            const { empId } = req.params;
+            const { inspectTemplate, normalizeTemplateForMB460, verifyCompatibility } = require('../services/template-validator');
+            const { getEmployeeByEmpId, getEmployeeFingerprints } = require('../services/supabase');
+
+            // Get employee
+            const employee = await getEmployeeByEmpId(empId);
+            if (!employee) {
+                return res.status(404).json({ success: false, error: `Employee ${empId} not found` });
+            }
+
+            // Get fingerprints
+            const fingerprints = await getEmployeeFingerprints(employee.id);
+            if (fingerprints.length === 0) {
+                return res.json({
+                    success: false,
+                    error: `No fingerprints enrolled for ${employee.name}`,
+                    employee: { id: employee.id, empId: employee.emp_id, name: employee.name },
+                });
+            }
+
+            const results = fingerprints.map((fp: any) => {
+                const rawTemplate = (fp.template || '').replace(/\s/g, '');
+                const inspection = inspectTemplate(rawTemplate);
+                const mb460Compat = verifyCompatibility(rawTemplate, 'mb460');
+                const normalization = normalizeTemplateForMB460(rawTemplate);
+
+                return {
+                    fingerIndex: fp.finger_index,
+                    inspection,
+                    mb460Compatibility: mb460Compat,
+                    normalization: {
+                        action: normalization.action,
+                        originalSize: normalization.originalSize,
+                        normalizedSize: normalization.normalizedSize,
+                    },
+                    // Preview what would be sent to MB460 (first 100 chars)
+                    normalizedTemplatePreview: normalization.template.substring(0, 100) + '...',
+                };
+            });
+
+            return res.json({
+                success: true,
+                employee: { id: employee.id, empId: employee.emp_id, name: employee.name },
+                fingerprintCount: fingerprints.length,
+                results,
+            });
+        } catch (error) {
+            logger.error('[TEST TEMPLATE] Error:', error);
+            res.status(500).json({ error: String(error) });
+        }
+    });
+
+    /**
+     * GET /api/template-roundtrip/:empId
+     * Verify Base64 template survives storage/retrieval without corruption.
+     * Re-decodes and re-encodes to check for truncation or character issues.
+     */
+    app.get('/api/template-roundtrip/:empId', async (req: Request, res: Response) => {
+        try {
+            const { empId } = req.params;
+            const { getEmployeeByEmpId, getEmployeeFingerprints } = require('../services/supabase');
+
+            const employee = await getEmployeeByEmpId(empId);
+            if (!employee) return res.status(404).json({ error: `Employee ${empId} not found` });
+
+            const fingerprints = await getEmployeeFingerprints(employee.id);
+            if (!fingerprints.length) return res.json({ error: 'No fingerprints found' });
+
+            const results = fingerprints.map((fp: any) => {
+                const raw = (fp.template || '');
+                const clean = raw.replace(/\s/g, '');
+                const decoded = Buffer.from(clean, 'base64');
+                const reEncoded = decoded.toString('base64');
+                const matches = clean === reEncoded;
+
+                return {
+                    fingerIndex: fp.finger_index,
+                    storedLength: raw.length,
+                    cleanLength: clean.length,
+                    decodedBytes: decoded.length,
+                    reEncodedLength: reEncoded.length,
+                    roundtripMatch: matches,
+                    issue: !matches ? 'WARNING: Template was modified during storage! Possible truncation or encoding issue.' : null,
+                    firstBytesHex: decoded.slice(0, 20).toString('hex'),
+                };
+            });
+
+            return res.json({ success: true, employee: employee.emp_id, results });
+        } catch (error) {
+            res.status(500).json({ error: String(error) });
+        }
+    });
+
+    // =========================================================================
     // STATISTICS
     // =========================================================================
 

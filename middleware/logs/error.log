@@ -636,3 +636,233 @@ At D:\attendance-manager\middleware\scripts\capture.ps1:105 char:1
 2026-02-10 10:21:27 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Araba Quainoo (PIN 7) Finger 0
 2026-02-10 10:21:27 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
 2026-02-10 10:21:27 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 11:08:07 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 11:08:07 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 9302
+2026-02-10 11:08:07 [error]: [DEVICECMD FAILED] Return Code: -1004
+2026-02-10 11:08:07 [error]: [DEVICECMD FAILED] Command was: QUERY OPTIONS
+2026-02-10 11:08:07 [error]: [DEVICECMD FAILED] Error meaning: Template size mismatch
+2026-02-10 11:08:07 [error]: [DEVICECMD FAILED] 💡 Recovery: Size= field does not match actual template bytes. Check normalizeTemplateForMB460().
+2026-02-10 11:08:07 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 13:29:21 [error]: [ADMS] Log save error: invalid base64 end sequence
+2026-02-10 13:30:53 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 13:30:53 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 8854
+2026-02-10 13:30:53 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 13:30:53 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Ama Mensah (PIN 5) Finger 0 [890B]
+2026-02-10 13:30:53 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN does not exist)
+2026-02-10 13:30:53 [error]: [DEVICECMD FAILED] 💡 Recovery: Ensure Phase 1 (DATA UPDATE userinfo) completed before Phase 2 (biodata). Increase PHASE2_DELAY_MS.
+2026-02-10 13:30:53 [error]: [DEVICECMD FAILED] Marking sync as failed for PIN 5
+2026-02-10 13:30:53 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 14:02:53 [error]: [ADMS] Log save error: invalid base64 end sequence
+2026-02-10 14:02:53 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 14:02:53 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 124
+2026-02-10 14:02:53 [error]: [DEVICECMD FAILED] Return Code: -1004
+2026-02-10 14:02:53 [error]: [DEVICECMD FAILED] Command was: unknown command
+2026-02-10 14:02:53 [error]: [DEVICECMD FAILED] Error meaning: Template size mismatch
+2026-02-10 14:02:53 [error]: [DEVICECMD FAILED] 💡 Recovery: Size= field does not match actual template bytes. Check normalizeTemplateForMB460().
+2026-02-10 14:02:53 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 14:03:27 [error]: [ADMS] Log save error: invalid base64 end sequence
+2026-02-10 14:03:28 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 14:03:28 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 3223
+2026-02-10 14:03:28 [error]: [DEVICECMD FAILED] Return Code: -1004
+2026-02-10 14:03:28 [error]: [DEVICECMD FAILED] Command was: unknown command
+2026-02-10 14:03:28 [error]: [DEVICECMD FAILED] Error meaning: Template size mismatch
+2026-02-10 14:03:28 [error]: [DEVICECMD FAILED] 💡 Recovery: Size= field does not match actual template bytes. Check normalizeTemplateForMB460().
+2026-02-10 14:03:28 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 14:22:23 [error]: [ADMS] Log save error: invalid base64 end sequence
+2026-02-10 14:22:24 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 14:22:24 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 6725
+2026-02-10 14:22:24 [error]: [DEVICECMD FAILED] Return Code: -1004
+2026-02-10 14:22:24 [error]: [DEVICECMD FAILED] Command was: unknown command
+2026-02-10 14:22:24 [error]: [DEVICECMD FAILED] Error meaning: Template size mismatch
+2026-02-10 14:22:24 [error]: [DEVICECMD FAILED] 💡 Recovery: Size= field does not match actual template bytes. Check normalizeTemplateForMB460().
+2026-02-10 14:22:24 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 14:30:33 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 14:30:33 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 5601
+2026-02-10 14:30:33 [error]: [DEVICECMD FAILED] Return Code: -1004
+2026-02-10 14:30:33 [error]: [DEVICECMD FAILED] Command was: unknown command
+2026-02-10 14:30:33 [error]: [DEVICECMD FAILED] Error meaning: Template size mismatch
+2026-02-10 14:30:33 [error]: [DEVICECMD FAILED] 💡 Recovery: Size= field does not match actual template bytes. Check normalizeTemplateForMB460().
+2026-02-10 14:30:33 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 15:42:39 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 15:42:39 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 5715
+2026-02-10 15:42:39 [error]: [DEVICECMD FAILED] Return Code: -1004
+2026-02-10 15:42:39 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(templatev10): Ama Dziedzom (PIN 4) Finger 7 [832B]
+2026-02-10 15:42:39 [error]: [DEVICECMD FAILED] Error meaning: Template size mismatch
+2026-02-10 15:42:39 [error]: [DEVICECMD FAILED] 💡 Recovery: Size= field does not match actual template bytes. Check normalizeTemplateForMB460().
+2026-02-10 15:42:39 [error]: [DEVICECMD FAILED] Marking sync as failed for PIN 4
+2026-02-10 15:42:39 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:01:24 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:01:24 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 4989
+2026-02-10 17:01:24 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 17:01:24 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Ama Dziedzom (PIN 4) Finger 0
+2026-02-10 17:01:24 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
+2026-02-10 17:01:24 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:01:40 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:01:40 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 1767
+2026-02-10 17:01:40 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 17:01:40 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Caleb Mensah (PIN 6) Finger 0
+2026-02-10 17:01:40 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
+2026-02-10 17:01:40 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:04:33 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:04:33 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 4715
+2026-02-10 17:04:33 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 17:04:33 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Caleb Mensah (PIN 6) Finger 0
+2026-02-10 17:04:33 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
+2026-02-10 17:04:33 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:04:38 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:04:38 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 4725
+2026-02-10 17:04:38 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 17:04:38 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Ama Dziedzom (PIN 4) Finger 0
+2026-02-10 17:04:38 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
+2026-02-10 17:04:38 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:04:55 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:04:55 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 1574
+2026-02-10 17:04:55 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 17:04:55 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Caleb Mensah (PIN 6) Finger 0
+2026-02-10 17:04:55 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
+2026-02-10 17:04:55 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:04:55 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:04:55 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 842
+2026-02-10 17:04:55 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 17:04:55 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Ama Dziedzom (PIN 4) Finger 0
+2026-02-10 17:04:55 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
+2026-02-10 17:04:55 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:10:06 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:10:06 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 6951
+2026-02-10 17:10:06 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 17:10:06 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Caleb Mensah (PIN 6) Finger 0
+2026-02-10 17:10:06 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
+2026-02-10 17:10:06 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:10:11 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:10:11 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 8895
+2026-02-10 17:10:11 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 17:10:11 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Ama Dziedzom (PIN 4) Finger 0
+2026-02-10 17:10:11 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
+2026-02-10 17:10:11 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:10:21 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:10:21 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 2935
+2026-02-10 17:10:21 [error]: [DEVICECMD FAILED] Return Code: -1004
+2026-02-10 17:10:21 [error]: [DEVICECMD FAILED] Command was: unknown command
+2026-02-10 17:10:21 [error]: [DEVICECMD FAILED] Error meaning: Unknown error code
+2026-02-10 17:10:21 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:16:35 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:16:35 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 3219
+2026-02-10 17:16:35 [error]: [DEVICECMD FAILED] Return Code: -1
+2026-02-10 17:16:35 [error]: [DEVICECMD FAILED] Command was: DATA USER: Caleb Mensah (PIN 6)
+2026-02-10 17:16:35 [error]: [DEVICECMD FAILED] Error meaning: General error / Invalid command syntax
+2026-02-10 17:16:35 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:16:36 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:16:36 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 4511
+2026-02-10 17:16:36 [error]: [DEVICECMD FAILED] Return Code: -1
+2026-02-10 17:16:36 [error]: [DEVICECMD FAILED] Command was: DATA USER: Araba Quainoo (PIN 7)
+2026-02-10 17:16:36 [error]: [DEVICECMD FAILED] Error meaning: General error / Invalid command syntax
+2026-02-10 17:16:36 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:16:37 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:16:37 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 5001
+2026-02-10 17:16:37 [error]: [DEVICECMD FAILED] Return Code: -1
+2026-02-10 17:16:37 [error]: [DEVICECMD FAILED] Command was: DATA USER: Akosua Agyemang (PIN 1)
+2026-02-10 17:16:37 [error]: [DEVICECMD FAILED] Error meaning: General error / Invalid command syntax
+2026-02-10 17:16:37 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:16:38 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:16:38 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 9505
+2026-02-10 17:16:38 [error]: [DEVICECMD FAILED] Return Code: -1
+2026-02-10 17:16:38 [error]: [DEVICECMD FAILED] Command was: DATA USER: John Doe (PIN 2)
+2026-02-10 17:16:38 [error]: [DEVICECMD FAILED] Error meaning: General error / Invalid command syntax
+2026-02-10 17:16:38 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:16:39 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:16:39 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 1866
+2026-02-10 17:16:39 [error]: [DEVICECMD FAILED] Return Code: -1
+2026-02-10 17:16:39 [error]: [DEVICECMD FAILED] Command was: DATA USER: Jane Smith (PIN 3)
+2026-02-10 17:16:39 [error]: [DEVICECMD FAILED] Error meaning: General error / Invalid command syntax
+2026-02-10 17:16:39 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:16:40 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:16:40 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 2015
+2026-02-10 17:16:40 [error]: [DEVICECMD FAILED] Return Code: -1
+2026-02-10 17:16:40 [error]: [DEVICECMD FAILED] Command was: DATA USER: Ama Dziedzom (PIN 4)
+2026-02-10 17:16:40 [error]: [DEVICECMD FAILED] Error meaning: General error / Invalid command syntax
+2026-02-10 17:16:40 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:16:40 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:16:40 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 3886
+2026-02-10 17:16:40 [error]: [DEVICECMD FAILED] Return Code: -1
+2026-02-10 17:16:40 [error]: [DEVICECMD FAILED] Command was: DATA USER: Ama Mensah (PIN 5)
+2026-02-10 17:16:40 [error]: [DEVICECMD FAILED] Error meaning: General error / Invalid command syntax
+2026-02-10 17:16:40 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:16:51 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:16:51 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 8511
+2026-02-10 17:16:51 [error]: [DEVICECMD FAILED] Return Code: -1004
+2026-02-10 17:16:51 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Caleb Mensah (PIN 6) Finger 0
+2026-02-10 17:16:51 [error]: [DEVICECMD FAILED] Error meaning: Unknown error code
+2026-02-10 17:16:51 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:16:52 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:16:52 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 182
+2026-02-10 17:16:52 [error]: [DEVICECMD FAILED] Return Code: -1004
+2026-02-10 17:16:52 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Ama Dziedzom (PIN 4) Finger 0
+2026-02-10 17:16:52 [error]: [DEVICECMD FAILED] Error meaning: Unknown error code
+2026-02-10 17:16:52 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:17:36 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:17:36 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 6166
+2026-02-10 17:17:36 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 17:17:36 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Caleb Mensah (PIN 6) Finger 0
+2026-02-10 17:17:36 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
+2026-02-10 17:17:36 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:17:41 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:17:41 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 6152
+2026-02-10 17:17:41 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 17:17:41 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Ama Dziedzom (PIN 4) Finger 0
+2026-02-10 17:17:41 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
+2026-02-10 17:17:41 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:18:02 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:18:02 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 2193
+2026-02-10 17:18:02 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 17:18:02 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Caleb Mensah (PIN 6) Finger 0
+2026-02-10 17:18:02 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
+2026-02-10 17:18:02 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:18:07 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:18:07 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 5296
+2026-02-10 17:18:07 [error]: [DEVICECMD FAILED] Return Code: -3
+2026-02-10 17:18:07 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Ama Dziedzom (PIN 4) Finger 0
+2026-02-10 17:18:07 [error]: [DEVICECMD FAILED] Error meaning: User not found (PIN doesnt exist)
+2026-02-10 17:18:07 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:19:41 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:19:41 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 857
+2026-02-10 17:19:41 [error]: [DEVICECMD FAILED] Return Code: -1004
+2026-02-10 17:19:41 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Caleb Mensah (PIN 6) Finger 0
+2026-02-10 17:19:41 [error]: [DEVICECMD FAILED] Error meaning: Unknown error code
+2026-02-10 17:19:41 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+2026-02-10 17:19:42 [error]: 
+🚨🚨🚨 COMMAND FAILED 🚨🚨🚨
+2026-02-10 17:19:42 [error]: [DEVICECMD FAILED] Device QWC5234701115 rejected command 6734
+2026-02-10 17:19:42 [error]: [DEVICECMD FAILED] Return Code: -1004
+2026-02-10 17:19:42 [error]: [DEVICECMD FAILED] Command was: FINGERPRINT(biodata): Ama Dziedzom (PIN 4) Finger 0
+2026-02-10 17:19:42 [error]: [DEVICECMD FAILED] Error meaning: Unknown error code
+2026-02-10 17:19:42 [error]: 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨

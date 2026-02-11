@@ -16,6 +16,8 @@ export interface ScanResult {
     template?: string;
     error?: string;
     quality?: number;
+    templateSize?: number;      // Decoded byte count
+    templateFormat?: string;    // e.g. "SilkID v10.0 Standard (1232 bytes)"
 }
 
 export class ScannerService {
@@ -75,10 +77,34 @@ export class ScannerService {
                 const successMatch = output.match(/SUCCESS:\s*([A-Za-z0-9+/=]+)/);
                 if (successMatch && successMatch[1]) {
                     logger.info('[Scanner] Fingerprint captured successfully (Real Hardware)');
+
+                    // Extract template diagnostics from PowerShell output
+                    let templateSize: number | undefined;
+                    let templateFormat: string | undefined;
+
+                    const sizeMatch = output.match(/TEMPLATE_SIZE:\s*(\d+)/);
+                    if (sizeMatch) {
+                        templateSize = parseInt(sizeMatch[1], 10);
+                        logger.info(`[Scanner] Template size: ${templateSize} bytes`);
+                    }
+
+                    const formatMatch = output.match(/TEMPLATE_FORMAT:\s*(.+)/);
+                    if (formatMatch) {
+                        templateFormat = formatMatch[1].trim();
+                        logger.info(`[Scanner] Template format: ${templateFormat}`);
+                    }
+
+                    const hexMatch = output.match(/TEMPLATE_HEADER_HEX:\s*([A-Fa-f0-9]+)/);
+                    if (hexMatch) {
+                        logger.info(`[Scanner] Template header hex: ${hexMatch[1]}`);
+                    }
+
                     resolve({
                         success: true,
                         template: successMatch[1],
-                        quality: 100 // DLL doesn't easily give quality in simple capture, assuming good
+                        quality: 100,
+                        templateSize,
+                        templateFormat,
                     });
                 } else {
                     // Check for specific error

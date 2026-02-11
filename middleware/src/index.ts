@@ -64,12 +64,20 @@ app.use(express.raw({
 
 app.use(express.text({ type: 'text/plain' }));
 
-// Health check endpoint
+// Health check endpoint (enhanced)
 app.get('/health', (req, res) => {
+    const memUsage = process.memoryUsage();
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        service: 'attendance-middleware'
+        service: 'attendance-middleware',
+        uptime: Math.round(process.uptime()),
+        nodeVersion: process.version,
+        memory: {
+            heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
+            heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
+            rssMB: Math.round(memUsage.rss / 1024 / 1024),
+        }
     });
 });
 
