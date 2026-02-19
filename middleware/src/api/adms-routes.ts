@@ -12,7 +12,7 @@ import { Express, Request, Response } from 'express';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { logger } from '../utils/logger';
 import { generateDevicePin } from '../utils/pin-generator';
-import { smartToggleAttendance, getEmployeeByEmpId, getTerminalBySN, getTerminalAgencies, getEmployeesByAgencies, getTerminalSyncStatus, markEmployeeSynced, getEmployeeFingerprints } from '../services/supabase';
+import { smartToggleAttendance, getEmployeeByEmpId, getTerminalBySN, getTerminalAgencies, getEmployeesByAgencies, getTerminalSyncStatus, markEmployeeSynced, getEmployeeFingerprints, getFingerprintsByEmployeeIds } from '../services/supabase';
 import { enqueueCommand, getNextCommand, markCommandSuccess, markCommandFailed, getQueueSummary, clearQueue, getCommandDescription, CMD_TYPES } from '../services/command-queue';
 
 export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
@@ -354,13 +354,19 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
 
             if (!employees || employees.length === 0) return res.json({ message: 'No employees found.' });
 
+            // Batch-fetch all fingerprints in a single query (avoids N+1)
+            const employeeUuids = employees.map((e: any) => e.id);
+            const fingerprintMap = employees.length < 5
+                ? await getFingerprintsByEmployeeIds(employeeUuids)
+                : new Map<string, any[]>(); // Only pre-fetch for small sets that queue immediately
+
             for (const emp of employees) {
                 // Force state to pending so heartbeat doesn't skip
                 await markEmployeeSynced(emp.emp_id, terminalSerial, 'pending');
 
                 // EXTRA: For small test sets, we can queue commands IMMEDIATELY
                 if (employees.length < 5) {
-                    const fingerprints = await getEmployeeFingerprints(emp.id);
+                    const fingerprints = fingerprintMap.get(emp.id) || [];
                     const simplePin = generateDevicePin(emp);
                     const tab = String.fromCharCode(9);
 

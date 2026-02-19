@@ -382,3 +382,39 @@ export async function getEmployeeFingerprints(employeeId: string): Promise<any[]
 
     return fingerprints;
 }
+
+/**
+ * Batch fetch fingerprints for multiple employees in a single query.
+ * Returns a Map keyed by employee_id → fingerprints array.
+ * This avoids N+1 queries when syncing multiple employees.
+ */
+export async function getFingerprintsByEmployeeIds(employeeIds: string[]): Promise<Map<string, any[]>> {
+    const result = new Map<string, any[]>();
+    if (!employeeIds || employeeIds.length === 0) return result;
+
+    const supabase = getSupabase();
+
+    const { data, error } = await supabase
+        .from('employee_fingerprints')
+        .select('*')
+        .in('employee_id', employeeIds)
+        .order('finger_index', { ascending: true });
+
+    if (error) {
+        logger.error('Batch get fingerprints error:', error);
+        return result;
+    }
+
+    // Group fingerprints by employee_id
+    for (const fp of (data || [])) {
+        const empId = fp.employee_id;
+        if (!result.has(empId)) {
+            result.set(empId, []);
+        }
+        result.get(empId)!.push(fp);
+    }
+
+    logger.info(`[Fingerprints] Batch loaded ${(data || []).length} fingerprint(s) for ${result.size} employee(s)`);
+
+    return result;
+}
