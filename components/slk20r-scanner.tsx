@@ -42,11 +42,10 @@ export function SLK20RScanner({
         const socket = io(MIDDLEWARE_URL)
 
         socket.on('connect', () => {
-            console.log('[Scanner UI] Connected to middleware WebSocket')
+            // Connected to middleware WebSocket
         })
 
         socket.on('scanner:progress', (data: { status: string }) => {
-            console.log('[Scanner UI] Progress:', data.status)
             setStatusText(data.status)
         })
 

@@ -179,10 +179,6 @@ export interface LeaveRequest {
  * Convert database employee to frontend employee
  */
 export function mapDbEmployeeToEmployee(dbEmployee: any): Employee {
-    console.log(`[Mapper] Processing ${dbEmployee.name || 'Unknown'} (UUID: ${dbEmployee.id})`, {
-        has_biometric_credential: !!dbEmployee.biometric_credential,
-        fingerprints_raw: dbEmployee.employee_fingerprints
-    });
 
     const department = Array.isArray(dbEmployee.department) ? dbEmployee.department[0] : dbEmployee.department
     const agency = Array.isArray(dbEmployee.agency) ? dbEmployee.agency[0] : dbEmployee.agency
