@@ -10,6 +10,7 @@
 import { Express, Request, Response } from 'express';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { logger } from '../utils/logger';
+import { terminalLimiter, apiLimiter, diagnosticLimiter } from '../utils/rate-limiter';
 import { setupProtocolRoutes } from './adms-protocol';
 import { setupSyncRoutes } from './sync-routes';
 import { setupDiagnosticRoutes } from './diagnostic-routes';
@@ -24,10 +25,15 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
         next();
     });
 
+    // Rate limiting per endpoint tier
+    app.use('/iclock', terminalLimiter);       // 120 req/min per device
+    app.use('/api/sync-to-device', apiLimiter); // 60 req/min per IP
+    app.use('/api/terminals', diagnosticLimiter); // 10 req/min per IP
+
     // Wire up route modules
     setupProtocolRoutes(app);
     setupSyncRoutes(app);
     setupDiagnosticRoutes(app);
 
-    logger.info('[ADMS] All routes configured');
+    logger.info('[ADMS] All routes configured (with rate limiting)');
 }
