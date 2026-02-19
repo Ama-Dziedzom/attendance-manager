@@ -67,13 +67,14 @@ export default function EmployeeDetailPage() {
       const empData = await db.employees.getByEmpId(employeeId)
       console.log("Raw empData result:", empData)
       if (empData) {
-        const biometric = empData.biometric_credential && Array.isArray(empData.biometric_credential)
-          ? empData.biometric_credential[0]
-          : empData.biometric_credential
+        const empDataRaw = empData as any
+        const biometric = empDataRaw.biometric_credential && Array.isArray(empDataRaw.biometric_credential)
+          ? empDataRaw.biometric_credential[0]
+          : empDataRaw.biometric_credential
 
-        const hardwareFingerprint = empData.employee_fingerprints && Array.isArray(empData.employee_fingerprints)
-          ? empData.employee_fingerprints[0]
-          : empData.employee_fingerprints
+        const hardwareFingerprint = empDataRaw.employee_fingerprints && Array.isArray(empDataRaw.employee_fingerprints)
+          ? empDataRaw.employee_fingerprints[0]
+          : empDataRaw.employee_fingerprints
 
         const mapped = mapDbEmployeeToEmployee(empData)
         console.log("Mapped employee object:", mapped)

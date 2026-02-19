@@ -4,7 +4,13 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Download, FileSpreadsheet, Calendar } from "lucide-react"
 import * as XLSX from 'xlsx'
-import { attendanceStorage } from "@/lib/storage"
+
+// Legacy localStorage fallback - callers should pass records explicitly
+const attendanceStorage = {
+  getAll: () => [] as any[],
+  getByDate: (_date: string) => [] as any[],
+  getByEmployeeId: (_id: string) => [] as any[],
+}
 
 interface ExportButtonsProps {
   // Optional: pass specific records to export
@@ -261,16 +267,16 @@ const mapRecordsToExcel = (records: any[]) => {
 
 export const exportDailyAttendanceToExcel = (records: any[], date: string) => {
   const excelData = mapRecordsToExcel(records)
-  saveExcelFile(excelData, Attendance_Daily_.xlsx)
+  saveExcelFile(excelData, `Attendance_Daily_${date}.xlsx`)
 }
 
 export const exportDateRangeAttendanceToExcel = (records: any[], startDate: string, endDate: string) => {
   const excelData = mapRecordsToExcel(records)
-  saveExcelFile(excelData, Attendance_Range__to_.xlsx)
+  saveExcelFile(excelData, `Attendance_Range_${startDate}_to_${endDate}.xlsx`)
 }
 
 export const exportEmployeeAttendanceToExcel = (employeeId: string, employeeName: string, records: any[]) => {
   const excelData = mapRecordsToExcel(records)
   const safeName = employeeName.replace(/[^a-z0-9]/gi, '_').toLowerCase()
-  saveExcelFile(excelData, Attendance_.xlsx)
+  saveExcelFile(excelData, `Attendance_${safeName}.xlsx`)
 }
