@@ -16,8 +16,16 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
+# env files (NEVER commit these)
 .env*
+middleware/.env
+middleware/.env.*
+
+# SECRET FILES — never commit
+secrets.txt
+*.secrets
+*.key
+*.pem
 
 # vercel
 .vercel

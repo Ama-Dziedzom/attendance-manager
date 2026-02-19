@@ -11,7 +11,9 @@
 import { Express, Request, Response } from 'express';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { logger } from '../utils/logger';
+import { generateDevicePin } from '../utils/pin-generator';
 import { smartToggleAttendance, getEmployeeByEmpId, getTerminalBySN, getTerminalAgencies, getEmployeesByAgencies, getTerminalSyncStatus, markEmployeeSynced, getEmployeeFingerprints } from '../services/supabase';
+import { enqueueCommand, getNextCommand, markCommandSuccess, markCommandFailed, getQueueSummary, clearQueue, getCommandDescription, CMD_TYPES } from '../services/command-queue';
 
 export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
     // Add a catch-all logger for transparency
@@ -46,13 +48,8 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
         }
     });
 
-    // Simple in-memory command queue for demonstration
-    const commandQueue: Record<string, string[]> = {};
-
-    // Global command tracker to correlate responses (initialized on global)
-    if (!(global as any).cmdTracker) {
-        (global as any).cmdTracker = {};
-    }
+    // Time sync throttle (remains in-memory — low risk, not critical data)
+    const lastTimeSyncMap: Record<string, number> = {};
 
     /**
      * Build the correct PUSH protocol command for syncing a fingerprint template.
@@ -83,50 +80,39 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             const { SN } = req.query;
             const terminalSerial = String(SN || 'UNKNOWN');
 
-            // 1. Time Sync (Throttled to once every 30 mins)
-            const lastTimeSync = (global as any).lastTimeSync || {};
+            // 1. Time Sync (Throttled to once every 30 mins — in-memory only)
             const nowTime = Date.now();
 
-            if (!lastTimeSync[terminalSerial] || (nowTime - lastTimeSync[terminalSerial] > 30 * 60 * 1000)) {
+            if (!lastTimeSyncMap[terminalSerial] || (nowTime - lastTimeSyncMap[terminalSerial] > 30 * 60 * 1000)) {
                 const now = new Date();
                 const serverTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
                 const timeCmdId = Math.floor(Math.random() * 10000);
                 const timeCmd = `C:${timeCmdId}:SET OPTION DateTime=${serverTime}`;
 
-                if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
-                commandQueue[terminalSerial].push(timeCmd);
-
-                // Track command
-                (global as any).cmdTracker[timeCmdId] = `TIME SYNC: ${serverTime}`;
-
-                (global as any).lastTimeSync = { ...lastTimeSync, [terminalSerial]: nowTime };
+                await enqueueCommand(terminalSerial, CMD_TYPES.TIME_SYNC, timeCmd, `TIME SYNC: ${serverTime}`);
+                lastTimeSyncMap[terminalSerial] = nowTime;
                 logger.info(`[ADMS] ⏰ Clock sync queued for ${terminalSerial}: ${serverTime}`);
             }
 
-            // 2. Check for priority commands in queue
-            if (commandQueue[terminalSerial] && commandQueue[terminalSerial].length > 0) {
-                const command = commandQueue[terminalSerial].shift();
-
-                // Extract command ID for tracking
-                const cmdIdMatch = command?.match(/^C:(\d+):/);
-                const cmdId = cmdIdMatch ? cmdIdMatch[1] : 'unknown';
-
+            // 2. Check for queued commands (persistent DB queue)
+            const nextCmd = await getNextCommand(terminalSerial);
+            if (nextCmd) {
                 logger.info(`\n========================================`);
                 logger.info(`[GETREQUEST] 📤 SENDING COMMAND TO DEVICE ${terminalSerial}`);
-                logger.info(`[GETREQUEST] Command ID: ${cmdId}`);
-                logger.info(`[GETREQUEST] Queue remaining: ${commandQueue[terminalSerial].length} commands`);
+                logger.info(`[GETREQUEST] Command ID: ${nextCmd.command_id}, Type: ${nextCmd.command_type}`);
+                logger.info(`[GETREQUEST] Description: ${nextCmd.description || 'N/A'}`);
 
                 // Log the command (truncate long templates for readability)
-                if (command && command.includes('TMP=')) {
-                    const truncated = command.substring(0, 150) + '...[template data]';
+                if (nextCmd.command_payload.includes('TMP=') || nextCmd.command_payload.includes('Template=')) {
+                    const truncated = nextCmd.command_payload.substring(0, 150) + '...[template data]';
                     logger.info(`[GETREQUEST] Command: ${truncated}`);
                 } else {
-                    logger.info(`[GETREQUEST] Command: ${command}`);
+                    logger.info(`[GETREQUEST] Command: ${nextCmd.command_payload}`);
                 }
                 logger.info(`========================================\n`);
 
-                return res.send(command);
+                return res.send(nextCmd.command_payload);
             }
 
             // 3. Automatic Synchronization Logic
@@ -167,14 +153,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                         const fp = fingerprints[0];
                         const fpCmdId = Math.floor(Math.random() * 10000);
 
-                        let numericPin: string;
-                        if (emp.device_pin) {
-                            numericPin = emp.device_pin.toString();
-                        } else {
-                            const partToUse = emp.emp_id.includes('-') ? emp.emp_id.split('-')[1] : emp.emp_id;
-                            numericPin = partToUse.replace(/\D/g, '');
-                        }
-                        const simplePin = parseInt(numericPin, 10).toString();
+                        const simplePin = generateDevicePin(emp);
 
                         // Use raw template from SLK20R — do NOT manipulate bytes
                         // SLK20R and MB460 both use SilkID algorithm, templates are already compatible
@@ -185,8 +164,8 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                         // Using DATA UPDATE biodata — the CORRECT format for biometric data
                         const fpCmd = buildFingerprintCommand(fpCmdId, simplePin, fingerID, base64Template);
 
-                        // Track command
-                        (global as any).cmdTracker[fpCmdId] = `FINGERPRINT(biodata): ${emp.name} (PIN ${simplePin}) Finger ${fingerID}`;
+                        // Enqueue fingerprint command (persistent)
+                        await enqueueCommand(terminalSerial, CMD_TYPES.FINGERPRINT_SYNC, fpCmd, `FINGERPRINT(biodata): ${emp.name} (PIN ${simplePin}) Finger ${fingerID}`, 5);
 
                         logger.info(`\n========================================`);
                         logger.info(`[SYNC PHASE 2] 🖐️ SYNCING FINGERPRINT for ${emp.name}`);
@@ -198,7 +177,8 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                         // Mark as synced now that fingerprint is being sent
                         await markEmployeeSynced(emp.emp_id, terminalSerial, 'synced');
 
-                        return res.send(fpCmd);
+                        // Command is queued; next getrequest poll will deliver it
+                        // Don't send directly — let the queue handle ordering
                     } else {
                         // No fingerprints found, mark as synced anyway
                         await markEmployeeSynced(emp.emp_id, terminalSerial, 'synced');
@@ -242,14 +222,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                 const emp = missingEmployees[0];
                 const cmdId = Math.floor(Math.random() * 10000);
 
-                let numericPin: string;
-                if (emp.device_pin) {
-                    numericPin = emp.device_pin.toString();
-                } else {
-                    const partToUse = emp.emp_id.includes('-') ? emp.emp_id.split('-')[1] : emp.emp_id;
-                    numericPin = partToUse.replace(/\D/g, '');
-                }
-                const simplePin = parseInt(numericPin, 10).toString();
+                const simplePin = generateDevicePin(emp);
                 const tab = String.fromCharCode(9);
 
                 // 1. Fetch Fingerprints
@@ -269,8 +242,8 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                 // IMPORTANT: Verify=1 enables fingerprint verification (shows fingerprint icon on device)
                 const userCmd = `C:${cmdId}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=1`;
 
-                // Track command
-                (global as any).cmdTracker[cmdId] = `DATA USER: ${emp.name} (PIN ${simplePin})`;
+                // Enqueue user command (persistent)
+                await enqueueCommand(terminalSerial, CMD_TYPES.USER_SYNC, userCmd, `DATA USER: ${emp.name} (PIN ${simplePin})`, 10);
 
                 logger.info(`[SYNC] 📤 User command created: CmdID ${cmdId}`);
                 logger.info(`[SYNC] User command: ${userCmd}`);
@@ -284,7 +257,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                     logger.info(`[SYNC] ✅ Marked ${emp.emp_id} as 'synced' (no fingerprints)`);
                 }
 
-                return res.send(userCmd);
+                // Command is queued; next getrequest poll will deliver it
             }
 
             // No commands, just respond OK
@@ -301,19 +274,14 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             const { serial } = req.params;
             const terminalSerial = String(serial).trim();
 
-            if (!commandQueue[terminalSerial]) {
-                commandQueue[terminalSerial] = [];
-            }
-
             const queryCmdId = Math.floor(Math.random() * 10000);
             const queryCmd = `C:${queryCmdId}:DATA QUERY FPTMP`;
-            commandQueue[terminalSerial].push(queryCmd);
+            await enqueueCommand(terminalSerial, CMD_TYPES.RAW, queryCmd, 'DIAGNOSTIC: Template query');
 
             logger.info(`[Diagnostic] Template query queued for ${terminalSerial}`);
             res.json({
                 success: true,
-                message: `Template query command (${queryCmdId}) queued for ${terminalSerial}. It will be picked up on the next heartbeat.`,
-                queueSize: commandQueue[terminalSerial].length
+                message: `Template query command (${queryCmdId}) queued for ${terminalSerial}. It will be picked up on the next heartbeat.`
             });
         } catch (error) {
             logger.error('[ADMS] Query-templates error:', error);
@@ -327,12 +295,13 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             const { serial } = req.params;
             const terminalSerial = String(serial).trim();
 
-            if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
-
             // Try 3 common formats to get templates back
-            commandQueue[terminalSerial].push(`C:${Math.floor(Math.random() * 10000)}:DATA QUERY FPTMP PIN=1`);
-            commandQueue[terminalSerial].push(`C:${Math.floor(Math.random() * 10000)}:GET USERPIN 1 FPTMP`);
-            commandQueue[terminalSerial].push(`C:${Math.floor(Math.random() * 10000)}:DATA QUERY FPTMP`);
+            const cmd1 = `C:${Math.floor(Math.random() * 10000)}:DATA QUERY FPTMP PIN=1`;
+            const cmd2 = `C:${Math.floor(Math.random() * 10000)}:GET USERPIN 1 FPTMP`;
+            const cmd3 = `C:${Math.floor(Math.random() * 10000)}:DATA QUERY FPTMP`;
+            await enqueueCommand(terminalSerial, CMD_TYPES.RAW, cmd1, 'DIAG: FPTMP PIN=1');
+            await enqueueCommand(terminalSerial, CMD_TYPES.RAW, cmd2, 'DIAG: GET USERPIN 1 FPTMP');
+            await enqueueCommand(terminalSerial, CMD_TYPES.RAW, cmd3, 'DIAG: DATA QUERY FPTMP');
 
             logger.info(`[Diagnostic] 3-way Diagnostic Pull queued for ${terminalSerial}`);
             res.json({ success: true, message: '3 diagnostic formats queued. Watch for Akosua/PIN 1 in logs.' });
@@ -346,12 +315,11 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
         try {
             const { serial } = req.params;
             const terminalSerial = String(serial).trim();
-            if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
 
             // These commands tell the device to upload its current user database to the server
-            commandQueue[terminalSerial].push(`C:${Math.floor(Math.random() * 10000)}:DATA QUERY USERINFO`);
-            commandQueue[terminalSerial].push(`C:${Math.floor(Math.random() * 10000)}:DATA QUERY FPTMP`);
-            commandQueue[terminalSerial].push(`C:${Math.floor(Math.random() * 10000)}:SET OPTIONS DataPostFp=1`);
+            await enqueueCommand(terminalSerial, CMD_TYPES.RAW, `C:${Math.floor(Math.random() * 10000)}:DATA QUERY USERINFO`, 'DIAG: Query user info');
+            await enqueueCommand(terminalSerial, CMD_TYPES.RAW, `C:${Math.floor(Math.random() * 10000)}:DATA QUERY FPTMP`, 'DIAG: Query fingerprint templates');
+            await enqueueCommand(terminalSerial, CMD_TYPES.RAW, `C:${Math.floor(Math.random() * 10000)}:SET OPTIONS DataPostFp=1`, 'DIAG: Enable FP data push');
 
             logger.info(`[Diagnostic] Force Upload queued for ${terminalSerial}`);
             res.json({ success: true, message: 'Force upload commands queued. Check /iclock/cdata logs in 60s.' });
@@ -370,7 +338,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             logger.info(`[Sync API] Requested sync for ${terminalSerial} (All: ${all}, Clear: ${clear})`);
 
             if (clear === 'true') {
-                commandQueue[terminalSerial] = [];
+                await clearQueue(terminalSerial);
                 logger.info(`[Sync API] Command queue cleared for ${terminalSerial}`);
             }
 
@@ -393,14 +361,12 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                 // EXTRA: For small test sets, we can queue commands IMMEDIATELY
                 if (employees.length < 5) {
                     const fingerprints = await getEmployeeFingerprints(emp.id);
-                    const partToUse = emp.emp_id.includes('-') ? emp.emp_id.split('-')[1] : emp.emp_id;
-                    const simplePin = parseInt(partToUse.replace(/\D/g, ''), 10).toString();
+                    const simplePin = generateDevicePin(emp);
                     const tab = String.fromCharCode(9);
 
                     // 1. Queue User - PROVEN WORKING FORMAT for MB460
                     const userCmd = `C:${Math.floor(Math.random() * 10000)}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=1`;
-                    if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
-                    commandQueue[terminalSerial].push(userCmd);
+                    await enqueueCommand(terminalSerial, CMD_TYPES.USER_SYNC, userCmd, `DATA USER: ${emp.name} (PIN ${simplePin})`, 10);
 
                     // 2. Queue Fingerprints using biodata format (correct biometric table)
                     for (const fp of fingerprints) {
@@ -412,8 +378,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                         const fpCmdId = Math.floor(Math.random() * 10000);
                         const fpCmd = buildFingerprintCommand(fpCmdId, simplePin, fid, base64);
 
-                        commandQueue[terminalSerial].push(fpCmd);
-                        (global as any).cmdTracker[fpCmdId] = `FP(biodata): ${emp.name} Finger ${fid}`;
+                        await enqueueCommand(terminalSerial, CMD_TYPES.FINGERPRINT_SYNC, fpCmd, `FP(biodata): ${emp.name} Finger ${fid}`, 5);
                         logger.info(`[Sync API] Direct Queue for ${emp.name} (PIN ${simplePin}): Finger ${fid}, Size ${size}, Format: biodata`);
                     }
                 }
@@ -426,36 +391,23 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
         }
     });
 
-    // ============ NEW DIAGNOSTIC ENDPOINTS ============
+    // ============ DIAGNOSTIC ENDPOINTS ============
 
-    // 1. Queue Inspection - See what's pending for a terminal
+    // 1. Queue Inspection - See what's pending for a terminal (now uses persistent DB)
     app.get('/api/terminals/:serial/queue', async (req: Request, res: Response) => {
         try {
             const { serial } = req.params;
             const terminalSerial = String(serial).trim();
 
-            const queue = commandQueue[terminalSerial] || [];
-            const cmdTracker = (global as any).cmdTracker || {};
+            const summary = await getQueueSummary(terminalSerial);
 
-            // Summarize commands (don't show full templates)
-            const summary = queue.map((cmd, idx) => {
-                const cmdMatch = cmd.match(/^C:(\d+):(.{50})/);
-                if (cmdMatch) {
-                    const cmdId = cmdMatch[1];
-                    const preview = cmdMatch[2];
-                    const info = cmdTracker[cmdId] || 'untracked';
-                    return { index: idx, cmdId, preview: preview + '...', info };
-                }
-                return { index: idx, cmdId: 'unknown', preview: cmd.substring(0, 50), info: 'unknown' };
-            });
-
-            logger.info(`[Diagnostic] Queue inspection for ${terminalSerial}: ${queue.length} commands`);
+            logger.info(`[Diagnostic] Queue inspection for ${terminalSerial}: ${summary.pending} pending, ${summary.sent} sent`);
 
             res.json({
                 terminal: terminalSerial,
-                queueLength: queue.length,
-                commands: summary,
-                trackerSize: Object.keys(cmdTracker).length
+                pending: summary.pending,
+                sent: summary.sent,
+                commands: summary.commands
             });
         } catch (error) {
             res.status(500).json({ error: String(error) });
@@ -492,8 +444,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
 
             // Build combined command
             const tab = String.fromCharCode(9);
-            const partToUse = emp.emp_id.includes('-') ? emp.emp_id.split('-')[1] : emp.emp_id;
-            const simplePin = parseInt(partToUse.replace(/\D/g, ''), 10).toString();
+            const simplePin = generateDevicePin(emp);
 
             const userCmdId = Math.floor(Math.random() * 10000);
             const userCmd = `C:${userCmdId}:DATA UPDATE userinfo${tab}PIN=${simplePin}${tab}Name=${emp.name}${tab}Pri=0${tab}Pass=${tab}Grp=1${tab}TZ=00000001${tab}Verify=1`;
@@ -509,16 +460,11 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             // Use DATA UPDATE biodata — correct biometric table
             const fpCmd = buildFingerprintCommand(fpCmdId, simplePin, fid, base64);
 
-            // Queue user first
-            if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
-            commandQueue[terminalSerial].push(userCmd);
+            // Queue user first (persistent)
+            await enqueueCommand(terminalSerial, CMD_TYPES.USER_SYNC, userCmd, `TEST USER: ${emp.name} (PIN ${simplePin})`, 10);
 
-            // Track
-            (global as any).cmdTracker[userCmdId] = `TEST USER: ${emp.name} (PIN ${simplePin})`;
-
-            // Queue fingerprint command
-            commandQueue[terminalSerial].push(fpCmd);
-            (global as any).cmdTracker[fpCmdId] = `TEST TEMPLATEV10: ${emp.name} Finger ${fid}`;
+            // Queue fingerprint command (persistent)
+            await enqueueCommand(terminalSerial, CMD_TYPES.FINGERPRINT_SYNC, fpCmd, `TEST FP: ${emp.name} Finger ${fid}`, 5);
 
             logger.info(`[TEST] Combined sync queued for ${emp.name} (PIN ${simplePin})`);
             logger.info(`[TEST] User cmd: ${userCmdId}`);
@@ -569,8 +515,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             }
 
             const tab = String.fromCharCode(9);
-            const partToUse = emp.emp_id.includes('-') ? emp.emp_id.split('-')[1] : emp.emp_id;
-            const simplePin = parseInt(partToUse.replace(/\D/g, ''), 10).toString();
+            const simplePin = generateDevicePin(emp);
 
             const fp = fingerprints[0];
             let templateBuffer = Buffer.from(fp.template.replace(/\s/g, ''), 'base64');
@@ -604,10 +549,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
 
             const selectedFormat = formats[formatIdx] || formats[0];
 
-            if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
-            commandQueue[terminalSerial].push(selectedFormat);
-
-            (global as any).cmdTracker[fpCmdId] = `TEMPLATEV10 FORMAT TEST ${formatIdx}: ${emp.name} Finger ${fid}`;
+            await enqueueCommand(terminalSerial, CMD_TYPES.FORMAT_TEST, selectedFormat, `FORMAT TEST ${formatIdx}: ${emp.name} Finger ${fid}`);
 
             logger.info(`[FORMAT TEST] Testing format ${formatIdx} for ${emp.name}`);
             logger.info(`[FORMAT TEST] Command: ${selectedFormat.substring(0, 120)}...`);
@@ -644,7 +586,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
                 await markEmployeeSynced(s.emp_id, terminalSerial, 'pending');
             }
 
-            commandQueue[terminalSerial] = [];
+            await clearQueue(terminalSerial);
 
             logger.info(`[RESET] All employees reset to pending for ${terminalSerial}`);
             res.json({ success: true, message: `${syncStatus.length} employees reset, queue cleared` });
@@ -663,10 +605,7 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             const cmdId = Math.floor(Math.random() * 10000);
             const fullCmd = `C:${cmdId}:${cmd}`;
 
-            if (!commandQueue[terminalSerial]) commandQueue[terminalSerial] = [];
-            commandQueue[terminalSerial].push(fullCmd);
-
-            (global as any).cmdTracker[cmdId] = `RAW: ${cmd}`;
+            await enqueueCommand(terminalSerial, CMD_TYPES.RAW, fullCmd, `RAW: ${cmd}`);
 
             logger.info(`[RAW] Queued raw command for ${terminalSerial}: ${fullCmd}`);
             res.json({ success: true, cmdId, fullCmd });
@@ -818,12 +757,12 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
             const cmdId = params.get('ID');
             const returnCode = params.get('Return');
             const cmdVal = params.get('CMD');
+            const terminalSerial = String(SN || 'UNKNOWN');
 
             logger.info(`[DEVICECMD] Parsed: CmdID=${cmdId}, Return=${returnCode}, CMD=${cmdVal}`);
 
-            // Track which command this response is for
-            const cmdTracker = (global as any).cmdTracker || {};
-            const cmdInfo = cmdId ? (cmdTracker[cmdId] || 'unknown command') : 'no command ID';
+            // Look up command description from persistent queue
+            const cmdInfo = cmdId ? (await getCommandDescription(parseInt(cmdId, 10), terminalSerial) || 'unknown command') : 'no command ID';
             logger.info(`[DEVICECMD] This response is for: ${cmdInfo}`);
 
             if (returnCode && returnCode !== '0') {
@@ -846,12 +785,20 @@ export function setupAdmsRoutes(app: Express, supabase: SupabaseClient) {
 
                 const meaning = errorMeanings[returnCode] || 'Unknown error code';
                 logger.error(`[DEVICECMD FAILED] Error meaning: ${meaning}`);
-                logger.error(`🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨`);
+
+                // Persist failure in DB (with retry logic)
+                if (cmdId) {
+                    await markCommandFailed(parseInt(cmdId, 10), terminalSerial, parseInt(returnCode, 10), meaning);
+                }
             } else if (returnCode === '0') {
                 logger.info(`\n✅✅✅ COMMAND SUCCESS ✅✅✅`);
                 logger.info(`[DEVICECMD SUCCESS] Command ${cmdId} accepted by device ${SN}`);
                 logger.info(`[DEVICECMD SUCCESS] Command was: ${cmdInfo}`);
-                logger.info(`✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅`);
+
+                // Persist success in DB
+                if (cmdId) {
+                    await markCommandSuccess(parseInt(cmdId, 10), terminalSerial);
+                }
             }
 
             res.send('OK');
