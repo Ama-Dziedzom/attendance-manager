@@ -33,3 +33,7 @@ secrets.txt
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#logs
+*.combined.log
+*.error.log
