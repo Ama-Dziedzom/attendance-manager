@@ -4,7 +4,7 @@ import { createClient } from "supabase";
 interface InviteRequest {
     email: string;
     fullName: string;
-    role: 'it' | 'hr' | 'front_desk';
+    role: 'super_admin' | 'it' | 'hr' | 'front_desk';
     redirectTo?: string;
 }
 
@@ -50,7 +50,7 @@ Deno.serve(async (req: Request) => {
             .eq('id', requester.id)
             .single();
 
-        if (profileError || profile?.role !== 'it') {
+        if (profileError || (profile?.role !== 'super_admin' && profile?.role !== 'it')) {
             return new Response(JSON.stringify({ error: 'Only IT Admins can invite users' }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 403,

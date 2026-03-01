@@ -39,7 +39,7 @@ export default function SettingsPage() {
           .eq('id', user.id)
           .single()
 
-        if (profileData?.role !== 'it') {
+        if (profileData?.role !== 'it' && profileData?.role !== 'super_admin') {
           router.push('/dashboard')
           return
         }

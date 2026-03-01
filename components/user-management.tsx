@@ -140,7 +140,7 @@ export default function UserManagement() {
     // Role badge component
     const RoleBadge = ({ role }: { role: string }) => {
         const config = USER_ROLES[role as keyof typeof USER_ROLES]
-        const Icon = role === 'it' ? Shield : (role === 'hr' ? UserCheck : ShieldCheck)
+        const Icon = (role === 'super_admin' || role === 'it') ? Shield : (role === 'hr' ? UserCheck : ShieldCheck)
 
         return (
             <Badge
