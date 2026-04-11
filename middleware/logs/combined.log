@@ -28033,3 +28033,61 @@ At D:\attendance-manager\middleware\scripts\capture.ps1:105 char:1
 2026-02-10 17:21:49 [info]: [Supabase] Looking up agencies for terminal: QWC5234701115
 2026-02-10 17:21:49 [info]: [Supabase] Found 2 agencies for terminal QWC5234701115
 2026-02-11 20:48:42 [info]: SIGINT received, shutting down...
+2026-02-27 15:01:16 [info]: [ADMS] Protocol routes configured
+2026-02-27 15:01:16 [info]: [ADMS] Sync routes configured
+2026-02-27 15:01:16 [info]: [ADMS] Diagnostic routes configured
+2026-02-27 15:01:16 [info]: [ADMS] All routes configured (with rate limiting)
+2026-02-27 15:01:16 [info]: API routes configured
+2026-02-27 15:01:16 [info]: Starting Attendance Middleware...
+2026-02-27 15:01:16 [info]: Supabase client initialized
+2026-02-27 15:01:16 [info]: ZKTeco server listening on port 4370
+2026-02-27 15:01:16 [info]: Checking port config... Env API_PORT: 3001, Final: 3001
+2026-02-27 15:01:16 [info]: Attendance Middleware started successfully!
+2026-02-27 15:01:16 [info]: Waiting for MB460 terminal connections...
+2026-02-27 15:01:16 [info]: API server listening on port 3001
+2026-02-27 15:01:16 [info]: WebSocket server ready on port 3001
+2026-02-27 15:01:16 [info]: ZKTeco TCP server listening on 0.0.0.0:4370
+2026-02-27 15:27:45 [info]: [ADMS] Protocol routes configured
+2026-02-27 15:27:45 [info]: [ADMS] Sync routes configured
+2026-02-27 15:27:45 [info]: [ADMS] Diagnostic routes configured
+2026-02-27 15:27:45 [info]: [ADMS] All routes configured (with rate limiting)
+2026-02-27 15:27:45 [info]: API routes configured
+2026-02-27 15:27:45 [info]: Starting Attendance Middleware...
+2026-02-27 15:27:45 [info]: Supabase client initialized
+2026-02-27 15:27:45 [info]: ZKTeco server listening on port 4370
+2026-02-27 15:27:45 [info]: Checking port config... Env API_PORT: 3001, Final: 3001
+2026-02-27 15:27:45 [info]: Attendance Middleware started successfully!
+2026-02-27 15:27:45 [info]: Waiting for MB460 terminal connections...
+2026-02-27 15:27:45 [info]: API server listening on port 3001
+2026-02-27 15:27:45 [info]: WebSocket server ready on port 3001
+2026-02-27 15:27:45 [info]: ZKTeco TCP server listening on 0.0.0.0:4370
+2026-02-27 15:30:24 [info]: SIGINT received, shutting down...
+2026-02-27 15:30:36 [info]: [ADMS] Protocol routes configured
+2026-02-27 15:30:36 [info]: [ADMS] Sync routes configured
+2026-02-27 15:30:36 [info]: [ADMS] Diagnostic routes configured
+2026-02-27 15:30:36 [info]: [ADMS] All routes configured (with rate limiting)
+2026-02-27 15:30:36 [info]: API routes configured
+2026-02-27 15:30:36 [info]: Starting Attendance Middleware...
+2026-02-27 15:30:36 [info]: Supabase client initialized
+2026-02-27 15:30:36 [info]: ZKTeco server listening on port 4370
+2026-02-27 15:30:36 [info]: Checking port config... Env API_PORT: 3001, Final: 3001
+2026-02-27 15:30:36 [info]: Attendance Middleware started successfully!
+2026-02-27 15:30:36 [info]: Waiting for MB460 terminal connections...
+2026-02-27 15:30:36 [info]: API server listening on port 3001
+2026-02-27 15:30:36 [info]: WebSocket server ready on port 3001
+2026-02-27 15:30:36 [info]: ZKTeco TCP server listening on 0.0.0.0:4370
+2026-02-27 15:30:55 [info]: SIGINT received, shutting down...
+2026-02-27 15:32:42 [info]: [ADMS] Protocol routes configured
+2026-02-27 15:32:42 [info]: [ADMS] Sync routes configured
+2026-02-27 15:32:42 [info]: [ADMS] Diagnostic routes configured
+2026-02-27 15:32:42 [info]: [ADMS] All routes configured (with rate limiting)
+2026-02-27 15:32:42 [info]: API routes configured
+2026-02-27 15:32:42 [info]: Starting Attendance Middleware...
+2026-02-27 15:32:42 [info]: Supabase client initialized
+2026-02-27 15:32:42 [info]: ZKTeco server listening on port 4370
+2026-02-27 15:32:42 [info]: Checking port config... Env API_PORT: 4370, Final: 4370
+2026-02-27 15:32:42 [info]: Attendance Middleware started successfully!
+2026-02-27 15:32:42 [info]: Waiting for MB460 terminal connections...
+2026-02-27 15:32:42 [info]: API server listening on port 4370
+2026-02-27 15:32:42 [info]: WebSocket server ready on port 4370
+2026-02-27 15:32:42 [info]: ZKTeco TCP server listening on 0.0.0.0:4370

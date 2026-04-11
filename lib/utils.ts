@@ -111,6 +111,7 @@ export const ATTENDANCE_STATUS = {
 export type AttendanceStatusKey = keyof typeof ATTENDANCE_STATUS
 
 export const USER_ROLES = {
+  super_admin: { label: 'Super Admin', badgeClass: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100' },
   it: { label: 'IT Admin', badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' },
   hr: { label: 'HR Manager', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
   front_desk: { label: 'Front Desk', badgeClass: 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' },

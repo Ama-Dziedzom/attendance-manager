@@ -63,7 +63,6 @@ export function AttendanceFeed({ date }: AttendanceFeedProps) {
 
     // Subscribe to real-time updates
     subscription = db.attendance.subscribeToUpdates((payload) => {
-      console.log("📡 Real-time attendance update:", payload)
       // Re-fetch to get joined employee data, as real-time payload only has the raw record
       loadData()
     })

@@ -63,9 +63,9 @@ export default function EmployeeDetailPage() {
   async function loadEmployeeData() {
     try {
       setLoading(true)
-      console.log("Fetching employee data for:", employeeId)
+
       const empData = await db.employees.getByEmpId(employeeId)
-      console.log("Raw empData result:", empData)
+
       if (empData) {
         const empDataRaw = empData as any
         const biometric = empDataRaw.biometric_credential && Array.isArray(empDataRaw.biometric_credential)
@@ -77,10 +77,10 @@ export default function EmployeeDetailPage() {
           : empDataRaw.employee_fingerprints
 
         const mapped = mapDbEmployeeToEmployee(empData)
-        console.log("Mapped employee object:", mapped)
+
         setEmployee(mapped)
         const attendanceData = await db.attendance.getEmployeeRecords(empData.id, 30)
-        console.log("Attendance records found:", attendanceData.length)
+
         const mappedAttendance = attendanceData.map((r: any) => mapDbAttendanceToAttendance(r))
         setEmployeeAttendance(mappedAttendance)
       }
@@ -106,7 +106,7 @@ export default function EmployeeDetailPage() {
 
     try {
       // 1. Send to Middleware for DB storage and terminal sync
-      console.log(`[Enroll] Sending request to ${MIDDLEWARE_URL}/api/fingerprints/enroll for ID: ${employee.id}`);
+
       const response = await fetch(`${MIDDLEWARE_URL}/api/fingerprints/enroll`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -118,7 +118,7 @@ export default function EmployeeDetailPage() {
       });
 
       const result = await response.json();
-      console.log("[Enroll] Middleware response:", result);
+
 
       if (!result.success) {
         console.error("[Enroll] Middleware reported failure:", result.error);

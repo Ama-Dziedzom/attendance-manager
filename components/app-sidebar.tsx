@@ -92,7 +92,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         const groups = []
 
         // Overview group - Only for IT and HR
-        if (profile?.role === 'it' || profile?.role === 'hr') {
+        if (profile?.role === 'super_admin' || profile?.role === 'it' || profile?.role === 'hr') {
             groups.push({
                 label: "Dashboard",
                 items: [
@@ -112,7 +112,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         // Management group - IT sees Users, IT/HR see Employees
         const managementItems = []
-        if (profile?.role === 'it' || profile?.role === 'hr') {
+        if (profile?.role === 'super_admin' || profile?.role === 'it' || profile?.role === 'hr') {
             managementItems.push({
                 href: "/dashboard/employees",
                 label: "Employees",
@@ -120,7 +120,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 badge: employeeCount?.toString()
             })
         }
-        if (profile?.role === 'it') {
+        if (profile?.role === 'super_admin' || profile?.role === 'it') {
             managementItems.push({
                 href: "/dashboard/users",
                 label: "Users",
@@ -159,6 +159,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                         Attendance Hub
                                     </span>
                                     <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground mt-1 flex items-center gap-1.5">
+                                        {profile?.role === "super_admin" && "Super Administrator"}
                                         {profile?.role === "it" && "IT Administrator"}
                                         {profile?.role === "hr" && "HR Manager"}
                                         {profile?.role === "front_desk" && "Front Desk"}
@@ -219,7 +220,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
             <SidebarFooter className="p-2 mt-auto border-t">
                 <SidebarMenu>
-                    {profile?.role === 'it' && (
+                    {(profile?.role === 'super_admin' || profile?.role === 'it') && (
                         <SidebarMenuItem className="mb-1">
                             <SidebarMenuButton
                                 asChild
