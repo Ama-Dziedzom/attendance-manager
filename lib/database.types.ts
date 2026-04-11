@@ -472,7 +472,7 @@ export type Database = {
             mv_daily_attendance_summary: {
                 Row: {
                     absent_count: number | null
-                    attendance_date: string | null
+                    date: string | null
                     late_count: number | null
                     on_time_count: number | null
                     present_count: number | null

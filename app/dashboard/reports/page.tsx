@@ -76,7 +76,7 @@ export default function ReportsPage() {
       const totalEmpCount = employees.length
 
       // Create a map for quick lookup
-      const summaryMap = new Map(summaryData.map(s => [s.attendance_date, s]))
+      const summaryMap = new Map(summaryData.map((s: any) => [s.date, s]))
 
       // Generate all dates in the range to ensure a continuous chart
       const chartData: any[] = []
@@ -108,7 +108,11 @@ export default function ReportsPage() {
       const totalAbsent = summaryData.reduce((acc: number, curr: any) => acc + (curr.absent_count || 0), 0)
 
       const avgRate = summaryData.length > 0
-        ? summaryData.reduce((acc: number, curr: any) => acc + (curr.attendance_rate || 0), 0) / summaryData.length
+        ? summaryData.reduce((acc: number, curr: any) => {
+            const total = curr.total_employees || 1
+            const present = curr.present_count || 0
+            return acc + (present / total) * 100
+          }, 0) / summaryData.length
         : 0
 
       setMetrics({
@@ -119,7 +123,7 @@ export default function ReportsPage() {
       })
 
     } catch (error) {
-      console.error("Error loading report data:", error)
+      console.error("Error loading report data:", JSON.stringify(error, Object.getOwnPropertyNames(error as object)))
     } finally {
       setIsLoading(false)
     }
