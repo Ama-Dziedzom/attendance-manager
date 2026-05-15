@@ -1,9 +1,9 @@
-const API_URL = process.env.API_URL || 'https://middleware.fly.dev';
+const API_URL = process.env.API_URL || 'http://localhost:3001';
 
 async function checkHealth() {
     try {
         const response = await fetch(`${API_URL}/health`);
-        const data = await response.json();
+        const data: any = await response.json();
         console.log('🏥 Health check:', data);
         return data.status === 'ok';
     } catch (error: any) {
@@ -44,7 +44,7 @@ async function simulateAttendance(empId: string, type: 'in' | 'out', method: str
                 verifyMethod: method
             })
         });
-        const data = await response.json();
+        const data: any = await response.json();
         if (data.success) {
             console.log('✅ Success!', data);
         } else {
